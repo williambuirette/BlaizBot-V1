@@ -33,6 +33,34 @@ npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir
 IMPORTANT : Attendre que la commande soit terminée avant toute autre action.
 ```
 
+### Prompt Optimal 1.1.1
+
+> **Itérations réelles** : 2
+> **Problèmes rencontrés** : npm refuse les majuscules dans le nom de package
+
+```
+Tu es dans le dossier BlaizBot-V1 qui est VIDE.
+
+⚠️ PROBLÈME CONNU : npm refuse les noms avec majuscules.
+Le dossier s'appelle "BlaizBot-V1" mais npm veut "blaizbot-v1".
+
+SOLUTION :
+1. Créer un dossier temp à côté : mkdir ../blaizbot-temp
+2. Se placer dedans : cd ../blaizbot-temp
+3. Créer le projet : npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --yes
+4. Copier le contenu dans BlaizBot-V1 :
+   Copy-Item -Path * -Destination ../BlaizBot-V1/ -Recurse -Force
+5. Supprimer le temp : cd .. ; Remove-Item blaizbot-temp -Recurse
+6. Dans BlaizBot-V1, modifier package.json : "name": "blaizbot-v1"
+
+ALTERNATIVE : Utiliser --yes pour accepter tous les défauts.
+```
+
+**Différences clés vs prompt original** :
+- npm refuse les majuscules dans les noms de package
+- Prévoir la solution de contournement avec dossier temporaire
+- Utiliser --yes pour éviter les prompts interactifs
+
 ### Prompt 1.1.2 — Réponses CLI
 
 ```
@@ -86,6 +114,28 @@ Cette option force à vérifier si un index existe avant d'y accéder.
 Placer cette ligne juste après "strict": true.
 ```
 
+### Prompt Optimal 1.2.2
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Exclure prisma/ pour éviter erreurs de build
+
+```
+Dans tsconfig.json :
+
+1. Ajouter dans compilerOptions :
+   "noUncheckedIndexedAccess": true
+
+2. Ajouter dans exclude (IMPORTANT pour éviter erreurs prisma) :
+   "exclude": ["node_modules", "prisma"]
+
+Le dossier prisma/ contient seed-template.ts qui référence @prisma/client
+avant qu'il soit généré, causant des erreurs de build.
+```
+
+**Différences clés vs prompt original** :
+- Ajouter `prisma/` dans exclude pour éviter les erreurs de build
+- Le fichier prisma/seed-template.ts cause des erreurs car @prisma/client n'existe pas encore
+
 ### Prompt 1.2.3 — Test build
 
 ```
@@ -124,6 +174,29 @@ Vérifier que ces 3 lignes sont présentes AU DÉBUT :
 Si absentes, les ajouter.
 ```
 
+### Prompt Optimal 1.3.2
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Tailwind CSS v4 utilise une nouvelle syntaxe
+
+```
+Ouvrir src/app/globals.css.
+
+⚠️ TAILWIND CSS v4 (décembre 2025) :
+La syntaxe a changé ! Au lieu de @tailwind directives, on utilise :
+
+@import "tailwindcss";
+
+Si tu vois cette ligne, c'est CORRECT - ne pas changer.
+L'ancienne syntaxe (@tailwind base/components/utilities) est pour Tailwind v3.
+
+Vérifier aussi que le fichier contient les variables CSS pour les couleurs shadcn.
+```
+
+**Différences clés vs prompt original** :
+- Tailwind CSS v4 utilise `@import "tailwindcss"` au lieu des directives @tailwind
+- Ne pas essayer de "corriger" en ajoutant les anciennes directives
+
 ### Prompt 1.3.3 — Test visuel Tailwind
 
 ```
@@ -153,6 +226,33 @@ Répondre aux questions :
 - Base color → Slate
 - CSS variables → Yes
 ```
+
+### Prompt Optimal 1.4.1
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Nouvelles options shadcn v4
+
+```
+Stopper le serveur dev si en cours.
+Exécuter :
+npx shadcn@latest init
+
+⚠️ SHADCN V4 (décembre 2025) - Nouvelles options :
+
+- Style → new-york-v4 (ou new-york, le v4 est le plus récent)
+- Base color → gray (ou slate, zinc selon préférence)
+- CSS variables → Yes
+
+La version v4 de shadcn génère :
+- components.json avec "style": "new-york-v4"
+- Variables CSS dans globals.css utilisant oklch() (moderne)
+- Pas de tailwind.config.ts nécessaire (intégré dans CSS)
+```
+
+**Différences clés vs prompt original** :
+- shadcn v4 propose "new-york-v4" comme style
+- Les couleurs utilisent oklch() au lieu de hsl()
+- Tailwind v4 + shadcn v4 = pas besoin de tailwind.config.ts
 
 ### Prompt 1.4.2 — Vérifier installation
 
@@ -217,6 +317,30 @@ Attendre "Done" avant de continuer.
 Fichiers créés : src/components/ui/toast.tsx et toaster.tsx
 ```
 
+### Prompt Optimal 1.5.6
+
+> **Itérations réelles** : 2
+> **Problèmes rencontrés** : toast n'existe plus dans shadcn v4, remplacé par sonner
+
+```
+⚠️ SHADCN V4 : Le composant "toast" n'existe plus !
+Il a été remplacé par "sonner" (librairie moderne de notifications).
+
+Exécuter : npx shadcn@latest add sonner
+Attendre "Done" avant de continuer.
+Fichier créé : src/components/ui/sonner.tsx
+
+USAGE :
+- Import : import { Toaster } from "@/components/ui/sonner"
+- Ajouter <Toaster /> dans layout.tsx
+- Déclencher : import { toast } from "sonner"; toast("Message")
+```
+
+**Différences clés vs prompt original** :
+- Le composant "toast" a été remplacé par "sonner" dans shadcn v4
+- Un seul fichier sonner.tsx au lieu de toast.tsx + toaster.tsx
+- API différente : `toast("message")` au lieu de `useToast()`
+
 ### Prompt 1.5.7 — Test import composant
 
 ```
@@ -230,6 +354,43 @@ Ajouter dans le JSX :
 Vérifier dans le navigateur : bouton stylé visible.
 Si erreur d'import → vérifier que @/ pointe vers src/ dans tsconfig.json.
 ```
+
+### Prompt Optimal 1.5.7
+
+> **Itérations réelles** : 2
+> **Problèmes rencontrés** : Page blanche (couleurs identiques fond/texte)
+
+```
+Ouvrir src/app/page.tsx.
+
+⚠️ ATTENTION PAGE BLANCHE :
+La page par défaut Next.js utilise bg-white + text-black.
+Avec les couleurs shadcn, cela peut créer du blanc sur blanc !
+
+REMPLACER TOUT le contenu de page.tsx par :
+
+import { Button } from "@/components/ui/button";
+
+export default function Home() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
+      <h1 className="text-4xl font-bold">🤖 BlaizBot</h1>
+      <p className="text-lg text-muted-foreground">
+        Plateforme éducative avec IA intégrée
+      </p>
+      <Button size="lg">Test shadcn/ui</Button>
+    </div>
+  );
+}
+
+Les classes "text-muted-foreground" et "bg-background" utilisent les variables
+CSS de shadcn qui s'adaptent au thème.
+```
+
+**Différences clés vs prompt original** :
+- La page par défaut peut être blanche sur blanc
+- Utiliser les classes shadcn (text-muted-foreground, bg-background) au lieu de couleurs fixes
+- Simplifier la page pour éviter les problèmes de style
 
 ---
 
@@ -389,6 +550,44 @@ export default eslintConfig;
 
 Si .eslintrc.json existe (ancien format), ajouter "prettier" dans extends.
 ```
+
+### Prompt Optimal 1.7.3
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : ESLint 9 utilise un format différent
+
+```
+⚠️ ESLINT 9 + NEXT.JS 15 (décembre 2025) :
+Le format a encore changé ! Utiliser ce format :
+
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+import eslintConfigPrettier from "eslint-config-prettier";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  eslintConfigPrettier,
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "prisma/**",  // ← IMPORTANT : exclure prisma/
+  ]),
+]);
+
+export default eslintConfig;
+
+Note : globalIgnores inclut prisma/ pour éviter les erreurs de lint
+sur les fichiers qui référencent @prisma/client avant génération.
+```
+
+**Différences clés vs prompt original** :
+- ESLint 9 utilise `defineConfig` et `globalIgnores` depuis "eslint/config"
+- Les imports sont différents (nextVitals, nextTs au lieu de compat.extends)
+- Exclure prisma/ dans globalIgnores
 
 ### Prompt 1.7.4 — Test lint
 
