@@ -118,6 +118,47 @@ Toujours conclure par :
 3. **Vérification** - Commandes safe (`npm run lint`, etc.)
 4. **Rollback (1 min)** - `git checkout -- <files>` ou `git revert`
 
+## 📝 Documentation des Prompts Optimaux (OBLIGATOIRE)
+
+> **Objectif** : Capitaliser sur chaque tâche pour améliorer le prompt engineering.
+
+```
+⚠️ APRÈS CHAQUE ÉTAPE TERMINÉE :
+
+1. L'IA ajoute dans `prompts/phase-XX-layout.md` (ou fichier prompt correspondant)
+2. Section "### Prompt Optimal X.X.X" sous le prompt original
+3. Contenu : le prompt qu'il AURAIT FALLU écrire pour réussir du premier coup
+
+FORMAT À RESPECTER :
+```
+
+### Prompt Optimal X.X.X
+
+> **Itérations réelles** : X (idéal = 1)
+> **Problèmes rencontrés** : [liste des erreurs/ajustements]
+
+```
+[Le prompt optimisé qui aurait fonctionné sans itération]
+```
+
+**Différences clés vs prompt original** :
+- [Point 1 manquant ou imprécis]
+- [Point 2 à clarifier]
+- ...
+
+```
+
+EXEMPLE :
+- Prompt original dit "créer Sidebar" 
+- Mais j'ai dû corriger le type Role (STUDENT vs student)
+- → Prompt optimal précise "utiliser Role depuis @/types (ADMIN | TEACHER | STUDENT en majuscules)"
+
+BÉNÉFICE :
+- L'utilisateur compare prompt original vs optimal
+- Apprentissage du prompt engineering par l'exemple
+- Base de données de prompts efficaces pour le futur
+```
+
 ## 📝 Mise à jour de l'exposé (AUTOMATIQUE)
 
 Après chaque **tâche TODO validée** ou **commit significatif**, l'IA doit :
