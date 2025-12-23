@@ -1,10 +1,13 @@
+import { currentUser, courses, studentProgress } from '@/data/mockData';
+import { WelcomeCard, StatsCards, RecentCourses } from '@/components/dashboard';
+
 export default function StudentDashboardPage() {
+  const firstName = currentUser.name.split(' ')[0] ?? currentUser.name;
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard Élève</h1>
-      <p className="text-muted-foreground">
-        Bienvenue sur votre espace élève.
-      </p>
+    <div className="space-y-6">
+      <WelcomeCard userName={firstName} />
+      <StatsCards stats={studentProgress} />
+      <RecentCourses courses={courses} />
     </div>
   );
 }

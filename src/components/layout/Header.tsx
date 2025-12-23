@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -11,11 +12,22 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, User, Settings, LogOut } from 'lucide-react';
 
+// Fix hydration mismatch avec Radix UI
+const emptySubscribe = () => () => {};
+const useIsClient = () =>
+  useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
 // -----------------------------------------------------
 // COMPOSANT HEADER
 // -----------------------------------------------------
 
 export function Header() {
+  const isClient = useIsClient();
+
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-6">
       {/* Zone gauche - Titre de page */}
@@ -30,31 +42,37 @@ export function Header() {
       </div>
 
       {/* Zone droite - Avatar + Dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <Avatar>
-              <AvatarImage src="/avatar.png" alt="Avatar" />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem className="cursor-pointer">
-            <User className="mr-2 h-4 w-4" />
-            Mon profil
-          </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            Paramètres
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="cursor-pointer text-red-500">
-            <LogOut className="mr-2 h-4 w-4" />
-            Déconnexion
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {isClient ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Avatar>
+                <AvatarImage src="/avatar.png" alt="Avatar" />
+                <AvatarFallback>JD</AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem className="cursor-pointer">
+              <User className="mr-2 h-4 w-4" />
+              Mon profil
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              <Settings className="mr-2 h-4 w-4" />
+              Paramètres
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer text-red-500">
+              <LogOut className="mr-2 h-4 w-4" />
+              Déconnexion
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Avatar>
+          <AvatarFallback>JD</AvatarFallback>
+        </Avatar>
+      )}
     </header>
   );
 }
