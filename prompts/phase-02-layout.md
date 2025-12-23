@@ -271,6 +271,30 @@ Créer les pages admin (chacune < 20 lignes) :
 - src/app/(dashboard)/admin/subjects/page.tsx → "Gestion matières"
 ```
 
+### Prompt Optimal 2.4.1
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Aucun
+
+```
+Créer les pages admin (chacune < 20 lignes, Server Components) :
+- src/app/(dashboard)/admin/page.tsx → "Dashboard Admin"
+- src/app/(dashboard)/admin/users/page.tsx → "Gestion utilisateurs"
+- src/app/(dashboard)/admin/classes/page.tsx → "Gestion classes"
+- src/app/(dashboard)/admin/subjects/page.tsx → "Gestion matières"
+
+Structure de chaque page :
+- PAS de 'use client' (Server Component par défaut)
+- export default function XxxPage()
+- <div> avec <h1 className="text-2xl font-bold mb-6"> + <p className="text-muted-foreground">
+- Utiliser &apos; pour les apostrophes dans JSX (ESLint)
+```
+
+**Différences clés vs prompt original** :
+- Préciser que ce sont des Server Components (pas de 'use client')
+- Donner la structure exacte du composant
+- Mentionner `&apos;` pour les apostrophes (règle ESLint react/no-unescaped-entities)
+
 ### Prompt 2.5.1 — Pages Teacher
 
 ```
@@ -281,6 +305,25 @@ Créer les pages teacher :
 - src/app/(dashboard)/teacher/messages/page.tsx → "Messagerie"
 ```
 
+### Prompt Optimal 2.5.1
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Aucun
+
+```
+Créer les pages teacher (même structure que admin) :
+- src/app/(dashboard)/teacher/page.tsx → "Dashboard Professeur"
+- src/app/(dashboard)/teacher/courses/page.tsx → "Mes Cours"
+- src/app/(dashboard)/teacher/classes/page.tsx → "Mes Classes"
+- src/app/(dashboard)/teacher/messages/page.tsx → "Messagerie"
+
+Réutiliser le pattern 2.4.1 (Server Component, h1 + p).
+```
+
+**Différences clés vs prompt original** :
+- Référencer le pattern 2.4.1 pour cohérence
+- Moins de détails car pattern déjà établi
+
 ### Prompt 2.6.1 — Pages Student
 
 ```
@@ -290,6 +333,25 @@ Créer les pages student :
 - src/app/(dashboard)/student/ai/page.tsx → "Assistant IA"
 - src/app/(dashboard)/student/messages/page.tsx → "Messagerie"
 ```
+
+### Prompt Optimal 2.6.1
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Aucun
+
+```
+Créer les pages student (même structure que admin/teacher) :
+- src/app/(dashboard)/student/page.tsx → "Dashboard Élève"
+- src/app/(dashboard)/student/courses/page.tsx → "Mes Cours"
+- src/app/(dashboard)/student/ai/page.tsx → "Assistant IA"
+- src/app/(dashboard)/student/messages/page.tsx → "Messagerie"
+
+Réutiliser le pattern 2.4.1 (Server Component, h1 + p).
+```
+
+**Différences clés vs prompt original** :
+- Référencer le pattern établi
+- Les 3 groupes de pages suivent la même structure
 
 ---
 
@@ -309,11 +371,11 @@ Checklist :
 
 | Étape | Date | Durée | Itérations | Rétro-prompt |
 |-------|------|-------|------------|--------------|
-| 2.1 | | | | |
-| 2.2 | | | | |
-| 2.3 | | | | |
-| 2.4-2.6 | | | | |
+| 2.1 | 23-12-2025 | ~15min | 1 | Prompt OK |
+| 2.2 | 23-12-2025 | ~10min | 1 | Prompt OK |
+| 2.3 | 23-12-2025 | ~5min | 1 | Prompt OK |
+| 2.4-2.6 | 23-12-2025 | ~15min | 1 | Pages simples, pattern réutilisable |
 
 ---
 
-*Dernière mise à jour : 2025-01-13*
+*Dernière mise à jour : 23-12-2025*
