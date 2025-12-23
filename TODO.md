@@ -20,15 +20,15 @@
 ```
 PHASE 0   PHASE 1   PHASE 2   PHASE 3   PHASE 4   PHASE 5
   PRD  →   Init  →  Layout →  Slice →    DB   →   Auth
-  ✅        🔴        ⬜        ⬜        ⬜        ⬜
+  ✅        ✅        ✅        ✅        ✅        🔴
 
 PHASE 6   PHASE 7   PHASE 8   PHASE 9   PHASE 10
  Admin →   Prof  →  Élève  →    IA   →   Démo
    ⬜        ⬜        ⬜        ⬜        ⬜
 ```
 
-**Phase active** : Phase 1 — Initialisation  
-**Progression** : 9% (1/11 phases)
+**Phase active** : Phase 5 — Authentification  
+**Progression** : 45% (5/11 phases)
 
 ---
 

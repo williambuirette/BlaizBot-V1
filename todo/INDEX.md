@@ -6,8 +6,8 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : [phase-02-layout.md](phase-02-layout.md)  
-**Étape en cours** : 2.1 — Créer layout dashboard  
+**Phase actuelle** : [phase-05-auth.md](phase-05-auth.md)  
+**Étape en cours** : 5.1 — Installation NextAuth.js  
 **Dernière MAJ** : 2025-12-23
 
 ---
@@ -46,7 +46,7 @@
 ```
 Phase 0   Phase 1   Phase 2   Phase 3   Phase 4   Phase 5
   PRD  →   Init  →  Layout →  Slice →    DB   →   Auth
-  ✅        ✅        🔴        ⬜        ⬜        ⬜
+  ✅        ✅        ✅        ✅        ✅        🔴
 
 Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
  Admin →   Prof  →  Élève  →    IA   →   Démo
@@ -57,10 +57,10 @@ Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
 |:------|:----|:-------|:------------|:------|:---------|:-------|
 | 0 | PRD & Specs | ✅ Done | 100% | — | — | — |
 | 1 | Initialisation | ✅ Done | 100% | ✅ | ✅ | ✅ |
-| 2 | Layout | 🔴 Active | 0% | ⬜ | ⬜ | ⬜ |
-| 3 | Vertical Slice | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
-| 4 | Base de données | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
-| 5 | Authentification | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
+| 2 | Layout | ✅ Done | 100% | ✅ | ✅ | ✅ |
+| 3 | Vertical Slice | ✅ Done | 100% | ✅ | ✅ | ✅ |
+| 4 | Base de données | ✅ Done | 100% | ✅ | ✅ | ✅ |
+| 5 | Authentification | 🔴 Active | 0% | ⬜ | ⬜ | ⬜ |
 | 6 | Admin | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 7 | Professeur | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 8 | Élève | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
@@ -69,7 +69,7 @@ Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
 
 **Légende** : ✅ Fait | ⬜ À faire | 🔴 En cours | — Non applicable
 
-**Progression globale** : 9% (1/11 phases)
+**Progression globale** : 45% (5/11 phases)
 
 ---
 
@@ -124,4 +124,4 @@ Ces fichiers sont prêts à l'emploi pour accélérer le développement :
 
 ---
 
-*Dernière mise à jour : 22.12.2025*
+*Dernière mise à jour : 23.12.2025*
