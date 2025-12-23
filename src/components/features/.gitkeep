@@ -1,0 +1,6 @@
+# Ce dossier contient les composants métier par domaine
+# Sous-dossiers à créer :
+# - admin/
+# - teacher/
+# - student/
+# - ai/

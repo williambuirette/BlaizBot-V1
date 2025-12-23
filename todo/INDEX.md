@@ -6,9 +6,9 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : [phase-01-init.md](phase-01-init.md)  
-**Étape en cours** : 1.1 — Créer projet Next.js 15  
-**Dernière MAJ** : 2025-12-22
+**Phase actuelle** : [phase-02-layout.md](phase-02-layout.md)  
+**Étape en cours** : 2.1 — Créer layout dashboard  
+**Dernière MAJ** : 2025-12-23
 
 ---
 
@@ -24,7 +24,7 @@
 
 | Phase | Fichier(s) | Durée | Statut |
 |:------|:-----------|:------|:-------|
-| 1 | [phase-01-init.md](phase-01-init.md) → [suite](phase-01-init-suite.md) → [fin](phase-01-init-fin.md) + [code](phase-01-fichiers.md) | 2-3h | 🔴 |
+| 1 | [phase-01-init.md](phase-01-init.md) → [suite](phase-01-init-suite.md) → [fin](phase-01-init-fin.md) + [code](phase-01-fichiers.md) | 2-3h | ✅ |
 | 2 | [phase-02-layout.md](phase-02-layout.md) → [suite](phase-02-layout-suite.md) + [code](phase-02-code.md) | 3-4h | 🔴 |
 | 3 | [phase-03-slice.md](phase-03-slice.md) → [suite](phase-03-slice-suite.md) + [code](phase-03-code.md) | 3-4h | 🔴 |
 | 4 | [phase-04-database.md](phase-04-database.md) → [suite](phase-04-database-suite.md) + [code](phase-04-code.md) → [code-suite](phase-04-code-suite.md) | 3-4h | 🔴 |
@@ -46,7 +46,7 @@
 ```
 Phase 0   Phase 1   Phase 2   Phase 3   Phase 4   Phase 5
   PRD  →   Init  →  Layout →  Slice →    DB   →   Auth
-  ✅        🔴        ⬜        ⬜        ⬜        ⬜
+  ✅        ✅        🔴        ⬜        ⬜        ⬜
 
 Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
  Admin →   Prof  →  Élève  →    IA   →   Démo
@@ -56,8 +56,8 @@ Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
 | Phase | Nom | Statut | Progression | Tests | Refactor | Exposé |
 |:------|:----|:-------|:------------|:------|:---------|:-------|
 | 0 | PRD & Specs | ✅ Done | 100% | — | — | — |
-| 1 | Initialisation | 🔴 Active | 0% | ⬜ | ⬜ | ⬜ |
-| 2 | Layout | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
+| 1 | Initialisation | ✅ Done | 100% | ✅ | ✅ | ✅ |
+| 2 | Layout | 🔴 Active | 0% | ⬜ | ⬜ | ⬜ |
 | 3 | Vertical Slice | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 4 | Base de données | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 5 | Authentification | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |

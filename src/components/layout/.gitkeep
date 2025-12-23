@@ -1,0 +1,5 @@
+# Ce dossier contient les composants de mise en page
+# - Sidebar.tsx
+# - Header.tsx
+# - Footer.tsx
+# - MainLayout.tsx
