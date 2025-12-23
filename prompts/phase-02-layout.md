@@ -35,6 +35,42 @@ Fichier < 200 lignes. Utiliser 'use client' car usePathname.
 Consulter phase-02-code.md section 1-2 pour le template.
 ```
 
+### Prompt Optimal 2.1.1
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Aucun (le template phase-02-code.md était complet)
+
+```
+Tu travailles sur BlaizBot-V1 (Next.js 15, TypeScript, shadcn/ui).
+Créer le fichier `src/components/layout/Sidebar.tsx` avec :
+
+1. 'use client' en première ligne (car usePathname)
+
+2. Types en haut :
+   - SidebarProps : { role: Role } → importer Role depuis '@/types' (ADMIN | TEACHER | STUDENT en majuscules)
+   - NavItem : { label: string, href: string, icon: React.ReactNode }
+
+3. Données de navigation par rôle :
+   - adminNavItems, teacherNavItems, studentNavItems (voir phase-02-code.md section 9)
+   - navItemsByRole: Record<Role, NavItem[]> pour le mapping
+
+4. Structure HTML exacte :
+   <aside className="w-64 h-screen bg-slate-900 text-white fixed left-0 top-0 flex flex-col">
+     <div className="p-4 border-b border-slate-700">Logo BlaizBot</div>
+     <nav className="flex-1 p-4"><ul>...</ul></nav>
+     <div className="p-4 border-t border-slate-700">Footer version</div>
+   </aside>
+
+5. Icônes : importer depuis lucide-react avec size={20}
+
+Fichier < 200 lignes.
+```
+
+**Différences clés vs prompt original** :
+- Préciser que Role vient de `@/types` et est en MAJUSCULES
+- Mentionner `navItemsByRole: Record<Role, NavItem[]>` pour le mapping
+- Référencer explicitement la section 9 de phase-02-code.md pour les navItems
+
 ### Prompt 2.1.2 — SidebarItem
 
 ```
@@ -54,6 +90,43 @@ Structure :
 
 < 50 lignes. Importer les icônes depuis lucide-react.
 ```
+
+### Prompt Optimal 2.1.2
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Aucun
+
+```
+Créer `src/components/layout/SidebarItem.tsx` :
+
+1. 'use client' en première ligne
+2. Importer : Link (next/link), cn (@/lib/utils), LucideIcon (lucide-react)
+
+3. Interface SidebarItemProps :
+   - href: string
+   - label: string  
+   - icon: LucideIcon (type, pas instance)
+   - isActive?: boolean (optionnel avec défaut false)
+
+4. Destructurer icon as Icon pour l'utiliser comme composant : <Icon size={20} />
+
+5. Structure :
+   <li>
+     <Link href={href} className={cn(styles...)}>
+       <Icon size={20} />
+       <span>{label}</span>
+     </Link>
+   </li>
+
+6. Utiliser cn() pour les classes conditionnelles actif/normal
+
+< 50 lignes.
+```
+
+**Différences clés vs prompt original** :
+- Préciser que `icon` est un type `LucideIcon`, pas une instance
+- Mentionner le pattern `icon: Icon` pour destructurer et utiliser comme composant
+- Indiquer que `isActive` doit être optionnel avec défaut `false`
 
 ---
 
@@ -81,6 +154,47 @@ Créer `src/components/layout/Header.tsx` avec :
 < 150 lignes. Utiliser composants shadcn existants.
 ```
 
+### Prompt Optimal 2.2.1
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Aucun
+
+```
+Créer `src/components/layout/Header.tsx` avec :
+
+1. 'use client' en première ligne
+
+2. Imports shadcn :
+   - Input depuis @/components/ui/input
+   - DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger depuis @/components/ui/dropdown-menu
+   - Avatar, AvatarFallback, AvatarImage depuis @/components/ui/avatar
+
+3. Imports lucide : Search, User, Settings, LogOut
+
+4. Structure flex 3 zones :
+   <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+     {/* Gauche */} <h1>Dashboard</h1>
+     {/* Centre */} <div className="relative max-w-md flex-1 mx-8">
+       <Search className="absolute left-3 top-1/2 -translate-y-1/2" />
+       <Input className="pl-10" />
+     </div>
+     {/* Droite */} <DropdownMenu>...</DropdownMenu>
+   </header>
+
+5. DropdownMenu items avec icônes :
+   - Mon profil (User icon)
+   - Paramètres (Settings icon)
+   - Separator
+   - Déconnexion (LogOut icon, className="text-red-500")
+
+< 150 lignes.
+```
+
+**Différences clés vs prompt original** :
+- Lister explicitement tous les imports shadcn nécessaires
+- Préciser le pattern pour la barre de recherche avec icône positionnée en absolute
+- Mentionner les icônes lucide pour chaque item du dropdown
+
 ---
 
 ## 📋 Étape 2.3 — Créer layout dashboard
@@ -104,6 +218,44 @@ Créer `src/app/(dashboard)/layout.tsx` :
 Note : ml-64 compense la sidebar fixed.
 Les parenthèses (dashboard) = route group.
 ```
+
+### Prompt Optimal 2.3.1
+
+> **Itérations réelles** : 1
+> **Problèmes rencontrés** : Aucun
+
+```
+Créer `src/app/(dashboard)/layout.tsx` :
+
+1. PAS de 'use client' (Server Component)
+
+2. Imports :
+   - Sidebar depuis @/components/layout/Sidebar
+   - Header depuis @/components/layout/Header
+
+3. Props typées :
+   export default function DashboardLayout({
+     children,
+   }: {
+     children: React.ReactNode;
+   })
+
+4. Structure exacte :
+   <div className="min-h-screen bg-gray-50">
+     <Sidebar role="STUDENT" />  ← MAJUSCULES car type Role
+     <div className="ml-64">     ← Compense w-64 de la sidebar fixed
+       <Header />
+       <main className="p-6">{children}</main>
+     </div>
+   </div>
+
+Note : Le dossier (dashboard) avec parenthèses = route group (pas d'impact sur l'URL).
+```
+
+**Différences clés vs prompt original** :
+- Préciser que role doit être en MAJUSCULES ("STUDENT" pas "student") car type Role
+- Montrer le typage explicite des props children
+- Expliquer pourquoi ml-64 (compense la sidebar fixed de w-64)
 
 ---
 
