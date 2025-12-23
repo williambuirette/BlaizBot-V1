@@ -375,6 +375,47 @@ Checklist :
 | 2.2 | 23-12-2025 | ~10min | 1 | Prompt OK |
 | 2.3 | 23-12-2025 | ~5min | 1 | Prompt OK |
 | 2.4-2.6 | 23-12-2025 | ~15min | 1 | Pages simples, pattern réutilisable |
+| **Audit** | 23-12-2025 | ~10min | 1 | Corrections post-validation |
+
+---
+
+## 🔍 Audit Post-Phase 2 (23-12-2025)
+
+### Problèmes identifiés
+
+| # | Problème | Impact |
+|---|----------|--------|
+| 1 | Role hardcodé "STUDENT" dans layout.tsx | Sidebar identique partout |
+| 2 | URLs sidebar ≠ pages créées | Navigation 404 |
+| 3 | SidebarItem.tsx non utilisé | Code mort |
+
+### Corrections appliquées
+
+**1. Layout dynamique** (`src/app/(dashboard)/layout.tsx`)
+```typescript
+'use client';
+import { usePathname } from 'next/navigation';
+
+function getRoleFromPathname(pathname: string): Role {
+  if (pathname.startsWith('/admin')) return 'ADMIN';
+  if (pathname.startsWith('/teacher')) return 'TEACHER';
+  return 'STUDENT';
+}
+```
+
+**2. URLs Sidebar corrigées** (`src/components/layout/Sidebar.tsx`)
+- `/student/assistant` → `/student/ai`
+- Supprimé : `/student/revisions`, `/student/calendar`, `/admin/settings`
+
+**3. Code mort supprimé**
+- `SidebarItem.tsx` supprimé (non utilisé)
+
+### Leçons apprises
+
+> **Prompt optimal pour éviter ces problèmes** :
+> - Toujours vérifier que les URLs dans les navItems correspondent aux pages créées
+> - Rendre le role dynamique dès le départ (basé sur route ou session)
+> - Ne pas créer de composants "au cas où" → YAGNI
 
 ---
 
