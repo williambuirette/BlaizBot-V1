@@ -198,13 +198,13 @@ import { auth } from '@/lib/auth';
 
 export default async function DashboardLayout({ children }) {
   const session = await auth();
-  const role = session?.user?.role?.toLowerCase() as 'admin' | 'teacher' | 'student';
+  const role = session.user.role as Role; // MAJUSCULES: ADMIN | TEACHER | STUDENT
 
   return (
     <div>
       <Sidebar role={role} />
       <div className="ml-64">
-        <Header user={session?.user} />
+        <Header />
         <main>{children}</main>
       </div>
     </div>
@@ -218,9 +218,9 @@ export default async function DashboardLayout({ children }) {
 
 ```
 Checklist :
-1. Login admin@blaizbot.fr / password123 → /admin
-2. Login prof1@blaizbot.fr / password123 → /teacher
-3. Login eleve1@blaizbot.fr / password123 → /student
+1. Login admin@blaizbot.edu / admin123 → /admin
+2. Login m.dupont@blaizbot.edu / prof123 → /teacher
+3. Login lucas.martin@blaizbot.edu / eleve123 → /student
 4. Accès /admin sans être admin → /unauthorized
 5. Logout → /login
 6. Sidebar affiche les bons liens selon le rôle
@@ -232,11 +232,135 @@ Checklist :
 
 | Étape | Date | Durée | Itérations | Rétro-prompt |
 |-------|------|-------|------------|--------------|
-| 5.1 | | | | |
-| 5.2 | | | | |
-| 5.3 | | | | |
-| 5.4 | | | | |
-| 5.5 | | | | |
+| 5.1 | 23.12.25 | 15min | 1 | Installation OK |
+| 5.2 | 23.12.25 | 10min | 1 | Types OK |
+| 5.3 | 23.12.25 | 45min | 3 | Middleware Next.js 16 incompatible avec auth wrapper → getToken |
+| 5.4 | 23.12.25 | 30min | 2 | Redirect vers role dashboard au lieu de "/" |
+| 5.5 | 23.12.25 | 20min | 1 | Layout async avec auth() |
+
+---
+
+## 🔧 Prompts Optimisés (Rétro)
+
+### Prompt Optimal 5.1 — Installation
+
+```
+npm install next-auth@beta bcryptjs
+npm install -D @types/bcryptjs
+
+Ajouter dans .env.local :
+AUTH_SECRET="[généré avec: openssl rand -base64 32]"
+
+⚠️ Note Next.js 16 : Le pattern "export { auth as middleware }" ne fonctionne plus.
+Utiliser getToken de next-auth/jwt dans middleware.ts à la place.
+```
+
+### Prompt Optimal 5.3 — Middleware RBAC (Next.js 16)
+
+```
+Créer src/middleware.ts :
+
+⚠️ IMPORTANT Next.js 16 : Ne PAS utiliser "export default auth((req) => {...})"
+→ Utiliser "export async function middleware()" avec getToken
+
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Routes publiques
+  if (pathname.startsWith('/login') || pathname.startsWith('/api/auth') ||
+      pathname.startsWith('/_next') || pathname.startsWith('/favicon.ico')) {
+    return NextResponse.next();
+  }
+
+  // Récupérer le token JWT
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+
+  // Non connecté → login
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  const role = token.role as string;
+
+  // RBAC - vérifier l'accès
+  if (pathname.startsWith('/admin') && role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/unauthorized', req.url));
+  }
+  if (pathname.startsWith('/teacher') && role !== 'TEACHER') {
+    return NextResponse.redirect(new URL('/unauthorized', req.url));
+  }
+  if (pathname.startsWith('/student') && role !== 'STUDENT') {
+    return NextResponse.redirect(new URL('/unauthorized', req.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};
+```
+
+### Prompt Optimal 5.4 — LoginForm avec redirect direct
+
+```
+Modifier LoginForm.tsx :
+
+⚠️ Après signIn réussi, rediriger DIRECTEMENT vers /${role} au lieu de "/"
+→ Évite un round-trip inutile via le middleware
+
+const handleLogin = async (email: string, password: string, targetRole?: string) => {
+  const result = await signIn('credentials', { email, password, redirect: false });
+  
+  if (result?.error) {
+    setError('Email ou mot de passe incorrect');
+  } else {
+    const redirectPath = targetRole ? `/${targetRole}` : '/';
+    router.push(redirectPath);
+    router.refresh(); // Force le refresh de la session côté client
+  }
+};
+```
+
+### Prompt Optimal 5.5 — Layout Dashboard (Server Component)
+
+```
+Convertir (dashboard)/layout.tsx en Server Component async :
+
+⚠️ IMPORTANT :
+- Retirer 'use client'
+- Utiliser auth() de @/lib/auth (pas useSession)
+- Role en MAJUSCULES (ADMIN | TEACHER | STUDENT)
+- Rediriger si pas de session
+
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import type { Role } from '@/types';
+
+export default async function DashboardLayout({ children }) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect('/login');
+  }
+
+  const role = session.user.role as Role; // MAJUSCULES
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar role={role} />
+      <div className="ml-64">
+        <Header />
+        <main className="p-6">{children}</main>
+      </div>
+    </div>
+  );
+}
+```
 
 ---
 

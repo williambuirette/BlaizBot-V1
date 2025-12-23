@@ -1,16 +1,29 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { signOut } from 'next-auth/react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, User, Settings, LogOut } from 'lucide-react';
+
+// -----------------------------------------------------
+// TYPES
+// -----------------------------------------------------
+
+interface HeaderProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+  };
+}
 
 // Fix hydration mismatch avec Radix UI
 const emptySubscribe = () => () => {};
@@ -21,12 +34,23 @@ const useIsClient = () =>
     () => false
   );
 
+// Générer les initiales à partir du nom
+const getInitials = (name?: string | null): string => {
+  if (!name) return 'U';
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
 // -----------------------------------------------------
 // COMPOSANT HEADER
 // -----------------------------------------------------
 
-export function Header() {
+export function Header({ user }: HeaderProps) {
   const isClient = useIsClient();
+  const initials = getInitials(user?.name);
 
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-6">
@@ -47,12 +71,23 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <Avatar>
-                <AvatarImage src="/avatar.png" alt="Avatar" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback className="bg-slate-700 text-white">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
+              <span className="text-sm font-medium hidden sm:block">
+                {user?.name || 'Utilisateur'}
+              </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium">{user?.name || 'Utilisateur'}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
               Mon profil
@@ -62,7 +97,10 @@ export function Header() {
               Paramètres
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-red-500">
+            <DropdownMenuItem 
+              className="cursor-pointer text-red-500"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Déconnexion
             </DropdownMenuItem>
@@ -70,7 +108,9 @@ export function Header() {
         </DropdownMenu>
       ) : (
         <Avatar>
-          <AvatarFallback>JD</AvatarFallback>
+          <AvatarFallback className="bg-slate-700 text-white">
+            {initials}
+          </AvatarFallback>
         </Avatar>
       )}
     </header>
