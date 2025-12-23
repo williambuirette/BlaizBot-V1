@@ -9,12 +9,9 @@ import {
   Users,
   School,
   BookMarked,
-  Settings,
   BookOpen,
   MessageSquare,
-  GraduationCap,
   Brain,
-  Calendar,
 } from 'lucide-react';
 
 // -----------------------------------------------------
@@ -40,7 +37,6 @@ const adminNavItems: NavItem[] = [
   { label: 'Utilisateurs', href: '/admin/users', icon: <Users size={20} /> },
   { label: 'Classes', href: '/admin/classes', icon: <School size={20} /> },
   { label: 'Matières', href: '/admin/subjects', icon: <BookMarked size={20} /> },
-  { label: 'Paramètres', href: '/admin/settings', icon: <Settings size={20} /> },
 ];
 
 const teacherNavItems: NavItem[] = [
@@ -54,9 +50,7 @@ const teacherNavItems: NavItem[] = [
 const studentNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/student', icon: <Home size={20} /> },
   { label: 'Mes cours', href: '/student/courses', icon: <BookOpen size={20} /> },
-  { label: 'Révisions', href: '/student/revisions', icon: <GraduationCap size={20} /> },
-  { label: 'Assistant IA', href: '/student/assistant', icon: <Brain size={20} /> },
-  { label: 'Agenda', href: '/student/calendar', icon: <Calendar size={20} /> },
+  { label: 'Assistant IA', href: '/student/ai', icon: <Brain size={20} /> },
   { label: 'Messages', href: '/student/messages', icon: <MessageSquare size={20} /> },
 ];
 
