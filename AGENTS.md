@@ -15,6 +15,29 @@ Ce document définit les règles pour les agents IA travaillant sur ce projet.
 3. **Documentation** : Mettre à jour JSDoc/types si la signature change.
 4. **Pas de Régression** : Ne pas supprimer de code existant sans comprendre son utilité.
 
+## 🛑 Règle d'Arrêt (CRITIQUE)
+
+> **UNE TÂCHE À LA FOIS — STOP APRÈS CHAQUE TÂCHE**
+
+```
+⚠️ COMPORTEMENT OBLIGATOIRE :
+
+1. L'IA exécute UNE SEULE tâche (ex: 1.1.1)
+2. L'IA S'ARRÊTE et attend la validation de l'utilisateur
+3. L'IA NE PASSE PAS à la tâche suivante sans instruction explicite
+4. Si l'utilisateur dit "continue" ou "suivant" → passer à la tâche suivante
+5. Si l'utilisateur ne dit rien → ATTENDRE
+
+❌ INTERDIT :
+- Enchaîner plusieurs tâches sans pause
+- Supposer que l'utilisateur veut continuer
+- Passer à la phase suivante automatiquement
+
+✅ CORRECT :
+- "Tâche 1.1.1 terminée. Veux-tu que je passe à 1.1.2 ?"
+- Attendre la réponse avant d'agir
+```
+
 ## 📚 Sources de Vérité
 
 | Priorité | Source | Contenu |
