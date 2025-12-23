@@ -15,7 +15,7 @@
 ### Prompt 4.1.1 — Création Database (Manuel)
 
 ```
-⚠️ IMPORTANT : En 2025, Vercel Postgres utilise des providers externes (Neon, Supabase...)
+⚠️ IMPORTANT : En 2025, Vercel Postgres utilise des providers externes (Neon)
 
 Actions manuelles :
 1. https://vercel.com/dashboard → Storage
@@ -233,16 +233,227 @@ Checklist :
 
 **Total** : ~2h30 (vs 4h estimées)
 
-### Prompts Optimaux Identifiés
+---
 
-**Problème Prisma 7** :
-> Prisma 7 a cassé la rétrocompatibilité. Utiliser `npm install prisma@6 @prisma/client@6` pour éviter les problèmes de configuration.
+## 🎯 PROMPTS OPTIMAUX (Post-Mortem)
 
-**Problème .env** :
-> Prisma CLI ne lit pas `.env.local`, seulement `.env`. Créer les deux fichiers avec les mêmes variables, ou utiliser `dotenv-cli`.
+> Format selon AGENTS.md : le prompt qu'il AURAIT FALLU écrire pour réussir du premier coup.
 
-**Problème Vercel Marketplace** :
-> En 2025, Vercel Postgres n'est plus natif. Aller dans Storage → Browse Marketplace → Neon.
+---
+
+### Prompt Optimal 4.1 — Database Neon
+
+> **Itérations réelles** : 1  
+> **Problèmes rencontrés** : UI Vercel a changé, Postgres n'est plus natif
+
+```
+Créer une base PostgreSQL pour BlaizBot via Vercel Marketplace :
+
+1. Dashboard Vercel → Storage → Browse Marketplace
+2. Sélectionner "Neon" (PostgreSQL serverless) ⚠️ PAS "Vercel Postgres" qui n'existe plus
+3. Accept Terms → Continue → Create Database
+   - Nom : blaizbot-db
+   - Region : US-East-1
+   - Plan : Free tier
+
+4. Récupérer dans l'onglet Quickstart :
+   - DATABASE_URL (avec "-pooler" dans le host)
+   - DIRECT_URL (host direct sans "-pooler")
+
+5. Créer .env ET .env.local avec ces 2 variables
+   ⚠️ Prisma CLI lit .env (pas .env.local)
+
+6. Vérifier .gitignore contient : .env*
+```
+
+**Différences clés vs prompt original** :
+- Préciser que Vercel Postgres → Neon via Marketplace
+- Insister sur la différence pooled vs direct URL
+- Mentionner que Prisma lit .env (pas .env.local)
+
+---
+
+### Prompt Optimal 4.2 — Prisma Setup
+
+> **Itérations réelles** : 3  
+> **Problèmes rencontrés** : Prisma 7 breaking changes, dossier existant
+
+```
+Configurer Prisma 6 pour le projet :
+
+⚠️ UTILISER PRISMA 6, PAS PRISMA 7 (breaking changes en décembre 2024)
+
+1. npm install prisma@6 @prisma/client@6
+
+2. SI dossier prisma/ existe déjà → NE PAS faire `npx prisma init`
+   SI dossier n'existe pas → npx prisma init
+
+3. Configurer prisma/schema.prisma datasource :
+   datasource db {
+     provider  = "postgresql"
+     url       = env("DATABASE_URL")
+     directUrl = env("DIRECT_URL")  // Important pour Neon
+   }
+
+4. Créer src/lib/prisma.ts (singleton pattern, < 20 lignes)
+   - Import PrismaClient
+   - Cache sur globalThis pour éviter connexions multiples en dev
+   - Log queries en dev seulement
+
+5. Valider : npx prisma validate
+```
+
+**Différences clés vs prompt original** :
+- ⚠️ Expliciter "Prisma 6" avec numéro de version exact
+- Vérifier existence dossier prisma/ avant init
+- Mentionner directUrl obligatoire pour Neon
+
+---
+
+### Prompt Optimal 4.3 — Schema Prisma
+
+> **Itérations réelles** : 1  
+> **Problèmes rencontrés** : Aucun (bien documenté)
+
+```
+Créer le schema Prisma complet selon docs/04-MODELE_DONNEES.md :
+
+ENUMS (9) :
+- Role : ADMIN | TEACHER | STUDENT
+- AssignmentTargetType, AssignmentStatus, LabSourceType
+- KnowledgeOwnerType, ConversationType
+- AIProvider, AIRestrictionLevel
+
+MODÈLES (22) :
+Auth : User, TeacherProfile, StudentProfile
+Organisation : Subject, Class, ClassStudent
+Contenu : Course, CourseFile, Exercise
+Suivi : Assignment, Grade, Progression
+Lab : LabProject, LabSource
+RAG : KnowledgeBase
+Messagerie : Conversation, ConversationParticipant, Message
+Calendrier : CalendarEvent
+IA : AISettings, AIChat
+
+Relations clés :
+- User 1↔1 TeacherProfile | StudentProfile (selon role)
+- Teacher M↔N Subject
+- Course → Teacher + Subject
+- Grade → Student + Assignment
+
+Valider : npx prisma validate → "schema is valid"
+```
+
+**Différences clés vs prompt original** :
+- Lister explicitement les 9 enums
+- Lister les 22 modèles par catégorie
+- Mentionner les relations clés
+
+---
+
+### Prompt Optimal 4.4 — Migration et Seed
+
+> **Itérations réelles** : 2  
+> **Problèmes rencontrés** : Seed incomplet (6 users → 8, 2 courses → 6)
+
+```
+Migrer et seeder la base de données :
+
+MIGRATION :
+npx prisma migrate dev --name init
+⚠️ Nécessite DIRECT_URL (pas pooled) pour les migrations
+
+SEED - Dépendances :
+npm install bcryptjs
+npm install -D @types/bcryptjs tsx
+
+SEED - package.json :
+{
+  "prisma": { "seed": "tsx prisma/seed.ts" },
+  "scripts": {
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force"
+  }
+}
+
+SEED - Données (COMPLET) :
+- 8 Users :
+  • 1 Admin : admin@blaizbot.edu / admin123
+  • 2 Teachers : m.dupont@blaizbot.edu, s.bernard@blaizbot.edu / prof123
+  • 5 Students : lucas.martin, emma.durand, noah.petit, lea.moreau, hugo.robert / eleve123
+
+- 6 Subjects : Maths, Français, Histoire-Géo, SVT, Physique-Chimie, Anglais
+
+- 3 Classes : 3ème A, 3ème B, 4ème A
+
+- 6 Courses :
+  • M. Dupont : Les Fractions, Équations 1er degré, La Photosynthèse
+  • Mme Bernard : La Révolution Française, L'Empire Napoléonien, L'argumentation
+
+TECHNIQUE :
+- Utiliser upsert (idempotent, relançable)
+- bcrypt.hashSync(password, 12)
+- < 350 lignes
+
+Valider : npm run db:seed → logs montrent 8 users, 6 subjects, 3 classes, 6 courses
+```
+
+**Différences clés vs prompt original** :
+- Spécifier EXACTEMENT 8 users, 5 students (pas 3)
+- Spécifier EXACTEMENT 6 courses (pas 2)
+- Mentionner le script db:reset utile pour debug
+- Préciser "upsert" pour idempotence
+
+---
+
+### Prompt Optimal 4.5 — Vercel Link
+
+> **Itérations réelles** : 2  
+> **Problèmes rencontrés** : Connecté au mauvais compte Vercel
+
+```
+Lier VS Code au projet Vercel :
+
+1. Vérifier le compte actuel :
+   npx vercel whoami
+   → Doit afficher TON compte, pas celui d'un client
+
+2. Si mauvais compte :
+   npx vercel logout
+   npx vercel login  // Ouvre navigateur, se connecter au bon compte
+
+3. Lier le projet :
+   npx vercel link
+   → Sélectionner le projet existant "blaiz-bot-v1"
+
+4. Synchroniser les variables :
+   npx vercel env pull .env.local
+   → Récupère DATABASE_URL, DIRECT_URL depuis Vercel
+
+5. Vérifier :
+   npx vercel ls
+   → Doit montrer le déploiement "Ready"
+
+⚠️ Si plusieurs comptes Vercel, toujours vérifier `whoami` d'abord
+```
+
+**Différences clés vs prompt original** :
+- Commencer par `whoami` pour vérifier le compte
+- Étape logout explicite si mauvais compte
+- Préciser que `env pull` récupère les vars depuis Vercel
+
+---
+
+## 📝 Leçons Apprises (Capitalisation)
+
+| Problème | Impact | Solution Pérenne |
+|----------|--------|------------------|
+| Prisma 7 breaking changes | 45 min perdues | Toujours vérifier changelog avant `npm install` sans version |
+| .env vs .env.local | Confusion, erreurs connexion | Créer les 2 fichiers identiques |
+| Vercel UI changée | Documentation obsolète | Vérifier l'UI actuelle, ne pas suivre aveuglément les tutos |
+| Seed incomplet | Données manquantes pour tests | Toujours relire les specs (TODO) avant de coder |
+| Multi-comptes Vercel | Déploiement sur mauvais projet | `whoami` systématique avant `link` |
 
 ---
 
