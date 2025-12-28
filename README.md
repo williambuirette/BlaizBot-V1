@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BlaizBot V1 🎓
 
-## Getting Started
+> **Application éducative full-stack** avec IA intégrée (chat, RAG, génération)
 
-First, run the development server:
+## 🚀 Quick Start
 
 ```bash
+# 1. Installer les dépendances
+npm install
+
+# 2. Configurer l'environnement
+cp .env.example .env
+# Remplir DATABASE_URL, AUTH_SECRET, etc.
+
+# 3. Initialiser la BDD
+npx prisma migrate dev
+
+# 4. Lancer le serveur
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📊 Progression
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+Phase 1-6  ✅ Terminées (Init, Layout, Slice, DB, Auth, Admin)
+Phase 7    🔴 En cours (Interface Professeur)
+Phase 8-10 ⬜ À faire (Élève, IA, Démo)
+```
 
-## Learn More
+## 🛠️ Stack Technique
 
-To learn more about Next.js, take a look at the following resources:
+| Catégorie | Technologies |
+|:----------|:-------------|
+| **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS |
+| **UI** | shadcn/ui, Lucide Icons |
+| **Backend** | Next.js API Routes, Prisma ORM |
+| **BDD** | PostgreSQL (Vercel Postgres) |
+| **Auth** | NextAuth.js v5 (Auth.js) |
+| **IA** | OpenAI, Claude, Gemini (à venir) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/
+│   ├── (auth)/          # Pages publiques (login)
+│   ├── (dashboard)/     # Pages protégées (student, teacher, admin)
+│   └── api/             # Routes API REST
+├── components/
+│   ├── ui/              # shadcn/ui
+│   ├── layout/          # Sidebar, Header
+│   └── features/        # Composants métier
+├── lib/                 # Prisma, Auth, utils
+└── types/               # Types TypeScript
+```
 
-## Deploy on Vercel
+## 📚 Documentation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Document | Description |
+|:---------|:------------|
+| [docs/00-INDEX.md](docs/00-INDEX.md) | Plan technique complet |
+| [todo/INDEX.md](todo/INDEX.md) | Progression et tâches |
+| [AGENTS.md](AGENTS.md) | Règles pour l'IA |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔐 Comptes de Test
+
+| Rôle | Email | Password |
+|:-----|:------|:---------|
+| Admin | admin@blaizbot.com | admin123 |
+| Prof | prof@blaizbot.com | prof123 |
+| Élève | eleve@blaizbot.com | eleve123 |
+
+## 📝 Scripts
+
+```bash
+npm run dev      # Serveur dev
+npm run build    # Build production
+npm run lint     # ESLint
+npm run db:push  # Sync Prisma schema
+npm run db:seed  # Seed données test
+```
+
+## 📄 License
+
+MIT © 2025 BlaizBot
+

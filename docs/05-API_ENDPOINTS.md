@@ -583,43 +583,113 @@ Détails et analytics d'un élève.
 
 ## ⚙️ ADMIN
 
-### CRUD Matières
+> **Note** : Toutes les routes admin requièrent `role === 'ADMIN'`
 
-#### `GET /api/admin/subjects`
-#### `POST /api/admin/subjects`
-#### `PUT /api/admin/subjects/:id`
-#### `DELETE /api/admin/subjects/:id`
+### Dashboard Stats
+
+#### `GET /api/admin/stats` ✅ Implémenté
+Retourne les KPIs du dashboard admin.
+
+**Réponse :**
+```typescript
+{
+  users: number,    // Nombre total d'utilisateurs
+  classes: number,  // Nombre de classes
+  subjects: number, // Nombre de matières
+  courses: number   // Nombre de cours
+}
+```
+
+---
+
+### CRUD Utilisateurs (unifié)
+
+#### `GET /api/admin/users` ✅ Implémenté
+Liste tous les utilisateurs (sans passwordHash).
+
+**Réponse :**
+```typescript
+{
+  id: string,
+  email: string,
+  firstName: string,
+  lastName: string,
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT',
+  createdAt: string
+}[]
+```
+
+#### `POST /api/admin/users` ✅ Implémenté
+Créer un utilisateur.
+
+**Body :**
+```typescript
+{
+  email: string,      // Required, unique
+  firstName: string,  // Required
+  lastName: string,   // Required
+  password: string,   // Required, hashé en bcrypt
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT'  // Required
+}
+```
+
+#### `GET /api/admin/users/:id` ✅ Implémenté
+#### `PUT /api/admin/users/:id` ✅ Implémenté
+#### `DELETE /api/admin/users/:id` ✅ Implémenté
 
 ---
 
 ### CRUD Classes
 
-#### `GET /api/admin/classes`
-#### `POST /api/admin/classes`
-#### `PUT /api/admin/classes/:id`
-#### `DELETE /api/admin/classes/:id`
+#### `GET /api/admin/classes` ✅ Implémenté
+Liste les classes avec nombre d'étudiants.
+
+**Réponse :**
+```typescript
+{
+  id: string,
+  name: string,
+  level: string,
+  studentCount: number  // _count.students
+}[]
+```
+
+#### `POST /api/admin/classes` ✅ Implémenté
+**Body :** `{ name: string, level: string }`
+
+#### `GET /api/admin/classes/:id` ✅ Implémenté
+#### `PUT /api/admin/classes/:id` ✅ Implémenté
+#### `DELETE /api/admin/classes/:id` ✅ Implémenté
+*(Bloqué si étudiants inscrits)*
 
 ---
 
-### CRUD Professeurs
+### CRUD Matières
 
-#### `GET /api/admin/teachers`
-#### `POST /api/admin/teachers`
-#### `PUT /api/admin/teachers/:id`
-#### `DELETE /api/admin/teachers/:id`
+#### `GET /api/admin/subjects` ✅ Implémenté
+Liste les matières avec compteurs.
+
+**Réponse :**
+```typescript
+{
+  id: string,
+  name: string,
+  courseCount: number,   // _count.courses
+  teacherCount: number   // _count.teachers
+}[]
+```
+
+#### `POST /api/admin/subjects` ✅ Implémenté
+**Body :** `{ name: string }`
+
+#### `GET /api/admin/subjects/:id` ✅ Implémenté
+#### `PUT /api/admin/subjects/:id` ✅ Implémenté
+#### `DELETE /api/admin/subjects/:id` ✅ Implémenté
+*(Bloqué si cours liés)*
 
 ---
 
-### CRUD Élèves
-
-#### `GET /api/admin/students`
-#### `POST /api/admin/students`
-#### `PUT /api/admin/students/:id`
-#### `DELETE /api/admin/students/:id`
-
----
-
-### CRUD Programmes
+### CRUD Programmes (À implémenter)
 
 #### `GET /api/admin/programs`
 #### `POST /api/admin/programs`
@@ -628,22 +698,12 @@ Détails et analytics d'un élève.
 
 ---
 
-### Statistiques
+### Statistiques détaillées (À implémenter)
 
 #### `GET /api/admin/statistics`
 Analytics global avec filtres.
 
 **Query :** `?classId=...&teacherId=...&studentId=...&subjectId=...`
-
----
-
-### Utilisateurs
-
-#### `GET /api/admin/users`
-#### `POST /api/admin/users`
-#### `PUT /api/admin/users/:id`
-#### `DELETE /api/admin/users/:id`
-#### `POST /api/admin/users/:id/reset-password`
 
 ---
 

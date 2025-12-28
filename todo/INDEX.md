@@ -6,9 +6,9 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : [phase-05-auth.md](phase-05-auth.md)  
-**Étape en cours** : 5.1 — Installation NextAuth.js  
-**Dernière MAJ** : 2025-12-23
+**Phase actuelle** : [phase-07-teacher.md](phase-07-teacher.md)  
+**Étape en cours** : 7.1 — Dashboard Professeur  
+**Dernière MAJ** : 2025-12-28
 
 ---
 
@@ -25,11 +25,11 @@
 | Phase | Fichier(s) | Durée | Statut |
 |:------|:-----------|:------|:-------|
 | 1 | [phase-01-init.md](phase-01-init.md) → [suite](phase-01-init-suite.md) → [fin](phase-01-init-fin.md) + [code](phase-01-fichiers.md) | 2-3h | ✅ |
-| 2 | [phase-02-layout.md](phase-02-layout.md) → [suite](phase-02-layout-suite.md) + [code](phase-02-code.md) | 3-4h | 🔴 |
-| 3 | [phase-03-slice.md](phase-03-slice.md) → [suite](phase-03-slice-suite.md) + [code](phase-03-code.md) | 3-4h | 🔴 |
-| 4 | [phase-04-database.md](phase-04-database.md) → [suite](phase-04-database-suite.md) + [code](phase-04-code.md) → [code-suite](phase-04-code-suite.md) | 3-4h | 🔴 |
-| 5 | [phase-05-auth.md](phase-05-auth.md) → [suite](phase-05-auth-suite.md) + [code](phase-05-code.md) → [code-suite](phase-05-code-suite.md) | 4-5h | 🔴 |
-| 6 | [phase-06-admin.md](phase-06-admin.md) → [suite](phase-06-admin-suite.md) + [code](phase-06-code.md) → [suite](phase-06-code-suite.md) → [fin](phase-06-code-fin.md) | 6-8h | 🔴 |
+| 2 | [phase-02-layout.md](phase-02-layout.md) → [suite](phase-02-layout-suite.md) + [code](phase-02-code.md) | 3-4h | ✅ |
+| 3 | [phase-03-slice.md](phase-03-slice.md) → [suite](phase-03-slice-suite.md) + [code](phase-03-code.md) | 3-4h | ✅ |
+| 4 | [phase-04-database.md](phase-04-database.md) → [suite](phase-04-database-suite.md) + [code](phase-04-code.md) → [code-suite](phase-04-code-suite.md) | 3-4h | ✅ |
+| 5 | [phase-05-auth.md](phase-05-auth.md) → [suite](phase-05-auth-suite.md) + [code](phase-05-code.md) → [code-suite](phase-05-code-suite.md) | 4-5h | ✅ |
+| 6 | [phase-06-admin.md](phase-06-admin.md) → [suite](phase-06-admin-suite.md) + [code](phase-06-code.md) → [suite](phase-06-code-suite.md) → [fin](phase-06-code-fin.md) | 6-8h | ✅ |
 | 7 | [phase-07-teacher.md](phase-07-teacher.md) | 6-8h | 🔴 |
 | 8 | [phase-08-student.md](phase-08-student.md) | 6-8h | 🔴 |
 | 9 | [phase-09-ai.md](phase-09-ai.md) | 8-10h | 🔴 |
@@ -46,11 +46,11 @@
 ```
 Phase 0   Phase 1   Phase 2   Phase 3   Phase 4   Phase 5
   PRD  →   Init  →  Layout →  Slice →    DB   →   Auth
-  ✅        ✅        ✅        ✅        ✅        🔴
+  ✅        ✅        ✅        ✅        ✅        ✅
 
 Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
  Admin →   Prof  →  Élève  →    IA   →   Démo
-   ⬜        ⬜        ⬜        ⬜        ⬜
+   ✅        🔴        ⬜        ⬜        ⬜
 ```
 
 | Phase | Nom | Statut | Progression | Tests | Refactor | Exposé |
@@ -60,16 +60,16 @@ Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
 | 2 | Layout | ✅ Done | 100% | ✅ | ✅ | ✅ |
 | 3 | Vertical Slice | ✅ Done | 100% | ✅ | ✅ | ✅ |
 | 4 | Base de données | ✅ Done | 100% | ✅ | ✅ | ✅ |
-| 5 | Authentification | 🔴 Active | 0% | ⬜ | ⬜ | ⬜ |
-| 6 | Admin | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
-| 7 | Professeur | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
+| 5 | Authentification | ✅ Done | 100% | ✅ | ✅ | ⬜ |
+| 6 | Admin | ✅ Done | 100% | ✅ | ✅ | ⬜ |
+| 7 | Professeur | 🔴 Active | 0% | ⬜ | ⬜ | ⬜ |
 | 8 | Élève | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 9 | IA | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 10 | Démo | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 
 **Légende** : ✅ Fait | ⬜ À faire | 🔴 En cours | — Non applicable
 
-**Progression globale** : 45% (5/11 phases)
+**Progression globale** : 64% (7/11 phases)
 
 ---
 

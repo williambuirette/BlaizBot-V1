@@ -101,6 +101,46 @@
 
 ---
 
+### [2024-12-28] - Phase 6 Admin complète
+
+**Durée** : ~7 heures (sessions cumulées)
+**Objectif** : Interface Admin avec CRUD complet (Users, Classes, Subjects)
+
+#### ✅ Réalisé
+- API `/api/admin/stats` avec 4 KPIs (users, classes, subjects, courses)
+- CRUD Users : API collection + item, UsersTable, UserFormModal, page orchestrator
+- CRUD Classes : API collection + item, ClassesTable, ClassFormModal, page orchestrator
+- CRUD Subjects : API collection + item, SubjectsTable, SubjectFormModal, page orchestrator
+- StatsCard component réutilisable
+- Protection ADMIN sur toutes les routes (16 checks)
+
+#### 🤔 Décisions prises
+- **Users unifiés** : Un seul endpoint `/api/admin/users` au lieu de teachers/students séparés → Simplifie le CRUD
+- **Color mapping côté client** : Subjects n'ont pas de champ `color` en DB → Mapping par nom dans SubjectsTable
+- **studentCount dynamique** : Classes retournent `_count.students` via Prisma include
+
+#### 🐛 Problèmes rencontrés
+- **Zod `.issues` vs `.errors`** : L'API Zod utilise `.issues` pour les erreurs de validation, pas `.errors` → Corrigé dans toutes les routes
+- **Prisma schema mismatch** : `User.name` n'existe pas (c'est `firstName`/`lastName`), `password` est `passwordHash` → Adaptation des types et API
+- **Class sans `year`** : Le schéma Prisma n'a pas de champ `year` → Types adaptés avec `studentCount`
+
+#### 📚 Apprentissages Vibecoding
+- **IA efficace pour** :
+  - Générer patterns CRUD répétitifs (copy/adapt)
+  - Créer composants table/modal cohérents
+  - Appliquer la protection ADMIN systématiquement
+- **Intervention humaine nécessaire pour** :
+  - Vérifier concordance Prisma schema vs types
+  - Corriger les erreurs d'API Zod
+  - Valider les badges/couleurs selon le design system
+
+#### 🔜 Prochaine session
+- Phase 7 : Interface Professeur
+- Dashboard avec ses classes et cours
+- CRUD Cours et Évaluations
+
+---
+
 ### [TEMPLATE] - Session suivante
 
 **Durée** : X heures
