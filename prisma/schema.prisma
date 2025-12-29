@@ -46,6 +46,14 @@ model User {
   sentMessages   Message[]       @relation("SentMessages")
   calendarEvents CalendarEvent[]
   aiChats        AIChat[]
+  notifications  Notification[]
+  messageReadStatus MessageReadStatus[]
+
+  // 🆕 Phase 7.8 - Équipes et Assignations
+  teamMemberships       TeamMember[]
+  teacherAssignments    CourseAssignment[] @relation("TeacherCourseAssignments")
+  studentAssignments    CourseAssignment[] @relation("StudentCourseAssignments")
+  studentProgress       StudentProgress[]
 }
 
 model TeacherProfile {
@@ -105,9 +113,14 @@ model Class {
   updatedAt DateTime @updatedAt
 
   // Relations
-  teachers    TeacherProfile[] @relation("TeacherClasses")
-  students    StudentProfile[]
-  assignments Assignment[]     @relation("ClassAssignments")
+  teachers      TeacherProfile[] @relation("TeacherClasses")
+  students      StudentProfile[]
+  assignments   Assignment[]     @relation("ClassAssignments")
+  conversations Conversation[]   @relation("ClassConversations")
+
+  // 🆕 Phase 7.8 - Équipes et Assignations
+  teams             Team[]
+  courseAssignments CourseAssignment[] @relation("ClassCourseAssignments")
 }
 
 // ============================================
@@ -131,6 +144,13 @@ model Course {
   children       Course[] @relation("CourseHierarchy")
 
   isFolder Boolean @default(false)
+  isDraft  Boolean @default(true) // Brouillon ou publié
+
+  // Métadonnées pédagogiques
+  difficulty Difficulty @default(MEDIUM)
+  duration   Int?       // Durée estimée en minutes
+  objectives String[]   // Objectifs pédagogiques
+  tags       String[]   // Mots-clés
 
   // Configuration IA
   aiObjective     String?  @db.Text
@@ -140,10 +160,22 @@ model Course {
   updatedAt DateTime @updatedAt
 
   // Relations
-  files        CourseFile[]
-  exercises    Exercise[]
-  assignments  Assignment[]
-  progressions Progression[]
+  files         CourseFile[]
+  exercises     Exercise[]
+  assignments   Assignment[]
+  progressions  Progression[]
+  conversations Conversation[] @relation("CourseConversations")
+
+  // 🆕 Phase 7.8 - Structure hiérarchique
+  chapters          Chapter[]
+  resources         Resource[]
+  courseAssignments CourseAssignment[]
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
 }
 
 model CourseFile {
@@ -284,6 +316,206 @@ model LabSource {
 }
 
 // ============================================
+// 🆕 PHASE 7.8 - CHAPITRES & ORGANISATION
+// ============================================
+
+// Types de sections
+enum SectionType {
+  LESSON     // Contenu texte
+  EXERCISE   // Exercice avec correction
+  QUIZ       // QCM auto-corrigé
+  VIDEO      // Vidéo intégrée
+}
+
+// Types de ressources
+enum ResourceType {
+  LINK       // Lien externe
+  YOUTUBE    // Vidéo YouTube
+  PDF        // Fichier PDF
+  DOCUMENT   // Document Word (DOC, DOCX)
+  EXCEL      // Tableur Excel (XLS, XLSX)
+  POWERPOINT // Présentation PowerPoint (PPT, PPTX)
+  IMAGE      // Image
+}
+
+// Cibles d'assignation
+enum CourseAssignmentTarget {
+  CLASS      // Toute la classe
+  TEAM       // Groupe d'élèves
+  STUDENT    // Un élève
+}
+
+// Statuts de progression
+enum ProgressStatus {
+  NOT_STARTED  // Pas commencé
+  IN_PROGRESS  // En cours
+  COMPLETED    // Terminé
+  GRADED       // Noté
+}
+
+// Chapitres (niveau 3 de la hiérarchie)
+model Chapter {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  order       Int      @default(0)
+
+  sections    Section[]
+  assignments CourseAssignment[] @relation("ChapterAssignments")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([order])
+}
+
+// Sections (niveau 4 de la hiérarchie)
+model Section {
+  id          String      @id @default(cuid())
+  chapterId   String
+  chapter     Chapter     @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  title       String
+  type        SectionType @default(LESSON)
+  content     String?     @db.Text  // HTML pour LESSON, JSON pour QUIZ/EXERCISE
+  order       Int         @default(0)
+  duration    Int?        // Minutes estimées
+
+  assignments CourseAssignment[] @relation("SectionAssignments")
+  progress    StudentProgress[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([chapterId])
+  @@index([order])
+}
+
+// Base de connaissances du cours (ressources)
+model Resource {
+  id          String       @id @default(cuid())
+  courseId    String
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  type        ResourceType
+  url         String?      // Pour LINK, YOUTUBE
+  fileUrl     String?      // Pour PDF, IMAGE (upload)
+  order       Int          @default(0)
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([courseId])
+  @@index([type])
+}
+
+// Équipes (groupes d'élèves dans une classe)
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  classId     String
+  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  members     TeamMember[]
+  assignments CourseAssignment[] @relation("TeamAssignments")
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([classId])
+}
+
+// Membres d'une équipe
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, studentId])
+}
+
+// Assignations de cours/chapitres/sections
+model CourseAssignment {
+  id          String               @id @default(cuid())
+
+  // Qui assigne
+  teacherId   String
+  teacher     User                 @relation("TeacherCourseAssignments", fields: [teacherId], references: [id])
+
+  // Quoi assigner (un seul parmi les 3)
+  courseId    String?
+  course      Course?              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapterId   String?
+  chapter     Chapter?             @relation("ChapterAssignments", fields: [chapterId], references: [id], onDelete: Cascade)
+  sectionId   String?
+  section     Section?             @relation("SectionAssignments", fields: [sectionId], references: [id], onDelete: Cascade)
+
+  // À qui assigner
+  targetType  CourseAssignmentTarget
+  classId     String?
+  class       Class?               @relation("ClassCourseAssignments", fields: [classId], references: [id], onDelete: Cascade)
+  teamId      String?
+  team        Team?                @relation("TeamAssignments", fields: [teamId], references: [id], onDelete: Cascade)
+  studentId   String?
+  student     User?                @relation("StudentCourseAssignments", fields: [studentId], references: [id])
+
+  // Détails
+  title       String
+  instructions String?             @db.Text
+  dueDate     DateTime?
+
+  // Suivi
+  progress    StudentProgress[]
+
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([teacherId])
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([sectionId])
+  @@index([classId])
+  @@index([teamId])
+  @@index([studentId])
+}
+
+// Progression d'un élève sur une assignation
+model StudentProgress {
+  id           String         @id @default(cuid())
+
+  assignmentId String
+  assignment   CourseAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Lien direct vers la section (optionnel)
+  sectionId    String?
+  section      Section?       @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  status       ProgressStatus @default(NOT_STARTED)
+  score        Float?         // Note sur 100
+  timeSpent    Int?           // Minutes passées
+  completedAt  DateTime?
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@index([sectionId])
+}
+
+// ============================================
 // BASE DE CONNAISSANCES
 // ============================================
 
@@ -328,10 +560,21 @@ model Conversation {
   subjectId String?
   subject   Subject? @relation(fields: [subjectId], references: [id])
 
+  // 🆕 Référence optionnelle au cours
+  courseId String?
+  course   Course? @relation("CourseConversations", fields: [courseId], references: [id])
+
+  // 🆕 Référence optionnelle à la classe (pour messages de classe)
+  classId String?
+  class   Class? @relation("ClassConversations", fields: [classId], references: [id])
+
   topicName String? // ex: "Les Fractions"
 
   // Participants (stocké comme array d'IDs pour flexibilité)
   participantIds String[]
+
+  // 🆕 Année scolaire pour historique
+  schoolYear String @default("2024-2025")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -353,6 +596,44 @@ model Message {
   attachments Json? // Array de {filename, url}
 
   createdAt DateTime @default(now())
+
+  // 🆕 Statut de lecture par participant
+  readStatus MessageReadStatus[]
+}
+
+// 🆕 Tracking lu/non-lu par participant
+model MessageReadStatus {
+  id        String    @id @default(cuid())
+  messageId String
+  message   Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt    DateTime?
+
+  @@unique([messageId, userId])
+}
+
+// 🆕 Notifications
+enum NotificationType {
+  MESSAGE
+  ASSIGNMENT
+  GRADE
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType
+  title     String
+  message   String
+  link      String?          // URL vers la ressource
+
+  read      Boolean          @default(false)
+
+  createdAt DateTime         @default(now())
 }
 
 // ============================================

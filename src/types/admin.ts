@@ -6,6 +6,11 @@ export interface UserRow {
   firstName: string;
   lastName: string;
   role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  isActive?: boolean;
   createdAt: Date | string;
 }
 

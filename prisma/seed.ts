@@ -56,6 +56,11 @@ const USERS = {
       firstName: 'Lucas',
       lastName: 'MARTIN',
       className: '3ème A',
+      phone: '06 12 34 56 78',
+      address: '12 rue des Lilas',
+      city: 'Paris',
+      postalCode: '75015',
+      parentEmail: 'parents.martin@email.com',
     },
     {
       email: 'emma.durand@blaizbot.edu',
@@ -63,6 +68,11 @@ const USERS = {
       firstName: 'Emma',
       lastName: 'DURAND',
       className: '3ème A',
+      phone: '06 23 45 67 89',
+      address: '45 avenue Victor Hugo',
+      city: 'Lyon',
+      postalCode: '69003',
+      parentEmail: 'famille.durand@email.com',
     },
     {
       email: 'noah.petit@blaizbot.edu',
@@ -70,6 +80,11 @@ const USERS = {
       firstName: 'Noah',
       lastName: 'PETIT',
       className: '3ème B',
+      phone: '06 34 56 78 90',
+      address: '8 place de la République',
+      city: 'Marseille',
+      postalCode: '13001',
+      parentEmail: 'petit.famille@email.com',
     },
     {
       email: 'lea.moreau@blaizbot.edu',
@@ -77,6 +92,11 @@ const USERS = {
       firstName: 'Léa',
       lastName: 'MOREAU',
       className: '3ème B',
+      phone: '06 45 67 89 01',
+      address: '23 boulevard Pasteur',
+      city: 'Toulouse',
+      postalCode: '31000',
+      parentEmail: 'moreau.parents@email.com',
     },
     {
       email: 'hugo.robert@blaizbot.edu',
@@ -84,6 +104,11 @@ const USERS = {
       firstName: 'Hugo',
       lastName: 'ROBERT',
       className: '4ème A',
+      phone: '06 56 78 90 12',
+      address: '67 rue de la Paix',
+      city: 'Bordeaux',
+      postalCode: '33000',
+      parentEmail: 'robert.famille@email.com',
     },
   ],
 }
@@ -170,16 +195,26 @@ async function seedUsers() {
 
     await prisma.user.upsert({
       where: { email: student.email },
-      update: {},
+      update: {
+        phone: student.phone,
+        address: student.address,
+        city: student.city,
+        postalCode: student.postalCode,
+      },
       create: {
         email: student.email,
         passwordHash: hashedPassword,
         firstName: student.firstName,
         lastName: student.lastName,
         role: Role.STUDENT,
+        phone: student.phone,
+        address: student.address,
+        city: student.city,
+        postalCode: student.postalCode,
         studentProfile: {
           create: {
             classId: cls.id,
+            parentEmail: student.parentEmail,
           },
         },
       },
@@ -188,6 +223,69 @@ async function seedUsers() {
 
   const total = 1 + USERS.teachers.length + USERS.students.length
   console.log(`✅ ${total} utilisateurs créés`)
+}
+
+async function seedTeacherAssignments() {
+  console.log('🔗 Affectation des profs aux classes...')
+
+  // M. Dupont (Maths/SVT) → 3ème A, 3ème B
+  const marcTeacher = await prisma.user.findUnique({
+    where: { email: 'm.dupont@blaizbot.edu' },
+    include: { teacherProfile: true },
+  })
+
+  // Mme Bernard (Histoire/Français) → 3ème A, 4ème A
+  const sophieTeacher = await prisma.user.findUnique({
+    where: { email: 's.bernard@blaizbot.edu' },
+    include: { teacherProfile: true },
+  })
+
+  const class3A = await prisma.class.findUnique({ where: { name: '3ème A' } })
+  const class3B = await prisma.class.findUnique({ where: { name: '3ème B' } })
+  const class4A = await prisma.class.findUnique({ where: { name: '4ème A' } })
+
+  const mathSubject = await prisma.subject.findUnique({ where: { name: 'Mathématiques' } })
+  const histSubject = await prisma.subject.findUnique({ where: { name: 'Histoire-Géographie' } })
+
+  if (!marcTeacher?.teacherProfile || !sophieTeacher?.teacherProfile || 
+      !class3A || !class3B || !class4A || !mathSubject || !histSubject) {
+    console.warn('⚠️ Données manquantes pour les affectations')
+    return
+  }
+
+  // Affecter M. Dupont aux classes 3ème A et 3ème B + matières
+  await prisma.teacherProfile.update({
+    where: { id: marcTeacher.teacherProfile.id },
+    data: {
+      classes: {
+        connect: [{ id: class3A.id }, { id: class3B.id }],
+      },
+      subjects: {
+        connect: [
+          { name: 'Mathématiques' },
+          { name: 'SVT' },
+        ],
+      },
+    },
+  })
+
+  // Affecter Mme Bernard aux classes 3ème A et 4ème A + matières
+  await prisma.teacherProfile.update({
+    where: { id: sophieTeacher.teacherProfile.id },
+    data: {
+      classes: {
+        connect: [{ id: class3A.id }, { id: class4A.id }],
+      },
+      subjects: {
+        connect: [
+          { name: 'Histoire-Géographie' },
+          { name: 'Français' },
+        ],
+      },
+    },
+  })
+
+  console.log('✅ Profs affectés aux classes et matières')
 }
 
 async function seedCourses() {
@@ -300,6 +398,7 @@ async function main() {
   await seedSubjects()
   await seedClasses()
   await seedUsers()
+  await seedTeacherAssignments()
   await seedCourses()
 
   console.log('\n✅ Seed terminé avec succès !')

@@ -10,6 +10,10 @@ const createUserSchema = z.object({
   lastName: z.string().min(2, 'Nom trop court'),
   password: z.string().min(6, 'Mot de passe trop court (min 6 caractères)'),
   role: z.enum(['ADMIN', 'TEACHER', 'STUDENT']),
+  phone: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  postalCode: z.string().nullable().optional(),
 });
 
 // GET /api/admin/users - Liste tous les utilisateurs
@@ -26,6 +30,11 @@ export async function GET() {
       firstName: true,
       lastName: true,
       role: true,
+      phone: true,
+      address: true,
+      city: true,
+      postalCode: true,
+      isActive: true,
       createdAt: true,
     },
     orderBy: { createdAt: 'desc' },
@@ -68,6 +77,10 @@ export async function POST(request: Request) {
         lastName: data.lastName,
         passwordHash: hashedPassword,
         role: data.role,
+        phone: data.phone,
+        address: data.address,
+        city: data.city,
+        postalCode: data.postalCode,
       },
       select: {
         id: true,
@@ -75,6 +88,11 @@ export async function POST(request: Request) {
         firstName: true,
         lastName: true,
         role: true,
+        phone: true,
+        address: true,
+        city: true,
+        postalCode: true,
+        isActive: true,
         createdAt: true,
       },
     });

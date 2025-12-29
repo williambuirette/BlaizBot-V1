@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, User, Settings, LogOut } from 'lucide-react';
+import { NotificationBell } from '@/components/features/shared/NotificationBell';
 
 // -----------------------------------------------------
 // TYPES
@@ -65,8 +66,11 @@ export function Header({ user }: HeaderProps) {
         <Input placeholder="Rechercher..." className="pl-10" />
       </div>
 
-      {/* Zone droite - Avatar + Dropdown */}
-      {isClient ? (
+      {/* Zone droite - Notifications + Avatar + Dropdown */}
+      <div className="flex items-center gap-4">
+        <NotificationBell />
+        
+        {isClient ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -113,6 +117,7 @@ export function Header({ user }: HeaderProps) {
           </AvatarFallback>
         </Avatar>
       )}
+      </div>
     </header>
   );
 }

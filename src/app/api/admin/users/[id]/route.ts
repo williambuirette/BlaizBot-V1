@@ -10,6 +10,10 @@ const updateUserSchema = z.object({
   lastName: z.string().min(2, 'Nom trop court').optional(),
   password: z.string().min(6, 'Mot de passe trop court').optional(),
   role: z.enum(['ADMIN', 'TEACHER', 'STUDENT']).optional(),
+  phone: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  postalCode: z.string().nullable().optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -21,6 +25,11 @@ const userSelectFields = {
   firstName: true,
   lastName: true,
   role: true,
+  phone: true,
+  address: true,
+  city: true,
+  postalCode: true,
+  isActive: true,
   createdAt: true,
 };
 
@@ -83,6 +92,10 @@ export async function PUT(request: Request, { params }: Params) {
     if (data.firstName) updateData.firstName = data.firstName;
     if (data.lastName) updateData.lastName = data.lastName;
     if (data.role) updateData.role = data.role;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.city !== undefined) updateData.city = data.city;
+    if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
     if (data.password) {
       updateData.passwordHash = await bcrypt.hash(data.password, 10);
     }

@@ -1,81 +1,81 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { teacherUser, teacherStats, teacherClasses } from '@/data/mockData';
-import { Users, BookOpen, GraduationCap, TrendingUp } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { GraduationCap, BookOpen, Mail } from 'lucide-react';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
+import { TeacherStatsCard } from '@/components/features/teacher/TeacherStatsCard';
 
-export default function TeacherDashboardPage() {
-  const firstName = teacherUser.name.split(' ')[0] ?? teacherUser.name;
+async function getTeacherStats(userId: string) {
+  const teacherProfile = await prisma.teacherProfile.findUnique({
+    where: { userId },
+    include: {
+      classes: { select: { id: true } },
+      courses: { select: { id: true } },
+      user: { select: { firstName: true } },
+    },
+  });
+
+  if (!teacherProfile) return null;
+
+  return {
+    firstName: teacherProfile.user.firstName,
+    classesCount: teacherProfile.classes.length,
+    coursesCount: teacherProfile.courses.length,
+    unreadMessages: 0, // TODO: implémenter quand Message.read existe
+  };
+}
+
+export default async function TeacherDashboardPage() {
+  const session = await auth();
+
+  if (!session?.user?.id || session.user.role !== 'TEACHER') {
+    redirect('/login');
+  }
+
+  const stats = await getTeacherStats(session.user.id);
+
+  if (!stats) {
+    return (
+      <div className="p-6">
+        <p className="text-muted-foreground">Profil professeur non trouvé.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome */}
       <Card className="bg-gradient-to-r from-green-500 to-teal-600 text-white">
         <CardContent className="pt-6">
-          <h1 className="text-2xl font-bold">Bonjour, {firstName} 👋</h1>
-          <p className="opacity-90">{teacherUser.subject}</p>
+          <h1 className="text-2xl font-bold">Bonjour, {stats.firstName} 👋</h1>
+          <p className="opacity-90">Bienvenue sur votre espace professeur</p>
         </CardContent>
       </Card>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Élèves</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teacherStats.totalStudents}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Classes</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teacherStats.totalClasses}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Cours créés</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teacherStats.coursesCreated}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Score moyen</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teacherStats.averageClassScore}%</div>
-          </CardContent>
-        </Card>
+      {/* Stats Cards avec liens */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <TeacherStatsCard
+          title="Mes classes"
+          value={stats.classesCount}
+          icon={GraduationCap}
+          href="/teacher/classes"
+          iconColor="text-blue-600"
+        />
+        <TeacherStatsCard
+          title="Mes cours"
+          value={stats.coursesCount}
+          icon={BookOpen}
+          href="/teacher/courses"
+          iconColor="text-green-600"
+        />
+        <TeacherStatsCard
+          title="Messages"
+          value={stats.unreadMessages}
+          icon={Mail}
+          href="/teacher/messages"
+          iconColor="text-purple-600"
+        />
       </div>
-
-      {/* Classes */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mes classes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {teacherClasses.map((cls) => (
-              <div key={cls.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">{cls.name}</p>
-                  <p className="text-sm text-muted-foreground">{cls.students} élèves</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold">{cls.averageScore}%</p>
-                  <p className="text-xs text-muted-foreground">Score moyen</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -1,12 +1,71 @@
 # 👨‍🏫 Phase 7 — Interface Professeur (Partie 2)
 
 > **Suite de** : [phase-07-teacher.md](phase-07-teacher.md) (étapes 7.1→7.3)
-> **Ce fichier** : Étapes 7.4→7.7 (CRUD Cours, Upload, Messagerie)
+> **Ce fichier** : Étapes 7.4→7.9 (CRUD Cours, Éditeur Riche, Génération IA, Fiche Élève, Messagerie)
 > **Code** : [phase-07-code.md](phase-07-code.md)
+> **Statut** : 🟡 EN COURS
 
 ---
 
-## 📋 Étape 7.4 — CRUD Cours
+## 📊 Récapitulatif
+
+| Étape | Description | Statut |
+|:------|:------------|:-------|
+| 7.4 | CRUD Cours | ✅ |
+| 7.5 | Éditeur de Cours Avancé (TipTap) | ✅ |
+| 7.6 | Génération IA de Cours | ✅ |
+| 7.6-fix | Synchronisation RichEditor | ✅ |
+| 7.7 | Fiche Élève (modale détails) | ✅ |
+| O1-O2 | Refactoring CourseForm | ✅ |
+| 7.8 | Chapitres (optionnel) | ⬜ |
+| 7.9 | Messagerie UI (optionnel) | ⬜ |
+
+---
+
+## 🔧 Optimisation O1-O2 — Refactoring CourseForm ✅ TERMINÉ
+
+> **Date** : 29/12/2025
+
+### 🎯 Objectif
+Réduire la duplication et respecter la limite de 350 lignes par fichier.
+
+### ❌ Avant (Problème)
+| Fichier | Lignes | Problème |
+|:--------|:-------|:---------|
+| `teacher/courses/new/page.tsx` | 451 | 🚨 > 350 |
+| `teacher/courses/[id]/edit/page.tsx` | 449 | 🚨 > 350 |
+| **Duplication** | ~90% | Code quasi-identique |
+
+### ✅ Après (Solution)
+| Fichier | Lignes | Rôle |
+|:--------|:-------|:-----|
+| `new/page.tsx` | 8 | Import CourseForm |
+| `edit/page.tsx` | 12 | Import CourseEditClient |
+| `CourseForm.tsx` | 197 | Composant UI principal |
+| `CourseFormTabs.tsx` | 303 | Sous-composants (5 onglets) |
+| `CourseEditClient.tsx` | 104 | Client wrapper pour edit (fetch data) |
+| `useCourseForm.ts` | 272 | Hook logique métier |
+
+### 📦 Fichiers créés/modifiés
+
+```
+src/hooks/teacher/useCourseForm.ts              ✅ NEW
+src/components/features/teacher/CourseForm.tsx  ✅ REFACTORED
+src/components/features/teacher/CourseFormTabs.tsx  ✅ NEW
+src/components/features/teacher/CourseEditClient.tsx  ✅ NEW
+src/app/(dashboard)/teacher/courses/new/page.tsx  ✅ SIMPLIFIED
+src/app/(dashboard)/teacher/courses/[id]/edit/page.tsx  ✅ SIMPLIFIED
+```
+
+### 🎉 Résultat
+- ✅ Tous les fichiers < 350 lignes
+- ✅ Duplication éliminée (DRY)
+- ✅ Logique extraite dans hook réutilisable
+- ✅ Build + Lint passent
+
+---
+
+## 📋 Étape 7.4 — CRUD Cours ✅ TERMINÉ
 
 ### 🎯 Objectif
 Le professeur peut créer, modifier et supprimer ses cours.
@@ -153,7 +212,103 @@ Le professeur peut créer, modifier et supprimer ses cours.
 
 ---
 
-## 📋 Étape 7.5 — Gestion des Chapitres
+## 📋 Étape 7.5 — Éditeur de Cours Avancé ✅ TERMINÉ
+
+> **Nouveau** : Ajouté le 28/12/2025
+
+### 🎯 Objectif
+Permettre au professeur de créer des cours avec une mise en page riche et professionnelle.
+
+### ✅ Réalisé
+
+| Tâche | Fichier | Statut |
+|:------|:--------|:-------|
+| TipTap Editor | `components/ui/rich-editor.tsx` | ✅ |
+| Toolbar formatage | `components/ui/editor-toolbar.tsx` | ✅ |
+| Upload fichiers | `components/ui/file-upload.tsx` | ✅ |
+| API Upload | `api/upload/route.ts` | ✅ |
+| Page création | `teacher/courses/new/page.tsx` | ✅ |
+| Page édition | `teacher/courses/[id]/edit/page.tsx` | ✅ |
+| Prévisualisation | `components/features/courses/course-preview.tsx` | ✅ |
+
+### 📦 Dépendances installées
+
+```bash
+npm install @tiptap/react @tiptap/pm @tiptap/starter-kit @tiptap/extension-link @tiptap/extension-image @tiptap/extension-placeholder @tiptap/extension-underline @tiptap/extension-text-align @tiptap/extension-highlight
+npm install react-dropzone
+npx shadcn add toggle popover separator tabs -y
+```
+
+### 🎨 Fonctionnalités éditeur
+
+- Titres H1, H2, H3
+- **Gras**, *italique*, souligné
+- Listes à puces et numérotées
+- Liens hypertexte
+- Images inline
+- Blocs de citation
+- Séparateurs
+- Alignement texte
+
+### 📁 Structure pages
+
+```
+/teacher/courses/new     → Création cours (5 onglets)
+/teacher/courses/[id]/edit → Édition cours existant
+```
+
+**5 onglets** : Informations | Contenu | Ressources | Paramètres | Aperçu
+
+---
+
+## 📋 Étape 7.6 — Génération de Cours par IA ✅ TERMINÉ
+
+> **Nouveau** : Ajouté le 28/12/2025
+
+### 🎯 Objectif
+L'IA génère un brouillon de cours basé sur le titre, la description, les objectifs et les fichiers uploadés.
+
+### ✅ Réalisé
+
+| Tâche | Fichier | Statut |
+|:------|:--------|:-------|
+| API génération | `api/ai/generate-course/route.ts` | ✅ |
+| Section IA dans page | `teacher/courses/new/page.tsx` | ✅ |
+| Instructions personnalisées | Textarea dans onglet Contenu | ✅ |
+| Mode démo (sans clé API) | Génère template structuré | ✅ |
+
+### 🤖 Fonctionnement
+
+1. Le prof remplit : Titre, Description, Objectifs, Difficulté
+2. (Optionnel) Upload des fichiers de référence
+3. (Optionnel) Instructions supplémentaires
+4. Clic "Générer le cours" → L'IA produit du HTML structuré
+5. Le contenu apparaît dans l'éditeur TipTap
+6. Le prof peut modifier/corriger librement
+
+### 🔧 Modes de fonctionnement
+
+| Mode | Condition | Comportement |
+|:-----|:----------|:-------------|
+| **Démo** | Pas de `OPENAI_API_KEY` | Génère un template structuré |
+| **Production** | `OPENAI_API_KEY` configurée | Appelle GPT-4o-mini |
+
+### 💡 Extensibilité IA
+
+L'API est conçue pour supporter facilement d'autres fournisseurs :
+- OpenAI (défaut)
+- Anthropic Claude
+- Google Gemini
+- Azure OpenAI
+
+```typescript
+// Pour changer de provider, modifier api/ai/generate-course/route.ts
+// Adapter l'appel fetch selon le fournisseur choisi
+```
+
+---
+
+## 📋 Étape 7.7 — Gestion des Chapitres
 
 ### 🎯 Objectif
 Un cours peut avoir plusieurs chapitres avec contenu texte.
@@ -210,7 +365,74 @@ Un cours peut avoir plusieurs chapitres avec contenu texte.
 
 ---
 
-## 📋 Étape 7.6 — Messagerie Prof ↔ Élèves
+## 📋 Étape 7.6-fix — Synchronisation RichEditor ✅ TERMINÉ
+
+### 🎯 Objectif
+Corriger le bug où le contenu généré par l'IA ne s'affiche pas dans l'éditeur TipTap.
+
+### 📝 Problème
+TipTap `useEditor()` n'observe pas les changements de la prop `content`. Quand `setContent(data.content)` est appelé après génération IA, l'éditeur ne se met pas à jour.
+
+### 🔧 Solution
+Ajouter un `useEffect` pour synchroniser le contenu externe :
+
+```tsx
+import { useEffect } from 'react';
+
+// Après le useEditor()
+useEffect(() => {
+  if (editor && content !== editor.getHTML()) {
+    editor.commands.setContent(content);
+  }
+}, [editor, content]);
+```
+
+### ✅ Fichier modifié
+- `src/components/ui/rich-editor.tsx`
+
+---
+
+## 📋 Étape 7.7 — Fiche Élève (Modale Détails) ✅ TERMINÉ
+
+### 🎯 Objectif
+Le professeur peut voir les informations complètes d'un élève (téléphone, adresse, email parent) via une modale.
+
+### 📝 Comment
+1. Bouton œil sur chaque ligne d'élève (pages Mes Élèves et Détail Classe)
+2. Dialog avec toutes les informations de l'élève
+3. Données de seed enrichies avec contacts
+
+### 🔧 Fichiers créés
+
+| Fichier | Rôle |
+|:--------|:-----|
+| `StudentDetailsDialog.tsx` | Dialog avec infos complètes (email, tel, adresse, parent) |
+| `StudentsList.tsx` | Composant client pour la liste "Mes Élèves" |
+| `ClassStudentsList.tsx` | Composant client pour la liste d'une classe |
+
+### ✅ Fichiers modifiés
+- `src/app/(dashboard)/teacher/students/page.tsx` — Récupère toutes les infos (phone, address, city, postalCode)
+- `src/app/(dashboard)/teacher/classes/[id]/page.tsx` — Idem + utilise ClassStudentsList
+- `prisma/seed.ts` — Données de contact pour les élèves de test
+
+---
+
+## 📋 Étape 7.8 — Chapitres (optionnel) ⬜
+
+### 🎯 Objectif
+Gérer les chapitres d'un cours (sous-sections).
+
+### 📝 Comment
+1. API CRUD chapitres rattachés à un cours
+2. UI : Liste réordonnable dans la page d'édition du cours
+
+### 🔧 Par quel moyen
+- API : `/api/teacher/courses/[id]/chapters`
+- UI : Accordion ou liste réordonnnable
+
+---
+
+## 📋 Étape 7.9 — Messagerie Prof ↔ Élèves (optionnel) ⬜
 
 ### 🎯 Objectif
 Communication simple entre professeur et élèves de ses classes.
@@ -228,7 +450,7 @@ Communication simple entre professeur et élèves de ses classes.
 
 ---
 
-### Tâche 7.6.1 — API Messages
+### Tâche 7.9.1 — API Messages
 
 | Critère | Attendu |
 | :--- | :--- |
@@ -269,7 +491,7 @@ Communication simple entre professeur et élèves de ses classes.
 
 ---
 
-### Tâche 7.6.2 — Composants Messagerie
+### Tâche 7.9.2 — Composants Messagerie
 
 | Critère | Attendu |
 | :--- | :--- |
@@ -297,7 +519,7 @@ Communication simple entre professeur et élèves de ses classes.
 
 ---
 
-### Tâche 7.6.3 — Page Messagerie
+### Tâche 7.9.3 — Page Messagerie
 
 | Critère | Attendu |
 | :--- | :--- |
@@ -418,17 +640,19 @@ Get-ChildItem -Path src -Recurse -Include *.tsx,*.ts | `
 
 | Critère | Vérifié |
 | :--- | :--- |
-| Dashboard Prof avec 3 KPIs | ⬜ |
-| API /api/teacher/stats | ⬜ |
-| Vue "Mes Classes" avec cards | ⬜ |
-| Vue détail classe (élèves + cours) | ⬜ |
-| CRUD Cours complet | ⬜ |
-| Gestion chapitres | ⬜ |
-| Messagerie fonctionnelle | ⬜ |
-| Filtrage par session partout | ⬜ |
-| Aucun fichier > 350 lignes | ⬜ |
-| `npm run lint` OK | ⬜ |
-| `npm run build` OK | ⬜ |
+| Dashboard Prof avec 3 KPIs | ✅ |
+| API /api/teacher/stats | ✅ |
+| Vue "Mes Classes" avec cards | ✅ |
+| Vue détail classe (élèves + bouton détails) | ✅ |
+| CRUD Cours complet | ✅ |
+| Éditeur TipTap + génération IA | ✅ |
+| Fiche élève (modale détails) | ✅ |
+| Gestion chapitres | ⬜ (optionnel) |
+| Messagerie fonctionnelle | ⬜ (optionnel) |
+| Filtrage par session partout | ✅ |
+| Aucun fichier > 350 lignes | ✅ |
+| `npm run lint` OK | ✅ |
+| `npm run build` OK | ✅ |
 
 ---
 
@@ -438,4 +662,4 @@ Get-ChildItem -Path src -Recurse -Include *.tsx,*.ts | `
 
 ---
 
-*Lignes : ~310 | Dernière MAJ : 2025-12-22*
+*Lignes : ~330 | Dernière MAJ : 2025-12-29*

@@ -28,7 +28,13 @@ PHASE 6   PHASE 7   PHASE 8   PHASE 9   PHASE 10
 ```
 
 **Phase active** : Phase 7 — Interface Professeur  
-**Progression** : 64% (7/11 phases)
+**Progression** : 68% (7.5/11 phases)
+
+### Phase 7 — Sous-étapes terminées
+- ✅ 7.1-7.7 : Dashboard, Classes, Cours, Messagerie, TipTap, IA, Fiche Élève
+- ✅ 7.9 : Messagerie Avancée (refonte UI)
+- ✅ 7.10 : Upload Fichiers Ressources (PDF, Word, Excel, PowerPoint, Images)
+- 🔄 7.8 : Chapitres & Organisation
 
 ---
 

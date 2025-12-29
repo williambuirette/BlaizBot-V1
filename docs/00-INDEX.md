@@ -20,6 +20,7 @@
 | 08 | [AUTHENTIFICATION.md](./08-AUTHENTIFICATION.md) | JWT, rôles, permissions | ✅ Fait |
 | 09 | [PLAN_DEVELOPPEMENT.md](./09-PLAN_DEVELOPPEMENT.md) | Phases, sprints, priorités | ✅ Fait |
 | 10 | [DEVLOG.md](./10-DEVLOG.md) | Journal de développement (exposé) | ✅ Fait |
+| 11 | [MESSAGERIE_AVANCEE.md](./11-MESSAGERIE_AVANCEE.md) | Messagerie groupe/classe + notifications | 🆕 À faire |
 
 ---
 

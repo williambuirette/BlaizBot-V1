@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { useUserForm } from '@/hooks/admin/useUserForm';
 import { UserRow, Role } from '@/types/admin';
 
@@ -34,13 +35,17 @@ export function UserFormModal({ open, onClose, user, onSuccess }: UserFormModalP
     email, setEmail,
     password, setPassword,
     role, setRole,
+    phone, setPhone,
+    address, setAddress,
+    city, setCity,
+    postalCode, setPostalCode,
     loading, error, isEdit,
     handleSubmit,
   } = useUserForm({ user, onSuccess, onClose });
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
@@ -112,6 +117,56 @@ export function UserFormModal({ open, onClose, user, onSuccess }: UserFormModalP
                 <SelectItem value="ADMIN">Administrateur</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground">
+              Informations de contact (optionnel)
+            </h4>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="06 12 34 56 78"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="12 rue des Lilas"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">Code postal</Label>
+                <Input
+                  id="postalCode"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="75001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Ville</Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Paris"
+                />
+              </div>
+            </div>
           </div>
 
           <DialogFooter>

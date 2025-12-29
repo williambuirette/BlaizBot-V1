@@ -6,9 +6,51 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : [phase-07-teacher.md](phase-07-teacher.md)  
-**Étape en cours** : 7.1 — Dashboard Professeur  
-**Dernière MAJ** : 2025-12-28
+**Phase actuelle** : [phase-07-teacher.md](phase-07-teacher.md) + [phase-07-chapitres.md](../prompts/phase-07-chapitres.md)  
+**Étape en cours** : 7.8 — Chapitres & Organisation des Cours  
+**Dernière MAJ** : 2025-12-29
+
+---
+
+## 📌 Prochaines tâches (Phase 7.8 - Chapitres)
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| 7.8.1 | Migration Prisma (Chapter, Section, Resource, Team, Assignment, Progress) | ✅ |
+| 7.8.2 | API CRUD Chapitres | ✅ |
+| 7.8.3 | API CRUD Sections | ✅ |
+| 7.8.4 | API CRUD Ressources | ✅ |
+| 7.8.5 | API Équipes (Teams) | ✅ |
+| 7.8.6 | API Assignations | ✅ |
+| 7.8.7 | UI Onglet Structure (ChaptersManager) | ✅ |
+| 7.8.8 | UI Onglet Ressources (ResourcesManager) | ✅ |
+| 7.8.9 | UI Onglet Exercices (ExercisesManager) | ✅ |
+| 7.8.10 | UI Onglet Assignations + AssignDialog | ✅ |
+| 7.8.11 | Intégration page /teacher/courses/[id] avec onglets | ✅ |
+
+**✅ Phase 7.8 COMPLÈTE !**
+
+**Prompts** : [prompts/phase-07-chapitres.md](../prompts/phase-07-chapitres.md)
+
+---
+
+## ✅ Tâches terminées (Phase 7.9 - Messagerie Avancée)
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| 7.9.1 | Migration Prisma (Notification, MessageReadStatus, schoolYear) | ✅ |
+| 7.9.2 | API /teacher/classes/[id]/students (backend) | ✅ |
+| 7.9.3 | API Notifications (backend) | ✅ |
+| 7.9.4 | NewConversationDialog (frontend) | ✅ |
+| 7.9.5 | ConversationsList amélioré (frontend) | ✅ |
+| 7.9.6 | MessageThread avec noms (frontend) | ✅ |
+| 7.9.7 | NotificationBell (frontend) | ✅ |
+| 7.9.8 | Intégration Header | ✅ |
+| 7.9.9 | Créer notifications à l'envoi | ✅ |
+| 7.9.10 | Refonte UI NewConversationDialog (cartes visuelles) | ✅ |
+| 7.9.11 | ConversationsList groupé par catégorie (Collapsible) | ✅ |
+
+**Documentation** : [docs/11-MESSAGERIE_AVANCEE.md](../docs/11-MESSAGERIE_AVANCEE.md)
 
 ---
 
@@ -62,7 +104,7 @@ Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
 | 4 | Base de données | ✅ Done | 100% | ✅ | ✅ | ✅ |
 | 5 | Authentification | ✅ Done | 100% | ✅ | ✅ | ⬜ |
 | 6 | Admin | ✅ Done | 100% | ✅ | ✅ | ⬜ |
-| 7 | Professeur | 🔴 Active | 0% | ⬜ | ⬜ | ⬜ |
+| 7 | Professeur | 🔴 Active | 90% | ⬜ | ⬜ | ⬜ |
 | 8 | Élève | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 9 | IA | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 10 | Démo | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |

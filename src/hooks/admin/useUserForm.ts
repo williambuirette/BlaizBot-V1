@@ -20,6 +20,14 @@ interface UseUserFormReturn {
   setPassword: (value: string) => void;
   role: Role;
   setRole: (value: Role) => void;
+  phone: string;
+  setPhone: (value: string) => void;
+  address: string;
+  setAddress: (value: string) => void;
+  city: string;
+  setCity: (value: string) => void;
+  postalCode: string;
+  setPostalCode: (value: string) => void;
   loading: boolean;
   error: string;
   isEdit: boolean;
@@ -32,6 +40,10 @@ export function useUserForm({ user, onSuccess, onClose }: UseUserFormProps): Use
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('STUDENT');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,12 +57,20 @@ export function useUserForm({ user, onSuccess, onClose }: UseUserFormProps): Use
       setEmail(user.email);
       setRole(user.role);
       setPassword('');
+      setPhone(user.phone || '');
+      setAddress(user.address || '');
+      setCity(user.city || '');
+      setPostalCode(user.postalCode || '');
     } else {
       setFirstName('');
       setLastName('');
       setEmail('');
       setPassword('');
       setRole('STUDENT');
+      setPhone('');
+      setAddress('');
+      setCity('');
+      setPostalCode('');
     }
     setError('');
   }, [user]);
@@ -61,7 +81,16 @@ export function useUserForm({ user, onSuccess, onClose }: UseUserFormProps): Use
     setLoading(true);
 
     try {
-      const payload: Record<string, string> = { firstName, lastName, email, role };
+      const payload: Record<string, string | null> = {
+        firstName,
+        lastName,
+        email,
+        role,
+        phone: phone || null,
+        address: address || null,
+        city: city || null,
+        postalCode: postalCode || null,
+      };
 
       if (!isEdit && !password) {
         setError('Le mot de passe est requis');
@@ -95,7 +124,7 @@ export function useUserForm({ user, onSuccess, onClose }: UseUserFormProps): Use
     } finally {
       setLoading(false);
     }
-  }, [firstName, lastName, email, password, role, isEdit, user?.id, onSuccess, onClose]);
+  }, [firstName, lastName, email, password, role, phone, address, city, postalCode, isEdit, user?.id, onSuccess, onClose]);
 
   return {
     firstName, setFirstName,
@@ -103,6 +132,10 @@ export function useUserForm({ user, onSuccess, onClose }: UseUserFormProps): Use
     email, setEmail,
     password, setPassword,
     role, setRole,
+    phone, setPhone,
+    address, setAddress,
+    city, setCity,
+    postalCode, setPostalCode,
     loading, error, isEdit,
     handleSubmit,
   };
