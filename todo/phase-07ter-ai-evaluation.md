@@ -101,7 +101,7 @@ interface EvaluationResult {
 
 | # | Tâche | Description | Effort | Statut |
 |:--|:------|:------------|:-------|:-------|
-| **AI3.1** | API trigger évaluation | POST /api/ai/evaluate | 15min | ⬜ |
+| **AI3.1** | API trigger évaluation | POST /api/ai/evaluate | 15min | ✅ |
 | **AI3.2** | Webhook fin session | Modifier PATCH /api/chat/sessions/[id] | 15min | ⬜ |
 
 #### Fichiers à créer/modifier
