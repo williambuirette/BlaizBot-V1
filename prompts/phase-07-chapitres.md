@@ -677,32 +677,32 @@ URL avec tab : /teacher/courses/[id]?tab=structure
 
 ```
 PRISMA :
-- [ ] Tables Chapter, Section, Resource créées
-- [ ] Tables Team, TeamMember créées
-- [ ] Tables Assignment, StudentProgress créées
-- [ ] Relations bi-directionnelles OK
-- [ ] Seed avec données de test
+- [x] Tables Chapter, Section, Resource créées
+- [x] Tables Team, TeamMember créées
+- [x] Tables Assignment, StudentProgress créées
+- [x] Relations bi-directionnelles OK
+- [x] Seed avec données de test
 
 API :
-- [ ] CRUD Chapters fonctionne
-- [ ] CRUD Sections fonctionne
-- [ ] CRUD Resources fonctionne
-- [ ] CRUD Teams fonctionne
-- [ ] CRUD Assignments fonctionne
-- [ ] Sécurité : prof ne voit que ses cours
+- [x] CRUD Chapters fonctionne
+- [x] CRUD Sections fonctionne
+- [x] CRUD Resources fonctionne
+- [x] CRUD Teams fonctionne
+- [x] CRUD Assignments fonctionne
+- [x] Sécurité : prof ne voit que ses cours
 
 UI :
-- [ ] Onglet Structure : chapitres collapsibles, sections listées
-- [ ] Onglet Ressources : groupées par type, preview YouTube
-- [ ] Onglet Exercices : liste avec statut assignation
-- [ ] Onglet Assignations : liste + dialog création
-- [ ] AssignDialog : wizard 4 étapes
-- [ ] ProgressSheet : progression détaillée
+- [x] Onglet Structure : chapitres collapsibles, sections listées
+- [x] Onglet Ressources : groupées par type, preview YouTube
+- [x] Onglet Exercices : liste avec statut assignation
+- [x] Onglet Assignations : liste + dialog création
+- [x] AssignDialog : wizard 4 étapes
+- [x] ProgressSheet : progression détaillée
 
 INTÉGRATION :
-- [ ] Page cours avec 5 onglets fonctionnels
-- [ ] Navigation par URL (?tab=)
-- [ ] Pas de régression sur pages existantes
+- [x] Page cours avec 5 onglets fonctionnels
+- [x] Navigation par URL (?tab=)
+- [x] Pas de régression sur pages existantes
 ```
 
 ---
@@ -711,17 +711,17 @@ INTÉGRATION :
 
 | Étape | Date | Durée | Itérations | Rétro-prompt |
 |-------|------|-------|------------|--------------|
-| 7.8.1 | - | - | - | - |
-| 7.8.2 | - | - | - | - |
-| 7.8.3 | - | - | - | - |
+| 7.8.1 | 29/12 | 30min | 1 | Migration Prisma OK |
+| 7.8.2 | 29/12 | 1h | 1 | API Chapters OK |
+| 7.8.3 | 29/12 | 1h | 1 | API Sections OK |
 | 7.8.4 | 29/12 | 3h | 8 | Upload fichiers ressources - voir 7.10 |
-| 7.8.5 | - | - | - | - |
-| 7.8.6 | - | - | - | - |
-| 7.8.7 | - | - | - | - |
-| 7.8.8 | - | - | - | - |
-| 7.8.9 | - | - | - | - |
-| 7.8.10 | - | - | - | - |
-| 7.8.11 | - | - | - | - |
+| 7.8.5 | 29/12 | 1h | 1 | API Teams OK |
+| 7.8.6 | 29/12 | 1h | 1 | API Assignments OK |
+| 7.8.7 | 29/12 | 2h | 1 | UI Structure (ChaptersManager) |
+| 7.8.8 | 29/12 | 1h | 1 | UI Ressources (ResourcesManager) |
+| 7.8.9 | 29/12 | 1h | 1 | UI Exercices (ExercisesManager) |
+| 7.8.10 | 29/12 | 2h | 1 | UI Assignations (AssignmentsManager + Dialog) |
+| 7.8.11 | 29/12 | 30min | 1 | Intégration Page Cours |
 
 ### Leçon apprise 7.8.4 — Upload fichiers Windows
 

@@ -388,6 +388,227 @@ async function seedCourses() {
   console.log('✅ 6 cours créés')
 }
 
+async function seedAssignments() {
+  console.log('📝 Création des assignations...')
+
+  const marcTeacher = await prisma.user.findUnique({ where: { email: 'm.dupont@blaizbot.edu' } })
+  const class3A = await prisma.class.findUnique({ where: { name: '3ème A' } })
+  const mathCourse = await prisma.course.findUnique({ where: { id: 'course-maths-fractions' } })
+
+  if (marcTeacher && class3A && mathCourse) {
+    // Vérifier si l'assignation existe déjà
+    const existing = await prisma.courseAssignment.findFirst({
+      where: {
+        courseId: mathCourse.id,
+        classId: class3A.id,
+      }
+    })
+
+    if (!existing) {
+      await prisma.courseAssignment.create({
+        data: {
+          teacherId: marcTeacher.id,
+          courseId: mathCourse.id,
+          classId: class3A.id,
+          targetType: 'CLASS',
+          title: 'Cours sur les Fractions',
+          instructions: 'Veuillez étudier ce cours pour la semaine prochaine.',
+        }
+      })
+      console.log('✅ Assignation créée : Fractions -> 3ème A')
+    } else {
+      console.log('ℹ️ Assignation déjà existante')
+    }
+  }
+}
+
+// -----------------------------------------------------
+// STUDENT SCORES (Données de test pour filtres/tri)
+// -----------------------------------------------------
+
+interface ScoreData {
+  studentEmail: string
+  courseId: string
+  quizAvg: number
+  exerciseAvg: number
+  aiComprehension: number
+  quizCount: number
+  exerciseCount: number
+  aiSessionCount: number
+  examGrade: number | null
+  examDate: Date | null
+}
+
+// Formule : continuousScore = quiz*35% + exos*40% + ia*25%
+function calcContinuous(quiz: number, exos: number, ia: number): number {
+  return quiz * 0.35 + exos * 0.40 + ia * 0.25
+}
+
+// Formule : finalScore = continuous*40% + (examGrade/6)*100*60%
+function calcFinal(continuous: number, examGrade: number | null): number | null {
+  if (examGrade === null) return null
+  return continuous * 0.4 + (examGrade / 6) * 100 * 0.6
+}
+
+// Formule : finalGrade = finalScore / 100 * 6
+function calcGrade(finalScore: number | null): number | null {
+  if (finalScore === null) return null
+  return (finalScore / 100) * 6
+}
+
+const STUDENT_SCORES: ScoreData[] = [
+  // Lucas MARTIN (3ème A) - 3 cours : 🟢 Fractions, 🟡 Équations, 🔴 Photosynthèse
+  {
+    studentEmail: 'lucas.martin@blaizbot.edu',
+    courseId: 'course-maths-fractions',
+    quizAvg: 85, exerciseAvg: 78, aiComprehension: 70,
+    quizCount: 5, exerciseCount: 8, aiSessionCount: 3,
+    examGrade: 5.2, examDate: new Date('2025-12-15'),
+  },
+  {
+    studentEmail: 'lucas.martin@blaizbot.edu',
+    courseId: 'course-maths-equations',
+    quizAvg: 60, exerciseAvg: 55, aiComprehension: 45,
+    quizCount: 4, exerciseCount: 6, aiSessionCount: 2,
+    examGrade: 4.0, examDate: new Date('2025-12-18'),
+  },
+  {
+    studentEmail: 'lucas.martin@blaizbot.edu',
+    courseId: 'course-svt-photosynthese',
+    quizAvg: 40, exerciseAvg: 35, aiComprehension: 30,
+    quizCount: 2, exerciseCount: 3, aiSessionCount: 1,
+    examGrade: null, examDate: null, // Pas encore d'examen
+  },
+  
+  // Emma DURAND (3ème A) - 2 cours : 🟢 Fractions, 🟡 Équations (sans examen)
+  {
+    studentEmail: 'emma.durand@blaizbot.edu',
+    courseId: 'course-maths-fractions',
+    quizAvg: 90, exerciseAvg: 88, aiComprehension: 85,
+    quizCount: 6, exerciseCount: 10, aiSessionCount: 4,
+    examGrade: 5.5, examDate: new Date('2025-12-15'),
+  },
+  {
+    studentEmail: 'emma.durand@blaizbot.edu',
+    courseId: 'course-maths-equations',
+    quizAvg: 70, exerciseAvg: 65, aiComprehension: 60,
+    quizCount: 4, exerciseCount: 7, aiSessionCount: 2,
+    examGrade: null, examDate: null,
+  },
+  
+  // Noah PETIT (3ème B) - 2 cours : 🔴 Fractions, 🟢 Photosynthèse
+  {
+    studentEmail: 'noah.petit@blaizbot.edu',
+    courseId: 'course-maths-fractions',
+    quizAvg: 50, exerciseAvg: 45, aiComprehension: 40,
+    quizCount: 3, exerciseCount: 4, aiSessionCount: 1,
+    examGrade: 3.2, examDate: new Date('2025-12-15'),
+  },
+  {
+    studentEmail: 'noah.petit@blaizbot.edu',
+    courseId: 'course-svt-photosynthese',
+    quizAvg: 75, exerciseAvg: 70, aiComprehension: 68,
+    quizCount: 4, exerciseCount: 5, aiSessionCount: 2,
+    examGrade: 4.8, examDate: new Date('2025-12-20'),
+  },
+  
+  // Léa MOREAU (3ème B) - 1 cours : 🟢 Fractions
+  {
+    studentEmail: 'lea.moreau@blaizbot.edu',
+    courseId: 'course-maths-fractions',
+    quizAvg: 80, exerciseAvg: 82, aiComprehension: 75,
+    quizCount: 5, exerciseCount: 7, aiSessionCount: 3,
+    examGrade: 5.0, examDate: new Date('2025-12-15'),
+  },
+  
+  // Hugo ROBERT (4ème A) - 1 cours : 🟡 Fractions
+  {
+    studentEmail: 'hugo.robert@blaizbot.edu',
+    courseId: 'course-maths-fractions',
+    quizAvg: 55, exerciseAvg: 50, aiComprehension: 48,
+    quizCount: 3, exerciseCount: 5, aiSessionCount: 2,
+    examGrade: 3.5, examDate: new Date('2025-12-15'),
+  },
+]
+
+async function seedStudentScores() {
+  console.log('📊 Création des scores élèves...')
+
+  let created = 0
+  let skipped = 0
+
+  for (const scoreData of STUDENT_SCORES) {
+    const student = await prisma.user.findUnique({
+      where: { email: scoreData.studentEmail },
+    })
+
+    if (!student) {
+      console.warn(`⚠️ Élève ${scoreData.studentEmail} non trouvé`)
+      skipped++
+      continue
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: scoreData.courseId },
+    })
+
+    if (!course) {
+      console.warn(`⚠️ Cours ${scoreData.courseId} non trouvé`)
+      skipped++
+      continue
+    }
+
+    const continuousScore = calcContinuous(
+      scoreData.quizAvg,
+      scoreData.exerciseAvg,
+      scoreData.aiComprehension
+    )
+    const finalScore = calcFinal(continuousScore, scoreData.examGrade)
+    const finalGrade = calcGrade(finalScore)
+
+    await prisma.studentScore.upsert({
+      where: {
+        studentId_courseId: {
+          studentId: student.id,
+          courseId: course.id,
+        },
+      },
+      update: {
+        quizAvg: scoreData.quizAvg,
+        exerciseAvg: scoreData.exerciseAvg,
+        aiComprehension: scoreData.aiComprehension,
+        continuousScore,
+        quizCount: scoreData.quizCount,
+        exerciseCount: scoreData.exerciseCount,
+        aiSessionCount: scoreData.aiSessionCount,
+        examGrade: scoreData.examGrade,
+        examDate: scoreData.examDate,
+        finalScore,
+        finalGrade,
+      },
+      create: {
+        studentId: student.id,
+        courseId: course.id,
+        quizAvg: scoreData.quizAvg,
+        exerciseAvg: scoreData.exerciseAvg,
+        aiComprehension: scoreData.aiComprehension,
+        continuousScore,
+        quizCount: scoreData.quizCount,
+        exerciseCount: scoreData.exerciseCount,
+        aiSessionCount: scoreData.aiSessionCount,
+        examGrade: scoreData.examGrade,
+        examDate: scoreData.examDate,
+        finalScore,
+        finalGrade,
+      },
+    })
+
+    created++
+  }
+
+  console.log(`✅ ${created} scores créés, ${skipped} ignorés`)
+}
+
 // -----------------------------------------------------
 // MAIN
 // -----------------------------------------------------
@@ -400,6 +621,8 @@ async function main() {
   await seedUsers()
   await seedTeacherAssignments()
   await seedCourses()
+  await seedAssignments()
+  await seedStudentScores()
 
   console.log('\n✅ Seed terminé avec succès !')
   console.log('\n📋 Comptes de test :')

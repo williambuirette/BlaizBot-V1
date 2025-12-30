@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Users, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { ClassStudentsList } from '@/components/features/teacher/ClassStudentsList';
+import { GeminiInsightCard } from '@/components/features/dashboard/GeminiInsightCard';
 
 interface ClassDetailPageProps {
   params: Promise<{ id: string }>;
@@ -64,6 +65,21 @@ export default async function TeacherClassDetailPage({ params }: ClassDetailPage
     notFound();
   }
 
+  // Récupérer les assignations pour trouver le cours principal associé à cette classe
+  // On cherche un cours assigné directement ou via un chapitre
+  const assignments = await prisma.courseAssignment.findMany({
+    where: { classId: id },
+    select: { 
+      courseId: true, 
+      chapter: { select: { courseId: true } } 
+    },
+    take: 20,
+  });
+  
+  // Extraire le premier courseId valide trouvé
+  const courseId = assignments.find(a => a.courseId)?.courseId || 
+                   assignments.find(a => a.chapter?.courseId)?.chapter?.courseId;
+
   // Transformer les données pour le composant
   const students = classData.students.map((s) => ({
     id: s.user.id,
@@ -91,6 +107,18 @@ export default async function TeacherClassDetailPage({ params }: ClassDetailPage
           <p className="text-muted-foreground">Niveau : {classData.level}</p>
         </div>
       </div>
+
+      {/* Section Analytics IA */}
+      {courseId ? (
+        <div className="mb-6">
+          <GeminiInsightCard classId={id} courseId={courseId} />
+        </div>
+      ) : (
+        <div className="mb-6 p-4 border border-dashed border-indigo-200 bg-indigo-50/50 rounded-lg text-indigo-600 text-sm flex items-center justify-center gap-2">
+          <BookOpen className="h-4 w-4" />
+          <span>Assignez un cours ou un chapitre à cette classe pour activer l'analyse IA (Cockpit Pédagogique).</span>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

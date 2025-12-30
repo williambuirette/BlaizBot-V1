@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Link, Youtube, FileText, Image, File, Upload, X, Loader2, CheckCircle, Table, Presentation } from 'lucide-react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 
 export type ResourceType = 'LINK' | 'YOUTUBE' | 'PDF' | 'DOCUMENT' | 'EXCEL' | 'POWERPOINT' | 'IMAGE';
 
@@ -146,7 +146,7 @@ export function ResourceFormDialog({
     }
   }, [setValue, selectedType]);
 
-  const onDropRejected = useCallback((fileRejections: Array<{ file: File; errors: Array<{ code: string; message: string }> }>) => {
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
     const rejection = fileRejections[0];
     if (rejection) {
       // Only show size errors, ignore MIME type errors (we validate by extension in onDrop)

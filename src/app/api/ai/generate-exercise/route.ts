@@ -3,11 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { geminiService } from '@/lib/ai/gemini';
 
 interface ExerciseItem {
   id: string;
@@ -15,6 +11,11 @@ interface ExerciseItem {
   answer: string;
   points?: number;
   hint?: string;
+}
+
+interface ExerciseResponse {
+  instructions: string;
+  items: ExerciseItem[];
 }
 
 export async function POST(request: NextRequest) {
@@ -30,51 +31,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prompt requis' }, { status: 400 });
     }
 
-    const systemPrompt = `Tu es un assistant pédagogique spécialisé dans la création d'exercices éducatifs.
-Génère exactement ${count} exercices en français avec leurs corrigés.
+    const fullPrompt = `
+      RÔLE:
+      Tu es un assistant pédagogique spécialisé dans la création d'exercices éducatifs.
+      
+      TÂCHE:
+      Génère exactement ${count} exercices en français avec leurs corrigés.
+      
+      CONTEXTE:
+      ${topic ? `Sujet du cours : ${topic}` : ''}
+      Demande spécifique : ${prompt}
 
-Format de réponse OBLIGATOIRE (JSON valide) :
-{
-  "instructions": "Consignes générales pour l'exercice",
-  "items": [
-    {
-      "id": "ex-1",
-      "question": "L'énoncé de l'exercice",
-      "answer": "La réponse attendue avec le développement si nécessaire",
-      "points": 2,
-      "hint": "Un indice optionnel pour aider l'élève"
-    }
-  ]
-}
+      FORMAT DE RÉPONSE OBLIGATOIRE (JSON valide) :
+      {
+        "instructions": "Consignes générales pour l'exercice",
+        "items": [
+          {
+            "id": "ex-1",
+            "question": "L'énoncé de l'exercice",
+            "answer": "La réponse attendue avec le développement si nécessaire",
+            "points": 2,
+            "hint": "Un indice optionnel pour aider l'élève"
+          }
+        ]
+      }
 
-Règles :
-- Les questions doivent être claires et précises
-- Les réponses doivent être complètes avec le raisonnement si nécessaire
-- Les points reflètent la difficulté (1-5 points)
-- Les indices sont optionnels mais utiles pour les questions difficiles
-- Adapter le niveau de difficulté au contexte donné
-- Varier les types d'exercices (calcul, rédaction, analyse, etc.)`;
+      RÈGLES:
+      - Les questions doivent être claires et précises
+      - Les réponses doivent être complètes avec le raisonnement si nécessaire
+      - Les points reflètent la difficulté (1-5 points)
+      - Les indices sont optionnels mais utiles pour les questions difficiles
+      - Adapter le niveau de difficulté au contexte donné
+      - Varier les types d'exercices (calcul, rédaction, analyse, etc.)
+    `;
 
-    const userPrompt = topic
-      ? `Sujet du cours : ${topic}\n\nDemande : ${prompt}`
-      : prompt;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' },
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (!content) {
-      return NextResponse.json({ error: 'Pas de réponse de l\'IA' }, { status: 500 });
-    }
-
-    const parsed = JSON.parse(content);
+    const parsed = await geminiService.generateJson<ExerciseResponse>(fullPrompt);
+    
     const instructions = parsed.instructions || '';
     const items: ExerciseItem[] = parsed.items || [];
 

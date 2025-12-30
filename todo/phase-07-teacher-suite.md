@@ -656,6 +656,38 @@ Get-ChildItem -Path src -Recurse -Include *.tsx,*.ts | `
 
 ---
 
+## 🧠 Phase 7.11 — Tableau de Bord IA & Assistant Gemini ✅ TERMINÉ
+
+> **Objectif** : "Cockpit Pédagogique" avec analyse multimodale (Vidéos/PDFs) via Gemini.
+> **Prompt** : [prompts/phase-07-11-ai-dashboard.md](../prompts/phase-07-11-ai-dashboard.md)
+
+### Tâche 7.11.1 — Configuration Gemini & Service ✅
+
+| Critère | Attendu |
+| :--- | :--- |
+| Fichier | `src/lib/ai/gemini.ts` |
+| Fonction | `analyzeCourseContent(resources)` |
+| Fonction | `generateQuizFromVideo(url)` |
+| Config | `GEMINI_API_KEY` dans `.env` |
+
+### Tâche 7.11.2 — Backend Analytics ✅
+
+| Critère | Attendu |
+| :--- | :--- |
+| Fichier | `src/app/api/teacher/analytics/generate/route.ts` |
+| Modèle | `ClassAnalysis` (Prisma) |
+| Logique | Récupérer ressources + stats → Gemini → Save |
+
+### Tâche 7.11.3 — UI Dashboard ✅
+
+| Critère | Attendu |
+| :--- | :--- |
+| Fichier | `src/components/features/dashboard/GeminiInsightCard.tsx` |
+| Fichier | `src/app/(dashboard)/teacher/page.tsx` |
+| UI | Cartes KPIs + Carte Insight IA |
+
+---
+
 ## 🔄 Navigation
 
 ← [phase-07-teacher.md](phase-07-teacher.md) | [phase-08-student.md](phase-08-student.md) →

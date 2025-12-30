@@ -6,31 +6,70 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : [phase-07-teacher.md](phase-07-teacher.md) + [phase-07-chapitres.md](../prompts/phase-07-chapitres.md)  
-**Étape en cours** : 7.8 — Chapitres & Organisation des Cours  
-**Dernière MAJ** : 2025-12-29
+**Phase actuelle** : [phase-07bis-scoring.md](phase-07bis-scoring.md) — Compteurs & Sélection (C1-C4)  
+**Prompts** : [prompts/phase-07bis-scoring.md](../prompts/phase-07bis-scoring.md)  
+**Étape en cours** : C1 — Types & calculs stats  
+**Dernière MAJ** : 2025-12-30
 
 ---
 
-## 📌 Prochaines tâches (Phase 7.8 - Chapitres)
+## 🆕 Compteurs & Sélection Groupe (C1-C4) — EN COURS
 
 | Tâche | Description | Statut |
 |:------|:------------|:-------|
-| 7.8.1 | Migration Prisma (Chapter, Section, Resource, Team, Assignment, Progress) | ✅ |
-| 7.8.2 | API CRUD Chapitres | ✅ |
-| 7.8.3 | API CRUD Sections | ✅ |
-| 7.8.4 | API CRUD Ressources | ✅ |
-| 7.8.5 | API Équipes (Teams) | ✅ |
-| 7.8.6 | API Assignations | ✅ |
-| 7.8.7 | UI Onglet Structure (ChaptersManager) | ✅ |
-| 7.8.8 | UI Onglet Ressources (ResourcesManager) | ✅ |
-| 7.8.9 | UI Onglet Exercices (ExercisesManager) | ✅ |
-| 7.8.10 | UI Onglet Assignations + AssignDialog | ✅ |
-| 7.8.11 | Intégration page /teacher/courses/[id] avec onglets | ✅ |
+| C1 | Types & calculs stats | ⬜ |
+| C2 | Composant StatsCounters | ⬜ |
+| C3 | Boutons sélection groupe | ⬜ |
+| C4 | Intégration StudentsList | ⬜ |
 
-**✅ Phase 7.8 COMPLÈTE !**
+**Prompts** : [prompts/phase-07bis-scoring.md](../prompts/phase-07bis-scoring.md#-compteurs--sélection-groupe-c1-c4)
 
-**Prompts** : [prompts/phase-07-chapitres.md](../prompts/phase-07-chapitres.md)
+---
+
+## ✅ Filtres Liste Élèves (S1-S6) — TERMINÉ
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| S1 | Types & Interfaces | ✅ |
+| S2 | API stats élèves | ✅ |
+| S3 | StudentFilterBar | ✅ |
+| S4 | StudentCard enrichie | ✅ |
+| S5 | Logique filtrage | ✅ |
+| S6 | Intégration page | ✅ |
+
+**Prompts** : [prompts/phase-07bis-scoring.md](../prompts/phase-07bis-scoring.md#-extension--filtres-liste-élèves-s1-s6)
+
+---
+
+## ✅ Filtres & Tri (F1-F4) — TERMINÉ
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| F1 | Seed StudentScore (données test) | ✅ |
+| F2 | Composant FilterBar | ✅ |
+| F3 | Logique de tri | ✅ |
+| F4 | Intégration page | ✅ |
+
+**Prompts** : [prompts/phase-07bis-scoring.md](../prompts/phase-07bis-scoring.md#-filtres--tri-f1-f4)
+
+---
+
+## ✅ Phase 7bis — Scoring & Fiche Élève (TERMINÉ)
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| 7bis.1 | Migration Prisma (StudentScore) | ✅ |
+| 7bis.2 | API Scores Élève (GET/PUT) | ✅ |
+| 7bis.3 | Service Stats (calculs, agrégations) | ✅ |
+| 7bis.4 | Composant ScoreBadge | ✅ |
+| 7bis.5 | Page Fiche Élève /teacher/students/[id] | ✅ |
+| 7bis.6 | Composants Scores (Header, CourseRow) | ✅ |
+| 7bis.7 | Dialog Saisie Examen | ✅ |
+| 7bis.8 | Navigation depuis Liste Élèves | ✅ |
+
+**✅ Phase 7bis COMPLÈTE !**
+
+**Prompts** : [prompts/phase-07bis-scoring.md](../prompts/phase-07bis-scoring.md)
 
 ---
 
@@ -72,10 +111,11 @@
 | 4 | [phase-04-database.md](phase-04-database.md) → [suite](phase-04-database-suite.md) + [code](phase-04-code.md) → [code-suite](phase-04-code-suite.md) | 3-4h | ✅ |
 | 5 | [phase-05-auth.md](phase-05-auth.md) → [suite](phase-05-auth-suite.md) + [code](phase-05-code.md) → [code-suite](phase-05-code-suite.md) | 4-5h | ✅ |
 | 6 | [phase-06-admin.md](phase-06-admin.md) → [suite](phase-06-admin-suite.md) + [code](phase-06-code.md) → [suite](phase-06-code-suite.md) → [fin](phase-06-code-fin.md) | 6-8h | ✅ |
-| 7 | [phase-07-teacher.md](phase-07-teacher.md) | 6-8h | 🔴 |
-| 8 | [phase-08-student.md](phase-08-student.md) | 6-8h | 🔴 |
-| 9 | [phase-09-ai.md](phase-09-ai.md) | 8-10h | 🔴 |
-| 10 | [phase-10-demo.md](phase-10-demo.md) | 4-6h | 🔴 |
+| 7 | [phase-07-teacher.md](phase-07-teacher.md) | 6-8h | ✅ |
+| **7bis** | [phase-07bis-scoring.md](phase-07bis-scoring.md) | 4-5h | ✅ |
+| 8 | [phase-08-student.md](phase-08-student.md) | 6-8h | ⬜ |
+| 9 | [phase-09-ai.md](phase-09-ai.md) | 8-10h | ⬜ |
+| 10 | [phase-10-demo.md](phase-10-demo.md) | 4-6h | ⬜ |
 
 **Note** : Phases 1-3 divisées (350 lignes max). Code/templates dans fichiers séparés.
 
@@ -104,14 +144,15 @@ Phase 6   Phase 7   Phase 8   Phase 9   Phase 10
 | 4 | Base de données | ✅ Done | 100% | ✅ | ✅ | ✅ |
 | 5 | Authentification | ✅ Done | 100% | ✅ | ✅ | ⬜ |
 | 6 | Admin | ✅ Done | 100% | ✅ | ✅ | ⬜ |
-| 7 | Professeur | 🔴 Active | 90% | ⬜ | ⬜ | ⬜ |
+| 7 | Professeur | ✅ Done | 100% | ⬜ | ⬜ | ⬜ |
+| 7bis | Scoring | ✅ Done | 100% | ⬜ | ⬜ | ⬜ |
 | 8 | Élève | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 9 | IA | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 | 10 | Démo | ⬜ À faire | 0% | ⬜ | ⬜ | ⬜ |
 
 **Légende** : ✅ Fait | ⬜ À faire | 🔴 En cours | — Non applicable
 
-**Progression globale** : 64% (7/11 phases)
+**Progression globale** : 73% (8/11 phases)
 
 ---
 

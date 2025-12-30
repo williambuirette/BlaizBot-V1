@@ -21,6 +21,7 @@
 | 7.8 | Chapitres & Organisation | 🟡 [phase-07-chapitres.md](phase-07-chapitres.md) |
 | 7.9 | Messagerie Avancée | ✅ |
 | 7.10 | Upload Fichiers Ressources | ✅ |
+| 7.11 | Tableau de Bord IA (Gemini) | ⬜ [phase-07-11-ai-dashboard.md](phase-07-11-ai-dashboard.md) |
 
 ---
 

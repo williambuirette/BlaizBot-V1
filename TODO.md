@@ -34,6 +34,7 @@ PHASE 6   PHASE 7   PHASE 8   PHASE 9   PHASE 10
 - ✅ 7.1-7.7 : Dashboard, Classes, Cours, Messagerie, TipTap, IA, Fiche Élève
 - ✅ 7.9 : Messagerie Avancée (refonte UI)
 - ✅ 7.10 : Upload Fichiers Ressources (PDF, Word, Excel, PowerPoint, Images)
+- ✅ 7.11 : Tableau de Bord IA & Assistant Gemini (Cockpit Pédagogique)
 - 🔄 7.8 : Chapitres & Organisation
 
 ---

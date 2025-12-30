@@ -54,6 +54,9 @@ model User {
   teacherAssignments    CourseAssignment[] @relation("TeacherCourseAssignments")
   studentAssignments    CourseAssignment[] @relation("StudentCourseAssignments")
   studentProgress       StudentProgress[]
+
+  // 🆕 Phase 7bis - Scores agrégés
+  studentScores         StudentScore[]     @relation("StudentScores")
 }
 
 model TeacherProfile {
@@ -121,6 +124,9 @@ model Class {
   // 🆕 Phase 7.8 - Équipes et Assignations
   teams             Team[]
   courseAssignments CourseAssignment[] @relation("ClassCourseAssignments")
+
+  // 🆕 Phase 7.11 - Analyses IA
+  analyses          ClassAnalysis[]
 }
 
 // ============================================
@@ -170,6 +176,9 @@ model Course {
   chapters          Chapter[]
   resources         Resource[]
   courseAssignments CourseAssignment[]
+
+  // 🆕 Phase 7bis - Scores agrégés
+  studentScores     StudentScore[]     @relation("CourseScores")
 }
 
 enum Difficulty {
@@ -515,6 +524,44 @@ model StudentProgress {
   @@index([sectionId])
 }
 
+// 🆕 Phase 7bis - Score agrégé par élève et par cours
+model StudentScore {
+  id          String   @id @default(cuid())
+
+  studentId   String
+  student     User     @relation("StudentScores", fields: [studentId], references: [id], onDelete: Cascade)
+
+  courseId    String
+  course      Course   @relation("CourseScores", fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Scores IA automatiques (0-100)
+  quizAvg         Float    @default(0)
+  exerciseAvg     Float    @default(0)
+  aiComprehension Float    @default(0)
+  continuousScore Float    @default(0)  // Calculé: Quiz*35% + Exo*40% + IA*25%
+
+  // Compteurs
+  quizCount       Int      @default(0)
+  exerciseCount   Int      @default(0)
+  aiSessionCount  Int      @default(0)
+
+  // Examen Final (note prof sur 6 - système suisse)
+  examGrade       Float?              // Note sur 6
+  examDate        DateTime?
+  examComment     String?
+
+  // Score Final calculé
+  finalScore      Float?              // 0-100: Continu*40% + Exam*60%
+  finalGrade      Float?              // Note sur 6
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
 // ============================================
 // BASE DE CONNAISSANCES
 // ============================================
@@ -709,3 +756,27 @@ model AIChat {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ============================================
+// ANALYTICS & IA (Phase 7.11)
+// ============================================
+
+model ClassAnalysis {
+  id          String   @id @default(cuid())
+  classId     String
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  // Contexte utilis�
+  resourceIds String[] // IDs des ressources analys�es (Vid�os, PDFs)
+  
+  // Contenu g�n�r�
+  summary     String   @db.Text
+  strengths   String[]
+  weaknesses  String[]
+  actions     String[]
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([classId])
+}
+

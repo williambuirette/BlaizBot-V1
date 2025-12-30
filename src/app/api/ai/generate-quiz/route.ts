@@ -3,11 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { geminiService } from '@/lib/ai/gemini';
 
 interface QuizQuestion {
   id: string;
@@ -15,6 +11,10 @@ interface QuizQuestion {
   options: string[];
   correctAnswers: number[];
   explanation?: string;
+}
+
+interface QuizResponse {
+  questions: QuizQuestion[];
 }
 
 export async function POST(request: NextRequest) {
@@ -30,49 +30,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prompt requis' }, { status: 400 });
     }
 
-    const systemPrompt = `Tu es un assistant pédagogique spécialisé dans la création de quiz éducatifs.
-Génère exactement ${count} questions à choix multiples en français.
+    const fullPrompt = `
+      RÔLE:
+      Tu es un assistant pédagogique spécialisé dans la création de quiz éducatifs.
+      
+      TÂCHE:
+      Génère exactement ${count} questions à choix multiples en français.
+      
+      CONTEXTE:
+      ${topic ? `Sujet du cours : ${topic}` : ''}
+      Demande spécifique : ${prompt}
 
-Format de réponse OBLIGATOIRE (JSON valide) :
-{
-  "questions": [
-    {
-      "id": "q-1",
-      "question": "La question posée",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswers": [0],
-      "explanation": "Explication de la bonne réponse"
-    }
-  ]
-}
+      FORMAT DE RÉPONSE OBLIGATOIRE (JSON valide) :
+      {
+        "questions": [
+          {
+            "id": "q-1",
+            "question": "La question posée",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswers": [0],
+            "explanation": "Explication de la bonne réponse"
+          }
+        ]
+      }
 
-Règles :
-- Chaque question doit avoir 4 options de réponse
-- correctAnswers contient les indices (0-3) des bonnes réponses
-- Une seule bonne réponse par question généralement
-- L'explication doit être claire et pédagogique
-- Adapter le niveau de difficulté au contexte donné`;
+      RÈGLES:
+      - Chaque question doit avoir 4 options de réponse
+      - correctAnswers contient les indices (0-3) des bonnes réponses
+      - Une seule bonne réponse par question généralement
+      - L'explication doit être claire et pédagogique
+      - Adapter le niveau de difficulté au contexte donné
+    `;
 
-    const userPrompt = topic
-      ? `Sujet du cours : ${topic}\n\nDemande : ${prompt}`
-      : prompt;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' },
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (!content) {
-      return NextResponse.json({ error: 'Pas de réponse de l\'IA' }, { status: 500 });
-    }
-
-    const parsed = JSON.parse(content);
+    const parsed = await geminiService.generateJson<QuizResponse>(fullPrompt);
     const questions: QuizQuestion[] = parsed.questions || [];
 
     // Valider et nettoyer les questions
