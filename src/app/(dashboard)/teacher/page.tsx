@@ -9,18 +9,18 @@ async function getTeacherStats(userId: string) {
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId },
     include: {
-      classes: { select: { id: true } },
-      courses: { select: { id: true } },
-      user: { select: { firstName: true } },
+      Class: { select: { id: true } },
+      Course: { select: { id: true } },
+      User: { select: { firstName: true } },
     },
   });
 
   if (!teacherProfile) return null;
 
   return {
-    firstName: teacherProfile.user.firstName,
-    classesCount: teacherProfile.classes.length,
-    coursesCount: teacherProfile.courses.length,
+    firstName: teacherProfile.User.firstName,
+    classesCount: teacherProfile.Class.length,
+    coursesCount: teacherProfile.Course.length,
     unreadMessages: 0, // TODO: implémenter quand Message.read existe
   };
 }

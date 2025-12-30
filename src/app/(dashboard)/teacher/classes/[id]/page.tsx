@@ -24,7 +24,7 @@ export default async function TeacherClassDetailPage({ params }: ClassDetailPage
   // Récupérer le TeacherProfile
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId: session.user.id },
-    include: { classes: { select: { id: true } } },
+    include: { Class: { select: { id: true } } },
   });
 
   if (!teacherProfile) {
@@ -32,7 +32,7 @@ export default async function TeacherClassDetailPage({ params }: ClassDetailPage
   }
 
   // Vérifier que le prof a accès à cette classe
-  const hasAccess = teacherProfile.classes.some((c) => c.id === id);
+  const hasAccess = teacherProfile.Class.some((c) => c.id === id);
   if (!hasAccess) {
     notFound();
   }
@@ -41,9 +41,9 @@ export default async function TeacherClassDetailPage({ params }: ClassDetailPage
   const classData = await prisma.class.findUnique({
     where: { id },
     include: {
-      students: {
+      StudentProfile: {
         include: {
-          user: {
+          User: {
             select: {
               id: true,
               firstName: true,
@@ -71,27 +71,27 @@ export default async function TeacherClassDetailPage({ params }: ClassDetailPage
     where: { classId: id },
     select: { 
       courseId: true, 
-      chapter: { select: { courseId: true } } 
+      Chapter: { select: { courseId: true } } 
     },
     take: 20,
   });
   
   // Extraire le premier courseId valide trouvé
   const courseId = assignments.find(a => a.courseId)?.courseId || 
-                   assignments.find(a => a.chapter?.courseId)?.chapter?.courseId;
+                   assignments.find(a => a.Chapter?.courseId)?.Chapter?.courseId;
 
   // Transformer les données pour le composant
-  const students = classData.students.map((s) => ({
-    id: s.user.id,
-    firstName: s.user.firstName,
-    lastName: s.user.lastName,
-    email: s.user.email,
-    phone: s.user.phone,
-    address: s.user.address,
-    city: s.user.city,
-    postalCode: s.user.postalCode,
+  const students = classData.StudentProfile.map((s) => ({
+    id: s.User.id,
+    firstName: s.User.firstName,
+    lastName: s.User.lastName,
+    email: s.User.email,
+    phone: s.User.phone,
+    address: s.User.address,
+    city: s.User.city,
+    postalCode: s.User.postalCode,
     parentEmail: s.parentEmail,
-    isActive: s.user.isActive,
+    isActive: s.User.isActive,
   }));
 
   return (
@@ -127,7 +127,7 @@ export default async function TeacherClassDetailPage({ params }: ClassDetailPage
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{classData.students.length}</div>
+            <div className="text-2xl font-bold">{classData.StudentProfile.length}</div>
           </CardContent>
         </Card>
 

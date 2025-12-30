@@ -19,7 +19,7 @@ export default async function TeacherStudentDetailPage({ params }: PageProps) {
   // Récupérer le profil prof avec ses classes
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId: session.user.id },
-    include: { classes: { select: { id: true } } },
+    include: { Class: { select: { id: true } } },
   });
 
   if (!teacherProfile) {
@@ -30,7 +30,7 @@ export default async function TeacherStudentDetailPage({ params }: PageProps) {
   const student = await prisma.studentProfile.findUnique({
     where: { userId: studentId },
     include: {
-      user: {
+      User: {
         select: {
           id: true,
           firstName: true,
@@ -54,7 +54,7 @@ export default async function TeacherStudentDetailPage({ params }: PageProps) {
   }
 
   // Vérifier que le prof a accès à cet élève (via ses classes)
-  const hasAccess = teacherProfile.classes.some((c) => c.id === student.classId);
+  const hasAccess = teacherProfile.Class.some((c) => c.id === student.classId);
   if (!hasAccess) {
     notFound();
   }

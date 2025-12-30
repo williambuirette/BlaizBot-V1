@@ -1,6 +1,3 @@
-// prisma/schema.prisma
-// Configuration pour Neon Postgres (via Vercel)
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,703 +8,503 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ============================================
-// AUTHENTIFICATION & UTILISATEURS
-// ============================================
+model AIActivityScore {
+  id                 String       @id
+  studentId          String
+  courseId           String
+  aiChatId           String       @unique
+  activityType       ActivityType
+  activityId         String?
+  themeId            String?
+  comprehensionScore Float
+  accuracyScore      Float
+  autonomyScore      Float
+  finalScore         Float
+  duration           Int
+  messageCount       Int
+  aiPromptTokens     Int
+  strengths          String?
+  weaknesses         String?
+  recommendation     String?
+  createdAt          DateTime     @default(now())
+  AIChat             AIChat       @relation(fields: [aiChatId], references: [id], onDelete: Cascade)
+  Course             Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  User               User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-enum Role {
-  ADMIN
-  TEACHER
-  STUDENT
-  PARENT
+  @@index([activityType])
+  @@index([aiChatId])
+  @@index([studentId, courseId])
 }
 
-model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  role         Role
-  firstName    String
-  lastName     String
-  phone        String?
-  address      String?
-  city         String?
-  postalCode   String?
-  isActive     Boolean   @default(true)
-  lastLogin    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations selon le rôle
-  teacherProfile TeacherProfile?
-  studentProfile StudentProfile?
-
-  // Relations communes
-  sentMessages   Message[]       @relation("SentMessages")
-  calendarEvents CalendarEvent[]
-  aiChats        AIChat[]
-  notifications  Notification[]
-  messageReadStatus MessageReadStatus[]
-
-  // 🆕 Phase 7.8 - Équipes et Assignations
-  teamMemberships       TeamMember[]
-  teacherAssignments    CourseAssignment[] @relation("TeacherCourseAssignments")
-  studentAssignments    CourseAssignment[] @relation("StudentCourseAssignments")
-  studentProgress       StudentProgress[]
-
-  // 🆕 Phase 7bis - Scores agrégés
-  studentScores         StudentScore[]     @relation("StudentScores")
+model AIChat {
+  id              String           @id
+  userId          String
+  contextType     String
+  contextId       String?
+  messages        Json
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  AIActivityScore AIActivityScore?
+  User            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model TeacherProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Relations many-to-many
-  subjects Subject[] @relation("TeacherSubjects")
-  classes  Class[]   @relation("TeacherClasses")
-
-  // Contenus créés
-  courses Course[]
-}
-
-model StudentProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  classId String
-  class   Class  @relation(fields: [classId], references: [id])
-
-  parentEmail String?
-
-  // Relations
-  subjects       Subject[]       @relation("StudentSubjects")
-  grades         Grade[]
-  progressions   Progression[]
-  labProjects    LabProject[]
-  knowledgeBases KnowledgeBase[] @relation("StudentKnowledge")
-}
-
-// ============================================
-// ORGANISATION SCOLAIRE
-// ============================================
-
-model Subject {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  teachers       TeacherProfile[] @relation("TeacherSubjects")
-  students       StudentProfile[] @relation("StudentSubjects")
-  courses        Course[]
-  conversations  Conversation[]
-  knowledgeBases KnowledgeBase[]
-}
-
-model Class {
-  id        String   @id @default(cuid())
-  name      String   @unique // ex: "6ème A"
-  level     String // ex: "6ème"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  teachers      TeacherProfile[] @relation("TeacherClasses")
-  students      StudentProfile[]
-  assignments   Assignment[]     @relation("ClassAssignments")
-  conversations Conversation[]   @relation("ClassConversations")
-
-  // 🆕 Phase 7.8 - Équipes et Assignations
-  teams             Team[]
-  courseAssignments CourseAssignment[] @relation("ClassCourseAssignments")
-
-  // 🆕 Phase 7.11 - Analyses IA
-  analyses          ClassAnalysis[]
-}
-
-// ============================================
-// CONTENUS PÉDAGOGIQUES
-// ============================================
-
-model Course {
-  id          String  @id @default(cuid())
-  title       String
-  description String?
-  content     String? @db.Text // Contenu markdown/HTML
-
-  subjectId String
-  subject   Subject @relation(fields: [subjectId], references: [id])
-
-  teacherId String
-  teacher   TeacherProfile @relation(fields: [teacherId], references: [id])
-
-  parentFolderId String?
-  parentFolder   Course?  @relation("CourseHierarchy", fields: [parentFolderId], references: [id])
-  children       Course[] @relation("CourseHierarchy")
-
-  isFolder Boolean @default(false)
-  isDraft  Boolean @default(true) // Brouillon ou publié
-
-  // Métadonnées pédagogiques
-  difficulty Difficulty @default(MEDIUM)
-  duration   Int?       // Durée estimée en minutes
-  objectives String[]   // Objectifs pédagogiques
-  tags       String[]   // Mots-clés
-
-  // Configuration IA
-  aiObjective     String?  @db.Text
-  aiExerciseTypes String[] // ["quiz", "application", "case_study", etc.]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  files         CourseFile[]
-  exercises     Exercise[]
-  assignments   Assignment[]
-  progressions  Progression[]
-  conversations Conversation[] @relation("CourseConversations")
-
-  // 🆕 Phase 7.8 - Structure hiérarchique
-  chapters          Chapter[]
-  resources         Resource[]
-  courseAssignments CourseAssignment[]
-
-  // 🆕 Phase 7bis - Scores agrégés
-  studentScores     StudentScore[]     @relation("CourseScores")
-}
-
-enum Difficulty {
-  EASY
-  MEDIUM
-  HARD
-}
-
-model CourseFile {
-  id       String @id @default(cuid())
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  filename String
-  fileType String // "pdf", "video", "link", etc.
-  url      String
-  isLocked Boolean @default(false) // true = imposé par prof
-
-  createdAt DateTime @default(now())
-}
-
-model Exercise {
-  id      String @id @default(cuid())
-  title   String
-  type    String // "quiz", "open", "multiple_choice", etc.
-  content Json // Structure flexible pour les questions
-
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  grades Grade[]
-}
-
-// ============================================
-// ATTRIBUTIONS & PROGRESSION
-// ============================================
-
-enum AssignmentTargetType {
-  CLASS
-  STUDENT
-}
-
-enum AssignmentStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
+model AISettings {
+  id                  String             @id
+  provider            AIProvider         @default(OPENAI)
+  apiKey              String
+  model               String             @default("gpt-4o")
+  endpoint            String?
+  restrictionLevel    AIRestrictionLevel @default(BALANCED)
+  enablePdfAnalysis   Boolean            @default(true)
+  allowTeacherPrompts Boolean            @default(true)
+  maintenanceMode     Boolean            @default(false)
+  platformName        String             @default("Blaiz'bot")
+  defaultLanguage     String             @default("fr")
+  updatedAt           DateTime
 }
 
 model Assignment {
-  id String @id @default(cuid())
-
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id])
-
+  id         String               @id
+  courseId   String
   targetType AssignmentTargetType
-
-  // Cible (soit une classe, soit un élève)
-  classId String?
-  class   Class?  @relation("ClassAssignments", fields: [classId], references: [id])
-
-  studentId String?
-
-  dueDate DateTime?
-  status  AssignmentStatus @default(ACTIVE)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  classId    String?
+  studentId  String?
+  dueDate    DateTime?
+  status     AssignmentStatus     @default(ACTIVE)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime
+  Class      Class?               @relation(fields: [classId], references: [id])
+  Course     Course               @relation(fields: [courseId], references: [id])
 }
 
-model Grade {
-  id String @id @default(cuid())
-
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id])
-
-  exerciseId String
-  exercise   Exercise @relation(fields: [exerciseId], references: [id])
-
-  score     Float
-  maxScore  Float   @default(20)
-  aiComment String? @db.Text
-
-  createdAt DateTime @default(now())
+model CalendarEvent {
+  id             String   @id
+  ownerId        String
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime
+  isTeacherEvent Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+  User           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }
 
-model Progression {
-  id String @id @default(cuid())
-
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id])
-
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id])
-
-  percentage   Float    @default(0)
-  lastActivity DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  @@unique([studentId, courseId])
-}
-
-// ============================================
-// BLAIZ'BOT LAB (Projets personnels)
-// ============================================
-
-enum LabSourceType {
-  FILE
-  LINK
-  YOUTUBE
-  TEXT
-}
-
-model LabProject {
-  id    String @id @default(cuid())
-  title String
-
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  sources LabSource[]
-}
-
-model LabSource {
-  id String @id @default(cuid())
-
-  projectId String
-  project   LabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  type     LabSourceType
-  filename String?
-  url      String?
-  content  String?       @db.Text
-
-  createdAt DateTime @default(now())
-}
-
-// ============================================
-// 🆕 PHASE 7.8 - CHAPITRES & ORGANISATION
-// ============================================
-
-// Types de sections
-enum SectionType {
-  LESSON     // Contenu texte
-  EXERCISE   // Exercice avec correction
-  QUIZ       // QCM auto-corrigé
-  VIDEO      // Vidéo intégrée
-}
-
-// Types de ressources
-enum ResourceType {
-  LINK       // Lien externe
-  YOUTUBE    // Vidéo YouTube
-  PDF        // Fichier PDF
-  DOCUMENT   // Document Word (DOC, DOCX)
-  EXCEL      // Tableur Excel (XLS, XLSX)
-  POWERPOINT // Présentation PowerPoint (PPT, PPTX)
-  IMAGE      // Image
-}
-
-// Cibles d'assignation
-enum CourseAssignmentTarget {
-  CLASS      // Toute la classe
-  TEAM       // Groupe d'élèves
-  STUDENT    // Un élève
-}
-
-// Statuts de progression
-enum ProgressStatus {
-  NOT_STARTED  // Pas commencé
-  IN_PROGRESS  // En cours
-  COMPLETED    // Terminé
-  GRADED       // Noté
-}
-
-// Chapitres (niveau 3 de la hiérarchie)
 model Chapter {
-  id          String   @id @default(cuid())
-  courseId    String
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String?
-  order       Int      @default(0)
-
-  sections    Section[]
-  assignments CourseAssignment[] @relation("ChapterAssignments")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String             @id
+  courseId         String
+  title            String
+  description      String?
+  order            Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  Course           Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  CourseAssignment CourseAssignment[]
+  Section          Section[]
 
   @@index([courseId])
   @@index([order])
 }
 
-// Sections (niveau 4 de la hiérarchie)
-model Section {
-  id          String      @id @default(cuid())
-  chapterId   String
-  chapter     Chapter     @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-
-  title       String
-  type        SectionType @default(LESSON)
-  content     String?     @db.Text  // HTML pour LESSON, JSON pour QUIZ/EXERCISE
-  order       Int         @default(0)
-  duration    Int?        // Minutes estimées
-
-  assignments CourseAssignment[] @relation("SectionAssignments")
-  progress    StudentProgress[]
-
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  @@index([chapterId])
-  @@index([order])
+model Class {
+  id               String             @id
+  name             String             @unique
+  level            String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  Assignment       Assignment[]
+  ClassAnalysis    ClassAnalysis[]
+  Conversation     Conversation[]
+  CourseAssignment CourseAssignment[]
+  StudentProfile   StudentProfile[]
+  Team             Team[]
+  TeacherProfile   TeacherProfile[]   @relation("TeacherClasses")
 }
 
-// Base de connaissances du cours (ressources)
-model Resource {
-  id          String       @id @default(cuid())
-  courseId    String
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+model ClassAnalysis {
+  id          String   @id
+  classId     String
+  resourceIds String[]
+  summary     String
+  strengths   String[]
+  weaknesses  String[]
+  actions     String[]
+  createdAt   DateTime @default(now())
+  Class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
 
+  @@index([classId])
+}
+
+model Conversation {
+  id             String           @id
+  type           ConversationType
+  subjectId      String?
+  topicName      String?
+  participantIds String[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  classId        String?
+  courseId       String?
+  schoolYear     String           @default("2024-2025")
+  Class          Class?           @relation(fields: [classId], references: [id])
+  Course         Course?          @relation(fields: [courseId], references: [id])
+  Subject        Subject?         @relation(fields: [subjectId], references: [id])
+  Message        Message[]
+}
+
+model Course {
+  id               String             @id
+  title            String
+  description      String?
+  content          String?
+  subjectId        String
+  teacherId        String
+  parentFolderId   String?
+  isFolder         Boolean            @default(false)
+  isDraft          Boolean            @default(true)
+  difficulty       Difficulty         @default(MEDIUM)
+  duration         Int?
+  objectives       String[]
+  tags             String[]
+  aiObjective      String?
+  aiExerciseTypes  String[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  AIActivityScore  AIActivityScore[]
+  Assignment       Assignment[]
+  Chapter          Chapter[]
+  Conversation     Conversation[]
+  Course           Course?            @relation("CourseToCourse", fields: [parentFolderId], references: [id])
+  other_Course     Course[]           @relation("CourseToCourse")
+  Subject          Subject            @relation(fields: [subjectId], references: [id])
+  TeacherProfile   TeacherProfile     @relation(fields: [teacherId], references: [id])
+  CourseAssignment CourseAssignment[]
+  CourseFile       CourseFile[]
+  Exercise         Exercise[]
+  Progression      Progression[]
+  Resource         Resource[]
+  StudentScore     StudentScore[]
+}
+
+model CourseAssignment {
+  id                                    String                 @id
+  teacherId                             String
+  courseId                              String?
+  chapterId                             String?
+  sectionId                             String?
+  targetType                            CourseAssignmentTarget
+  classId                               String?
+  teamId                                String?
+  studentId                             String?
+  title                                 String
+  instructions                          String?
+  dueDate                               DateTime?
+  createdAt                             DateTime               @default(now())
+  updatedAt                             DateTime
+  Chapter                               Chapter?               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  Class                                 Class?                 @relation(fields: [classId], references: [id], onDelete: Cascade)
+  Course                                Course?                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  Section                               Section?               @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  User_CourseAssignment_studentIdToUser User?                  @relation("CourseAssignment_studentIdToUser", fields: [studentId], references: [id])
+  User_CourseAssignment_teacherIdToUser User                   @relation("CourseAssignment_teacherIdToUser", fields: [teacherId], references: [id])
+  Team                                  Team?                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  StudentProgress                       StudentProgress[]
+
+  @@index([chapterId])
+  @@index([classId])
+  @@index([courseId])
+  @@index([sectionId])
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([teamId])
+}
+
+model CourseFile {
+  id        String   @id
+  courseId  String
+  filename  String
+  fileType  String
+  url       String
+  isLocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  Course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Exercise {
+  id        String   @id
+  title     String
+  type      String
+  content   Json
+  courseId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  Grade     Grade[]
+}
+
+model Grade {
+  id             String         @id
+  studentId      String
+  exerciseId     String
+  score          Float
+  maxScore       Float          @default(20)
+  aiComment      String?
+  createdAt      DateTime       @default(now())
+  Exercise       Exercise       @relation(fields: [exerciseId], references: [id])
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+}
+
+model KnowledgeBase {
+  id             String             @id
+  ownerType      KnowledgeOwnerType
+  subjectId      String?
+  studentId      String?
+  topic          String
+  documents      Json
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime
+  StudentProfile StudentProfile?    @relation(fields: [studentId], references: [id])
+  Subject        Subject?           @relation(fields: [subjectId], references: [id])
+}
+
+model LabProject {
+  id             String         @id
+  title          String
+  studentId      String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  LabSource      LabSource[]
+}
+
+model LabSource {
+  id         String        @id
+  projectId  String
+  type       LabSourceType
+  filename   String?
+  url        String?
+  content    String?
+  createdAt  DateTime      @default(now())
+  LabProject LabProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id                String              @id
+  conversationId    String
+  senderId          String
+  content           String
+  attachments       Json?
+  createdAt         DateTime            @default(now())
+  Conversation      Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  User              User                @relation(fields: [senderId], references: [id])
+  MessageReadStatus MessageReadStatus[]
+}
+
+model MessageReadStatus {
+  id        String    @id
+  messageId String
+  userId    String
+  readAt    DateTime?
+  Message   Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+model Notification {
+  id        String           @id
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Progression {
+  id             String         @id
+  studentId      String
+  courseId       String
+  percentage     Float          @default(0)
+  lastActivity   DateTime       @default(now())
+  updatedAt      DateTime
+  Course         Course         @relation(fields: [courseId], references: [id])
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, courseId])
+}
+
+model Resource {
+  id          String       @id
+  courseId    String
   title       String
   description String?
   type        ResourceType
-  url         String?      // Pour LINK, YOUTUBE
-  fileUrl     String?      // Pour PDF, IMAGE (upload)
+  url         String?
+  fileUrl     String?
   order       Int          @default(0)
-
   createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  updatedAt   DateTime
+  Course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId])
   @@index([type])
 }
 
-// Équipes (groupes d'élèves dans une classe)
+model Section {
+  id               String             @id
+  chapterId        String
+  title            String
+  type             SectionType        @default(LESSON)
+  content          String?
+  order            Int                @default(0)
+  duration         Int?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  CourseAssignment CourseAssignment[]
+  Chapter          Chapter            @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  StudentProgress  StudentProgress[]
+
+  @@index([chapterId])
+  @@index([order])
+}
+
+model StudentProfile {
+  id            String          @id
+  userId        String          @unique
+  classId       String
+  parentEmail   String?
+  Grade         Grade[]
+  KnowledgeBase KnowledgeBase[]
+  LabProject    LabProject[]
+  Progression   Progression[]
+  Class         Class           @relation(fields: [classId], references: [id])
+  User          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Subject       Subject[]       @relation("StudentSubjects")
+}
+
+model StudentProgress {
+  id               String           @id
+  assignmentId     String
+  studentId        String
+  sectionId        String?
+  status           ProgressStatus   @default(NOT_STARTED)
+  score            Float?
+  timeSpent        Int?
+  completedAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime
+  CourseAssignment CourseAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  Section          Section?         @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  User             User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([sectionId])
+  @@index([studentId])
+}
+
+model StudentScore {
+  id              String    @id
+  studentId       String
+  courseId        String
+  quizAvg         Float     @default(0)
+  exerciseAvg     Float     @default(0)
+  aiComprehension Float     @default(0)
+  continuousScore Float     @default(0)
+  quizCount       Int       @default(0)
+  exerciseCount   Int       @default(0)
+  aiSessionCount  Int       @default(0)
+  examGrade       Float?
+  examDate        DateTime?
+  examComment     String?
+  finalScore      Float?
+  finalGrade      Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  Course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  User            User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([courseId])
+  @@index([studentId])
+}
+
+model Subject {
+  id             String           @id
+  name           String           @unique
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  Conversation   Conversation[]
+  Course         Course[]
+  KnowledgeBase  KnowledgeBase[]
+  StudentProfile StudentProfile[] @relation("StudentSubjects")
+  TeacherProfile TeacherProfile[] @relation("TeacherSubjects")
+}
+
+model TeacherProfile {
+  id      String    @id
+  userId  String    @unique
+  Course  Course[]
+  User    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Class   Class[]   @relation("TeacherClasses")
+  Subject Subject[] @relation("TeacherSubjects")
+}
+
 model Team {
-  id          String       @id @default(cuid())
-  name        String
-  classId     String
-  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
-
-  members     TeamMember[]
-  assignments CourseAssignment[] @relation("TeamAssignments")
-
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id               String             @id
+  name             String
+  classId          String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  CourseAssignment CourseAssignment[]
+  Class            Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  TeamMember       TeamMember[]
 
   @@index([classId])
 }
 
-// Membres d'une équipe
 model TeamMember {
-  id        String   @id @default(cuid())
+  id        String   @id
   teamId    String
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   studentId String
-  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
   createdAt DateTime @default(now())
+  User      User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  Team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, studentId])
 }
 
-// Assignations de cours/chapitres/sections
-model CourseAssignment {
-  id          String               @id @default(cuid())
-
-  // Qui assigne
-  teacherId   String
-  teacher     User                 @relation("TeacherCourseAssignments", fields: [teacherId], references: [id])
-
-  // Quoi assigner (un seul parmi les 3)
-  courseId    String?
-  course      Course?              @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  chapterId   String?
-  chapter     Chapter?             @relation("ChapterAssignments", fields: [chapterId], references: [id], onDelete: Cascade)
-  sectionId   String?
-  section     Section?             @relation("SectionAssignments", fields: [sectionId], references: [id], onDelete: Cascade)
-
-  // À qui assigner
-  targetType  CourseAssignmentTarget
-  classId     String?
-  class       Class?               @relation("ClassCourseAssignments", fields: [classId], references: [id], onDelete: Cascade)
-  teamId      String?
-  team        Team?                @relation("TeamAssignments", fields: [teamId], references: [id], onDelete: Cascade)
-  studentId   String?
-  student     User?                @relation("StudentCourseAssignments", fields: [studentId], references: [id])
-
-  // Détails
-  title       String
-  instructions String?             @db.Text
-  dueDate     DateTime?
-
-  // Suivi
-  progress    StudentProgress[]
-
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-
-  @@index([teacherId])
-  @@index([courseId])
-  @@index([chapterId])
-  @@index([sectionId])
-  @@index([classId])
-  @@index([teamId])
-  @@index([studentId])
+model User {
+  id                                                String              @id
+  email                                             String              @unique
+  passwordHash                                      String
+  role                                              Role
+  firstName                                         String
+  lastName                                          String
+  phone                                             String?
+  address                                           String?
+  city                                              String?
+  postalCode                                        String?
+  isActive                                          Boolean             @default(true)
+  lastLogin                                         DateTime?
+  createdAt                                         DateTime            @default(now())
+  updatedAt                                         DateTime
+  AIActivityScore                                   AIActivityScore[]
+  AIChat                                            AIChat[]
+  CalendarEvent                                     CalendarEvent[]
+  CourseAssignment_CourseAssignment_studentIdToUser CourseAssignment[]  @relation("CourseAssignment_studentIdToUser")
+  CourseAssignment_CourseAssignment_teacherIdToUser CourseAssignment[]  @relation("CourseAssignment_teacherIdToUser")
+  Message                                           Message[]
+  MessageReadStatus                                 MessageReadStatus[]
+  Notification                                      Notification[]
+  StudentProfile                                    StudentProfile?
+  StudentProgress                                   StudentProgress[]
+  StudentScore                                      StudentScore[]
+  TeacherProfile                                    TeacherProfile?
+  TeamMember                                        TeamMember[]
 }
-
-// Progression d'un élève sur une assignation
-model StudentProgress {
-  id           String         @id @default(cuid())
-
-  assignmentId String
-  assignment   CourseAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  studentId    String
-  student      User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  // Lien direct vers la section (optionnel)
-  sectionId    String?
-  section      Section?       @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-
-  status       ProgressStatus @default(NOT_STARTED)
-  score        Float?         // Note sur 100
-  timeSpent    Int?           // Minutes passées
-  completedAt  DateTime?
-
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@unique([assignmentId, studentId])
-  @@index([studentId])
-  @@index([sectionId])
-}
-
-// 🆕 Phase 7bis - Score agrégé par élève et par cours
-model StudentScore {
-  id          String   @id @default(cuid())
-
-  studentId   String
-  student     User     @relation("StudentScores", fields: [studentId], references: [id], onDelete: Cascade)
-
-  courseId    String
-  course      Course   @relation("CourseScores", fields: [courseId], references: [id], onDelete: Cascade)
-
-  // Scores IA automatiques (0-100)
-  quizAvg         Float    @default(0)
-  exerciseAvg     Float    @default(0)
-  aiComprehension Float    @default(0)
-  continuousScore Float    @default(0)  // Calculé: Quiz*35% + Exo*40% + IA*25%
-
-  // Compteurs
-  quizCount       Int      @default(0)
-  exerciseCount   Int      @default(0)
-  aiSessionCount  Int      @default(0)
-
-  // Examen Final (note prof sur 6 - système suisse)
-  examGrade       Float?              // Note sur 6
-  examDate        DateTime?
-  examComment     String?
-
-  // Score Final calculé
-  finalScore      Float?              // 0-100: Continu*40% + Exam*60%
-  finalGrade      Float?              // Note sur 6
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([studentId, courseId])
-  @@index([studentId])
-  @@index([courseId])
-}
-
-// ============================================
-// BASE DE CONNAISSANCES
-// ============================================
-
-enum KnowledgeOwnerType {
-  TEACHER
-  STUDENT
-}
-
-model KnowledgeBase {
-  id String @id @default(cuid())
-
-  ownerType KnowledgeOwnerType
-
-  // Propriétaire (soit prof via subject, soit élève)
-  subjectId String?
-  subject   Subject? @relation(fields: [subjectId], references: [id])
-
-  studentId String?
-  student   StudentProfile? @relation("StudentKnowledge", fields: [studentId], references: [id])
-
-  topic     String
-  documents Json // Array de {filename, url, type}
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================
-// MESSAGERIE
-// ============================================
-
-enum ConversationType {
-  CLASS_GENERAL
-  CLASS_TOPIC
-  PRIVATE
-}
-
-model Conversation {
-  id   String           @id @default(cuid())
-  type ConversationType
-
-  subjectId String?
-  subject   Subject? @relation(fields: [subjectId], references: [id])
-
-  // 🆕 Référence optionnelle au cours
-  courseId String?
-  course   Course? @relation("CourseConversations", fields: [courseId], references: [id])
-
-  // 🆕 Référence optionnelle à la classe (pour messages de classe)
-  classId String?
-  class   Class? @relation("ClassConversations", fields: [classId], references: [id])
-
-  topicName String? // ex: "Les Fractions"
-
-  // Participants (stocké comme array d'IDs pour flexibilité)
-  participantIds String[]
-
-  // 🆕 Année scolaire pour historique
-  schoolYear String @default("2024-2025")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  messages Message[]
-}
-
-model Message {
-  id String @id @default(cuid())
-
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  senderId String
-  sender   User   @relation("SentMessages", fields: [senderId], references: [id])
-
-  content     String @db.Text
-  attachments Json? // Array de {filename, url}
-
-  createdAt DateTime @default(now())
-
-  // 🆕 Statut de lecture par participant
-  readStatus MessageReadStatus[]
-}
-
-// 🆕 Tracking lu/non-lu par participant
-model MessageReadStatus {
-  id        String    @id @default(cuid())
-  messageId String
-  message   Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  readAt    DateTime?
-
-  @@unique([messageId, userId])
-}
-
-// 🆕 Notifications
-enum NotificationType {
-  MESSAGE
-  ASSIGNMENT
-  GRADE
-  SYSTEM
-}
-
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type      NotificationType
-  title     String
-  message   String
-  link      String?          // URL vers la ressource
-
-  read      Boolean          @default(false)
-
-  createdAt DateTime         @default(now())
-}
-
-// ============================================
-// CALENDRIER
-// ============================================
-
-model CalendarEvent {
-  id String @id @default(cuid())
-
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String? @db.Text
-
-  startDate DateTime
-  endDate   DateTime
-
-  isTeacherEvent Boolean @default(false) // true = événement imposé par prof
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================
-// CONFIGURATION IA
-// ============================================
 
 enum AIProvider {
   OPENAI
@@ -723,60 +520,87 @@ enum AIRestrictionLevel {
   CREATIVE
 }
 
-model AISettings {
-  id String @id @default(cuid())
-
-  provider AIProvider @default(OPENAI)
-  apiKey   String // Chiffré en BDD
-  model    String     @default("gpt-4o")
-  endpoint String? // Pour CUSTOM
-
-  restrictionLevel    AIRestrictionLevel @default(BALANCED)
-  enablePdfAnalysis   Boolean            @default(true)
-  allowTeacherPrompts Boolean            @default(true)
-  maintenanceMode     Boolean            @default(false)
-
-  platformName    String @default("Blaiz'bot")
-  defaultLanguage String @default("fr")
-
-  updatedAt DateTime @updatedAt
+enum ActivityType {
+  QUIZ
+  EXERCISE
+  REVISION
 }
 
-model AIChat {
-  id String @id @default(cuid())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  contextType String // "course", "lab", "assistant"
-  contextId   String? // ID du cours ou projet
-
-  messages Json // Array de {role, content, timestamp}
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum AssignmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
-// ============================================
-// ANALYTICS & IA (Phase 7.11)
-// ============================================
-
-model ClassAnalysis {
-  id          String   @id @default(cuid())
-  classId     String
-  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  
-  // Contexte utilis�
-  resourceIds String[] // IDs des ressources analys�es (Vid�os, PDFs)
-  
-  // Contenu g�n�r�
-  summary     String   @db.Text
-  strengths   String[]
-  weaknesses  String[]
-  actions     String[]
-  
-  createdAt   DateTime @default(now())
-  
-  @@index([classId])
+enum AssignmentTargetType {
+  CLASS
+  STUDENT
 }
 
+enum ConversationType {
+  CLASS_GENERAL
+  CLASS_TOPIC
+  PRIVATE
+}
+
+enum CourseAssignmentTarget {
+  CLASS
+  TEAM
+  STUDENT
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum KnowledgeOwnerType {
+  TEACHER
+  STUDENT
+}
+
+enum LabSourceType {
+  FILE
+  LINK
+  YOUTUBE
+  TEXT
+}
+
+enum NotificationType {
+  MESSAGE
+  ASSIGNMENT
+  GRADE
+  SYSTEM
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  GRADED
+}
+
+enum ResourceType {
+  LINK
+  YOUTUBE
+  PDF
+  IMAGE
+  DOCUMENT
+  EXCEL
+  POWERPOINT
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum SectionType {
+  LESSON
+  EXERCISE
+  QUIZ
+  VIDEO
+}

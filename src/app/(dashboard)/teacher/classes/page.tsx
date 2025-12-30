@@ -18,10 +18,10 @@ async function calculateClassStats(classId: string) {
       classId,
     },
     include: {
-      user: {
+      User: {
         select: {
           id: true,
-          studentScores: {
+          StudentScore: {
             select: {
               continuousScore: true,
               finalGrade: true,
@@ -46,7 +46,7 @@ async function calculateClassStats(classId: string) {
   const studentGrades: number[] = [];
 
   students.forEach((student) => {
-    const scores = student.user.studentScores;
+    const scores = student.User.StudentScore;
     if (scores.length === 0) return;
 
     const gradesWithFinal = scores.filter((s: { continuousScore: number; finalGrade: number | null }) => s.finalGrade !== null);
@@ -100,23 +100,23 @@ async function getTeacherClassesWithStats(userId: string): Promise<ClassWithStat
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId },
     include: {
-      classes: {
+      Class: {
         include: {
-          students: {
+          StudentProfile: {
             select: { id: true },
           },
         },
       },
-      subjects: true,
+      Subject: true,
     },
   });
 
   if (!teacherProfile) return [];
 
   const classesWithStats = await Promise.all(
-    teacherProfile.classes.map(async (cls) => {
+    teacherProfile.Class.map(async (cls) => {
       const stats = await calculateClassStats(cls.id);
-      const subjects = teacherProfile.subjects.map((s) => ({
+      const subjects = teacherProfile.Subject.map((s) => ({
         id: s.id,
         name: s.name,
       }));
@@ -125,7 +125,7 @@ async function getTeacherClassesWithStats(userId: string): Promise<ClassWithStat
         id: cls.id,
         name: cls.name,
         level: cls.level,
-        studentsCount: cls.students.length,
+        studentsCount: cls.StudentProfile.length,
         subjects,
         stats,
       };
