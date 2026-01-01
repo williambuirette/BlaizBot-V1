@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, X, Plus, ChevronDown, ChevronUp } from 'lucide-react';
-import type { ClassFilters } from '@/types/class-filters';
+import type { ClassFilters, ClassWithStats } from '@/types/class-filters';
 
 interface ClassFilterBarProps {
   subjects: { id: string; name: string }[];
   levels: string[];
+  classes: ClassWithStats[];
   filters: ClassFilters;
   onFiltersChange: (filters: ClassFilters) => void;
   resultCount: number;
@@ -20,7 +21,7 @@ interface ClassFilterBarProps {
 
 export function ClassFilterBar({
   subjects,
-  levels,
+  classes,
   filters,
   onFiltersChange,
   resultCount,
@@ -29,6 +30,7 @@ export function ClassFilterBar({
   const [isOpen, setIsOpen] = useState(true);
   const selectedSubjects = subjects.filter(s => filters.subjectIds.includes(s.id));
   const availableSubjects = subjects.filter(s => !filters.subjectIds.includes(s.id));
+  const selectedClass = classes.find(c => c.id === filters.classId);
 
   const addSubject = (subjectId: string) => {
     onFiltersChange({
@@ -121,21 +123,29 @@ export function ClassFilterBar({
           </div>
         </div>
 
-        {/* Niveau */}
+        {/* Classe */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Niveau</label>
+          <label className="text-sm font-medium">Classe</label>
           <Select
-            value={filters.level ?? 'all'}
-            onValueChange={(value) => onFiltersChange({ ...filters, level: value === 'all' ? null : value })}
+            value={filters.classId ?? 'all'}
+            onValueChange={(value) => onFiltersChange({ ...filters, classId: value === 'all' ? null : value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Tous les niveaux" />
+              <SelectValue placeholder="Toutes les classes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les niveaux</SelectItem>
-              {levels.map((level) => (
-                <SelectItem key={level} value={level}>
-                  {level}
+              <SelectItem value="all">Toutes les classes</SelectItem>
+              {classes.map((cls) => (
+                <SelectItem key={cls.id} value={cls.id}>
+                  <div className="flex items-center gap-2">
+                    {cls.color && (
+                      <span
+                        className="h-3 w-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: cls.color }}
+                      />
+                    )}
+                    {cls.name}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

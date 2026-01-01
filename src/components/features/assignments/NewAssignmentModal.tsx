@@ -106,6 +106,18 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
     setIsSubmitting(true);
     
     try {
+      // Combiner date + heure
+      let finalDueDate = form.dueDate;
+      if (finalDueDate && form.dueTime) {
+        const [hours, minutes] = form.dueTime.split(':').map(Number);
+        finalDueDate = new Date(finalDueDate);
+        finalDueDate.setHours(hours, minutes, 0, 0);
+      } else if (finalDueDate) {
+        // Si pas d'heure spécifiée, mettre 23:59
+        finalDueDate = new Date(finalDueDate);
+        finalDueDate.setHours(23, 59, 0, 0);
+      }
+
       // Mode édition : mise à jour de l'assignation existante
       if (isEditing && editingAssignment) {
         const response = await fetch(`/api/teacher/assignments/${editingAssignment.id}`, {
@@ -114,7 +126,7 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
           body: JSON.stringify({
             title: editingAssignment.title, // Garder le titre original
             instructions: form.instructions,
-            dueDate: form.dueDate?.toISOString(),
+            dueDate: finalDueDate?.toISOString(),
             priority: form.priority,
           }),
         });
@@ -157,7 +169,7 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
               targetType: 'STUDENT',
               title: course?.title || 'Assignation',
               instructions: form.instructions,
-              dueDate: form.dueDate?.toISOString(),
+              dueDate: finalDueDate?.toISOString(),
               priority: form.priority,
             });
           }
@@ -186,7 +198,7 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
               targetType: 'STUDENT',
               title: `${course?.title || 'Cours'} - ${section.title}`,
               instructions: form.instructions,
-              dueDate: form.dueDate?.toISOString(),
+              dueDate: finalDueDate?.toISOString(),
               priority: form.priority,
             });
           }
@@ -296,6 +308,8 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
           <StepDeadline
             dueDate={form.dueDate}
             onDateChange={form.setDueDate}
+            dueTime={form.dueTime}
+            onTimeChange={form.setDueTime}
             priority={form.priority}
             onPriorityChange={form.setPriority}
             instructions={form.instructions}

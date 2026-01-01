@@ -29,7 +29,7 @@ interface AssignmentFiltersBarProps {
 
 interface Subject { id: string; name: string }
 interface Course { id: string; title: string; subjectId?: string; subject?: { id: string } }
-interface ClassOption { id: string; name: string }
+interface ClassOption { id: string; name: string; color?: string | null }
 interface Student { id: string; firstName: string; lastName: string; classId: string }
 
 const PRIORITY_OPTIONS = [
@@ -201,7 +201,17 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
         selected={filters.classIds}
         onToggle={(id) => toggleItem('classIds', id)}
         getId={(c) => c.id}
-        renderItem={(c) => c.name}
+        renderItem={(c) => (
+          <span className="flex items-center gap-2">
+            {c.color && (
+              <span
+                className="h-3 w-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: c.color }}
+              />
+            )}
+            {c.name}
+          </span>
+        )}
         isLoading={isLoading}
         emptyMessage="Aucune classe"
       />

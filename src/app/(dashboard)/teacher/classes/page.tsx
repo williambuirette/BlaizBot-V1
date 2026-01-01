@@ -140,6 +140,7 @@ async function getTeacherClassesWithStats(userId: string): Promise<ClassWithStat
         id: cls.id,
         name: cls.name,
         level: cls.level,
+        color: cls.color,
         studentsCount: cls.StudentProfile.length,
         subjects,
         stats,

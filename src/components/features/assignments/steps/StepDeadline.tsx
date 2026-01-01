@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { CalendarIcon, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,8 @@ import { PRIORITY_OPTIONS } from '../types';
 interface StepDeadlineProps {
   dueDate?: Date;
   onDateChange: (date: Date | undefined) => void;
+  dueTime?: string;
+  onTimeChange: (time: string) => void;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   onPriorityChange: (priority: 'LOW' | 'MEDIUM' | 'HIGH') => void;
   instructions: string;
@@ -24,6 +27,8 @@ interface StepDeadlineProps {
 export function StepDeadline({
   dueDate,
   onDateChange,
+  dueTime,
+  onTimeChange,
   priority,
   onPriorityChange,
   instructions,
@@ -34,7 +39,7 @@ export function StepDeadline({
       <div>
         <h3 className="font-medium mb-2">Définissez la deadline</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Choisissez la date limite et la priorité de l&apos;assignation
+          Choisissez la date limite, l&apos;heure et la priorité de l&apos;assignation
         </p>
       </div>
 
@@ -71,6 +76,23 @@ export function StepDeadline({
             ⚠️ Sélectionnez une date limite pour continuer
           </p>
         )}
+      </div>
+
+      {/* Time picker */}
+      <div className="space-y-2">
+        <Label>Heure (optionnel)</Label>
+        <div className="relative">
+          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="time"
+            value={dueTime || ''}
+            onChange={(e) => onTimeChange(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Si non renseignée, l&apos;assignation sera due à 23:59
+        </p>
       </div>
 
       {/* Priority */}

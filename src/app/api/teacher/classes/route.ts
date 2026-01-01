@@ -35,11 +35,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
     }
 
-    // Transformer les données pour inclure le count d'élèves
+    // Transformer les données pour inclure le count d'élèves et la couleur
     const classes = teacherProfile.Class.map((cls) => ({
       id: cls.id,
       name: cls.name,
       level: cls.level,
+      color: cls.color,
       studentsCount: cls.StudentProfile.length,
     }));
 

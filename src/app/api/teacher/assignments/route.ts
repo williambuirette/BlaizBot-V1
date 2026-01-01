@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
           select: { id: true, title: true, type: true },
         },
         Class: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, color: true },
         },
         Team: {
           select: { id: true, name: true },
@@ -349,7 +349,7 @@ export async function POST(request: NextRequest) {
         Course: { select: { id: true, title: true } },
         Chapter: { select: { id: true, title: true } },
         Section: { select: { id: true, title: true, type: true } },
-        Class: { select: { id: true, name: true } },
+        Class: { select: { id: true, name: true, color: true } },
         Team: { select: { id: true, name: true } },
         User_CourseAssignment_studentIdToUser: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { StudentProgress: true, Children: true } },

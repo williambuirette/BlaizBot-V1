@@ -20,10 +20,21 @@ const SUBJECTS = [
   { id: 'subject-anglais', name: 'Anglais' },
 ]
 
+const CLASS_COLORS: Record<string, string> = {
+  '6ème A': '#3b82f6',  // Bleu
+  '6ème B': '#8b5cf6',  // Violet
+  '5ème A': '#ec4899',  // Rose
+  '5ème B': '#f59e0b',  // Orange
+  '4ème A': '#10b981',  // Vert
+  '4ème B': '#06b6d4',  // Cyan
+  '3ème A': '#ef4444',  // Rouge
+  '3ème B': '#6366f1',  // Indigo
+}
+
 const CLASSES = [
-  { id: 'class-3eme-a', name: '3ème A', level: '3ème', updatedAt: new Date() },
-  { id: 'class-3eme-b', name: '3ème B', level: '3ème', updatedAt: new Date() },
-  { id: 'class-4eme-a', name: '4ème A', level: '4ème', updatedAt: new Date() },
+  { id: 'class-3eme-a', name: '3ème A', level: '3ème', color: CLASS_COLORS['3ème A'], updatedAt: new Date() },
+  { id: 'class-3eme-b', name: '3ème B', level: '3ème', color: CLASS_COLORS['3ème B'], updatedAt: new Date() },
+  { id: 'class-4eme-a', name: '4ème A', level: '4ème', color: CLASS_COLORS['4ème A'], updatedAt: new Date() },
 ]
 
 const USERS = {
@@ -271,12 +282,12 @@ async function seedTeacherAssignments() {
     return
   }
 
-  // Affecter M. Dupont aux classes 3ème A et 3ème B + matières
+  // Affecter M. Dupont aux classes 3ème A, 3ème B et 4ème A + matières
   await prisma.teacherProfile.update({
     where: { id: marcTeacher.TeacherProfile.id },
     data: {
       Class: {
-        connect: [{ id: class3A.id }, { id: class3B.id }],
+        connect: [{ id: class3A.id }, { id: class3B.id }, { id: class4A.id }],
       },
       Subject: {
         connect: [

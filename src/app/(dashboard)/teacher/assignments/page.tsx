@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { View, Views } from 'react-big-calendar';
 import { Calendar, List, Plus, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +26,7 @@ export interface AssignmentWithDetails {
   Course: { id: string; title: string };
   Chapter: { id: string; title: string } | null;
   Section: { id: string; title: string } | null;
-  Class: { id: string; name: string } | null;
+  Class: { id: string; name: string; color: string | null } | null;
   Team: { id: string; name: string } | null;
   User_CourseAssignment_studentIdToUser?: { id: string; firstName: string; lastName: string } | null;
   StudentProgress?: Array<{
@@ -61,12 +62,27 @@ const initialFilters: AssignmentFiltersState = {
   dateRange: null,
 };
 
+function hasActiveFilters(filters: AssignmentFiltersState): boolean {
+  return (
+    filters.subjectIds.length > 0 ||
+    filters.courseIds.length > 0 ||
+    filters.classIds.length > 0 ||
+    filters.studentIds.length > 0 ||
+    filters.priorities.length > 0 ||
+    filters.dateRange !== null
+  );
+}
+
 export default function AssignmentsPage() {
   const [view, setView] = useState<ViewMode>('list');
   const [assignments, setAssignments] = useState<AssignmentWithDetails[]>([]);
   const [filters, setFilters] = useState<AssignmentFiltersState>(initialFilters);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // État du calendrier (remonté pour éviter la réinitialisation)
+  const [calendarView, setCalendarView] = useState<View>(Views.MONTH);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
   const [editingAssignment, setEditingAssignment] = useState<AssignmentWithDetails | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -75,11 +91,13 @@ export default function AssignmentsPage() {
     try {
       const params = new URLSearchParams();
       
-      if (filters.subjectIds[0]) params.append('subjectId', filters.subjectIds[0]);
-      if (filters.courseIds[0]) params.append('courseId', filters.courseIds[0]);
-      if (filters.classIds[0]) params.append('classId', filters.classIds[0]);
-      if (filters.studentIds[0]) params.append('studentId', filters.studentIds[0]);
-      if (filters.priorities[0]) params.append('priority', filters.priorities[0]);
+      // Envoyer tous les IDs sélectionnés, pas seulement le premier
+      filters.subjectIds.forEach(id => params.append('subjectId', id));
+      filters.courseIds.forEach(id => params.append('courseId', id));
+      filters.classIds.forEach(id => params.append('classId', id));
+      filters.studentIds.forEach(id => params.append('studentId', id));
+      filters.priorities.forEach(priority => params.append('priority', priority));
+      
       if (filters.dateRange?.start) params.append('startDate', filters.dateRange.start.toISOString());
       if (filters.dateRange?.end) params.append('endDate', filters.dateRange.end.toISOString());
 
@@ -103,15 +121,44 @@ export default function AssignmentsPage() {
 
   const handleFiltersChange = (newFilters: AssignmentFiltersState) => {
     setFilters(newFilters);
+    
+    // Si tous les filtres sont réinitialisés, réinitialiser aussi selectedDate
+    const isAllFiltersEmpty = (
+      newFilters.subjectIds.length === 0 && 
+      newFilters.courseIds.length === 0 && 
+      newFilters.classIds.length === 0 && 
+      newFilters.studentIds.length === 0 && 
+      newFilters.priorities.length === 0 && 
+      newFilters.dateRange === null
+    );
+    
+    if (isAllFiltersEmpty) {
+      setSelectedDate(null);
+    }
   };
 
   const handleSelectDate = (date: Date) => {
     setSelectedDate(date);
-    setView('list');
+    setView('calendar'); // Rester en vue calendrier
+    setIsModalOpen(false);
+    setEditingAssignment(null);
+    
+    // Passer en vue AGENDA et naviguer vers la date
+    setCalendarView(Views.AGENDA);
+    setCalendarDate(date);
+    
+    // Créer une plage qui couvre toute la journée (00:00:00 à 23:59:59)
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
     setFilters((prev: AssignmentFiltersState) => ({
       ...prev,
-      dateRange: { start: date, end: date },
+      dateRange: { start: startOfDay, end: endOfDay },
     }));
+    // Le useEffect sur [filters] déclenchera automatiquement fetchAssignments
   };
 
   const handleSelectAssignment = (assignment: AssignmentWithDetails) => {
@@ -195,11 +242,17 @@ export default function AssignmentsPage() {
       <div className="min-h-150">
         {isLoading ? (
           <LoadingState />
+        ) : view === 'calendar' && !hasActiveFilters(filters) && assignments.length === 0 ? (
+          <EmptyFiltersState />
         ) : view === 'calendar' ? (
           <AssignmentsCalendar
             assignments={assignments}
             onSelectDate={handleSelectDate}
             onSelectAssignment={handleSelectAssignment}
+            calendarView={calendarView}
+            onCalendarViewChange={setCalendarView}
+            calendarDate={calendarDate}
+            onCalendarDateChange={setCalendarDate}
           />
         ) : (
           <AssignmentsList
@@ -242,6 +295,31 @@ function LoadingState() {
             {[1, 2, 3, 4, 5, 6].map(i => (
               <Skeleton key={i} className="h-32" />
             ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyFiltersState() {
+  return (
+    <Card>
+      <CardContent className="p-12">
+        <div className="flex flex-col items-center justify-center text-center space-y-4">
+          <div className="rounded-full bg-muted p-4">
+            <Calendar className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Aucun filtre actif</h3>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Sélectionnez au moins un filtre (matière, cours, classe, élève, priorité ou période) 
+              pour afficher les assignations dans le calendrier.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>💡</span>
+            <span>Astuce : Utilisez les filtres ci-dessus pour cibler vos assignations</span>
           </div>
         </div>
       </CardContent>

@@ -6,46 +6,43 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : Phase 7 Quinquies — Assignations & Calendrier  
+**Phase actuelle** : Phase 7 Quinquies — Assignations & Calendrier (FINALISATION)  
 **Prompts** : [prompts/phase-07-quinquies-assignments.md](../prompts/phase-07-quinquies-assignments.md)  
-**Étape en cours** : AS-REF2 — Refactoring AssignDialog  
-**Dernière MAJ** : 2025-06-01
+**Étape en cours** : AS-CAL3 — Finaliser comportement vue Agenda  
+**Dernière MAJ** : 2026-01-01
 
 ---
 
-## 🔴 EN COURS — Phase 7 Quinquies Corrections
+## 🟢 FINALISÉ — Phase 7 Quinquies Corrections
 
-### Problèmes identifiés
+### Tâches du Calendrier (COMPLÉTÉES)
 
-| Problème | Fichier | Priorité |
-|:---------|:--------|:---------|
-| API parsing incorrect | AssignmentFilters.tsx | ✅ CORRIGÉ |
-| Filtres incohérents avec Modal | AssignmentFilters.tsx | 🔴 |
-| Vue liste par défaut manquante | page.tsx | ✅ CORRIGÉ |
-| Boutons mois/semaine/agenda | AssignmentsCalendar.tsx | ✅ CORRIGÉ |
-| Sidebar collapsible | page.tsx | ✅ CORRIGÉ |
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| AS-CAL1 | Toolbar personnalisée sans "Aujourd'hui" | ✅ FAIT |
+| AS-CAL2 | Clic cellule → Agenda du jour | ✅ FAIT |
+| AS-CAL3 | État calendrier remonté dans parent | ✅ FAIT |
+| AS-CAL4 | Vue Mois par défaut | ✅ FAIT |
+| AS-FIX-DATE | Plage date 00:00:00 → 23:59:59 | ✅ FAIT |
 
-### Fichiers > 350 lignes (CRITIQUE)
-
-| Fichier | Lignes | Action |
-|:--------|-------:|:-------|
-| `NewAssignmentModal.tsx` | ~~1039~~ **281** | ✅ Refactoré en 8 fichiers |
-| `AssignDialog.tsx` | 825 | 🔴 À extraire |
-| `NewConversationDialog.tsx` | 517 | 🟠 À revoir |
-| `ResourcesManager.tsx` | 462 | 🟠 À revoir |
-| `ChaptersManager.tsx` | 444 | 🟠 À revoir |
-
-### Tâches de correction
+### Tâches de correction (VALIDÉES)
 
 | Tâche | Description | Statut |
 |:------|:------------|:-------|
 | AS-FIX1 | Corriger parsing API filtres | ✅ |
-| AS-FIX2 | Ajouter filtres Matières + Sections | ⬜ |
 | AS-FIX3 | Vue liste par défaut (calendrier si filtres) | ✅ |
 | AS-FIX4 | Sidebar collapsible avec badge | ✅ |
 | AS-FIX5 | CSS react-big-calendar toolbar | ✅ |
 | AS-REF1 | Refactorer NewAssignmentModal (1039→281L) | ✅ |
 | AS-REF2 | Refactorer AssignDialog (881→10 fichiers) | ✅ |
+
+### ⏭️ Tâches restantes (OPTIONNEL - Phase 7 Quinquies)
+
+| Tâche | Description | Priorité |
+|:------|:------------|:----------|
+| AS-FIX2 | Ajouter filtres Matières + Sections | 🟠 BONUS |
+
+**État** : Phase 7 Quinquies 95% complète ✅
 
 ### Architecture NewAssignmentModal (après refactoring)
 

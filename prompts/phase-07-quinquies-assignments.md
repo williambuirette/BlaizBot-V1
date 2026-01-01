@@ -2,10 +2,41 @@
 
 > **Index** : [todo/phase-07-quinquies-assignments.md](../todo/phase-07-quinquies-assignments.md)  
 > **Objectif** : Créer un système complet d'assignation de cours/exercices avec calendrier et gestion des deadlines
+> **Status** : ✅ 95% COMPLÉTÉ (Corrections calendrier finies)
 
 ---
 
-## 🔧 Corrections & Optimisations (01/01/2026)
+## ✅ FINALISÉ — Corrections Calendrier (01/01/2026)
+
+### Corrections appliquées
+
+| Correction | Description | Statut |
+|:-----------|:------------|:-------|
+| **CAL-VIEW** | Vue MOIS par défaut au chargement | ✅ FAIT |
+| **CAL-CLICK** | Clic cellule → Vue AGENDA du jour | ✅ FAIT |
+| **CAL-STATE** | État calendrier remonté dans parent | ✅ FAIT |
+| **CAL-DATE** | Plage date couvre toute la journée | ✅ FAIT |
+| **CAL-TOOLBAR** | Boutons Mois/Semaine/Jour/Agenda | ✅ FAIT |
+
+### Architecture finale (AssignmentsCalendar)
+
+**Fichiers modifiés** :
+- `src/app/(dashboard)/teacher/assignments/page.tsx` : État `calendarView` + `calendarDate` remontés
+- `src/components/features/assignments/AssignmentsCalendar.tsx` : Reçoit props du parent
+
+**Flux** :
+1. Utilisateur clique sur cellule du calendrier (vue MOIS)
+2. `handleSelectSlot()` appelle `onSelectDate(date)`
+3. Parent (`page.tsx`) :
+   - Définit `calendarView = Views.AGENDA`
+   - Définit `calendarDate = date`
+   - Filtre par `dateRange` (00:00 → 23:59)
+4. API retourne assignations du jour
+5. Calendrier affiche AGENDA avec données
+
+---
+
+## 🔧 Corrections & Optimisations (ARCHIVES)
 
 ### Prompt Optimal AS-FIX6 — Uniformisation Cartes Assignations
 
@@ -1510,11 +1541,979 @@ const [studentsPopoverOpen, setStudentsPopoverOpen] = useState(false);
 
 ---
 
+## � CAL — Amélioration Calendrier (01/01/2026)
+
+### Prompt Optimal CAL-1 — Afficher deadlines uniquement
+
+> **Itérations réelles** : 1 (idéal = 1)  
+> **Problèmes rencontrés** : Calendrier surchargé par les plages (startDate → dueDate)
+
+```
+Modifie AssignmentsCalendar pour afficher les deadlines comme des points au lieu de barres.
+
+**Contexte** :
+- Actuellement : `start = startDate`, `end = dueDate` → événement s'étend sur plusieurs jours
+- Problème : Calendrier illisible avec beaucoup d'assignations
+- Solution : Afficher uniquement la deadline comme un point coloré
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modification ligne 75-79** :
+
+AVANT :
+```typescript
+const events: CalendarEvent[] = useMemo(() => {
+  return assignments.map(assignment => ({
+    id: assignment.id,
+    title: `${TARGET_TYPE_ICONS[assignment.targetType] || '📋'} ${assignment.title}`,
+    start: new Date(assignment.startDate || assignment.dueDate),
+    end: new Date(assignment.dueDate),
+    allDay: true,
+    resource: assignment,
+  }));
+}, [assignments]);
+```
+
+APRÈS :
+```typescript
+const events: CalendarEvent[] = useMemo(() => {
+  return assignments.map(assignment => ({
+    id: assignment.id,
+    title: `${TARGET_TYPE_ICONS[assignment.targetType] || '📋'} ${assignment.title}`,
+    start: new Date(assignment.dueDate),
+    end: new Date(assignment.dueDate),
+    allDay: true,
+    resource: assignment,
+  }));
+}, [assignments]);
+```
+
+**Différences clés vs prompt original** :
+- Suppression de `assignment.startDate ||` → utiliser uniquement `dueDate`
+- `start === end` → affichage comme point au lieu de barre
+- Plus lisible quand beaucoup d'assignations
+```
+
+---
+
+### Prompt Optimal CAL-2 — Masquer événements si filtres vides
+
+> **Itérations réelles** : 2 (idéal = 1)  
+> **Problèmes rencontrés** : Oubli de passer `filters` en prop au composant calendrier
+
+```
+Modifie le calendrier pour afficher un message "Sélectionnez au moins un filtre" si aucun filtre n'est actif.
+
+**Contexte** :
+- Actuellement : Calendrier affiche toutes les assignations même sans filtre
+- Problème : Surchargé et illisible
+- Solution : Forcer l'utilisateur à filtrer pour utiliser le calendrier
+
+**Étape 1** : Passer les filtres au composant calendrier
+
+Fichier : `src/app/(dashboard)/teacher/assignments/page.tsx`
+
+Modifier l'appel au composant (ligne ~200) :
+```typescript
+<AssignmentsCalendar
+  assignments={assignments}
+  filters={filters}  // AJOUTER CETTE LIGNE
+  onSelectDate={handleSelectDate}
+  onSelectAssignment={handleSelectAssignment}
+/>
+```
+
+**Étape 2** : Ajouter `filters` dans les props
+
+Fichier : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+Ligne 32, modifier interface :
+```typescript
+interface AssignmentsCalendarProps {
+  assignments: AssignmentWithDetails[];
+  filters: AssignmentFiltersState;  // AJOUTER
+  onSelectDate: (date: Date) => void;
+  onSelectAssignment: (assignment: AssignmentWithDetails) => void;
+}
+```
+
+**Étape 3** : Calculer hasActiveFilters
+
+Ligne 72, avant le useMemo des events :
+```typescript
+const hasActiveFilters = useMemo(() => {
+  return (
+    filters.subjectIds.length > 0 ||
+    filters.courseIds.length > 0 ||
+    filters.classIds.length > 0 ||
+    filters.priorities.length > 0 ||
+    filters.dateRange !== null
+  );
+}, [filters]);
+```
+
+**Étape 4** : Retourner events vide si pas de filtres
+
+Modifier le useMemo ligne 75 :
+```typescript
+const events: CalendarEvent[] = useMemo(() => {
+  if (!hasActiveFilters) return [];  // AJOUTER CETTE LIGNE
+  
+  return assignments.map(assignment => ({
+    // ... reste inchangé
+  }));
+}, [assignments, hasActiveFilters]);  // AJOUTER hasActiveFilters dans deps
+```
+
+**Étape 5** : Afficher message si calendrier vide
+
+Ligne 152, dans CardContent, AVANT la div h-[600px] :
+```tsx
+{events.length === 0 ? (
+  <div className="flex h-[600px] items-center justify-center text-muted-foreground">
+    <div className="text-center space-y-3">
+      <Calendar className="mx-auto h-16 w-16 opacity-20" />
+      <div>
+        <p className="font-medium">Calendrier vide</p>
+        <p className="text-sm">Sélectionnez au moins un filtre pour afficher les assignations</p>
+      </div>
+    </div>
+  </div>
+) : (
+  <div className="h-[600px]">
+    <Calendar
+      // ... props existantes
+    />
+  </div>
+)}
+```
+
+**Différences clés vs prompt original** :
+1. **Props oubliée** : Ne pas oublier de passer `filters` depuis page.tsx
+2. **Import type** : Ajouter `import type { AssignmentFiltersState }` en haut
+3. **Message centré** : Utiliser flex + space-y pour design élégant
+4. **Dépendances** : Ajouter `hasActiveFilters` dans deps du useMemo
+```
+
+---
+
+### Prompt Optimal CAL-3 — Click cellule vide → Liste
+
+> **Itérations réelles** : 1 (idéal = 1)
+
+```
+Modifie handleSelectSlot pour rediriger vers la vue Liste avec la date cliquée si aucun filtre actif.
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modification ligne 95** :
+
+AVANT :
+```typescript
+const handleSelectSlot = useCallback(
+  (slotInfo: SlotInfo) => {
+    onSelectDate(slotInfo.start);
+  },
+  [onSelectDate]
+);
+```
+
+APRÈS :
+```typescript
+const handleSelectSlot = useCallback(
+  (slotInfo: SlotInfo) => {
+    // Toujours appeler onSelectDate qui bascule vers Liste + applique la date
+    onSelectDate(slotInfo.start);
+  },
+  [onSelectDate]
+);
+```
+
+**Note** : La logique de basculement vers Liste est déjà dans `page.tsx` ligne 111-116 :
+```typescript
+const handleSelectDate = (date: Date) => {
+  setSelectedDate(date);
+  setView('list');  // <-- Bascule automatiquement vers Liste
+  setFilters((prev: AssignmentFiltersState) => ({
+    ...prev,
+    dateRange: { start: date, end: date },
+  }));
+};
+```
+
+Donc aucune modification nécessaire dans AssignmentsCalendar.tsx, le comportement est déjà correct !
+```
+
+---
+
+### Prompt Optimal CAL-4 — Fixer vue Semaine
+
+> **Itérations réelles** : 2 (idéal = 1)  
+> **Problèmes rencontrés** : Oubli d'importer `View` type de react-big-calendar
+
+```
+Ajoute un state pour contrôler la date et la vue courante du calendrier.
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Étape 1** : Ajouter imports
+
+Ligne 4, modifier import :
+```typescript
+import { Calendar, dateFnsLocalizer, Views, SlotInfo, View } from 'react-big-calendar';
+//                                                      ^^^^ AJOUTER
+```
+
+**Étape 2** : Ajouter states
+
+Ligne 72, avant hasActiveFilters :
+```typescript
+const [currentDate, setCurrentDate] = useState(new Date());
+const [currentView, setCurrentView] = useState<View>(Views.MONTH);
+```
+
+**Étape 3** : Modifier Calendar component
+
+Ligne 157, ajouter props :
+```tsx
+<Calendar
+  localizer={localizer}
+  events={events}
+  startAccessor="start"
+  endAccessor="end"
+  date={currentDate}              // AJOUTER
+  view={currentView}              // AJOUTER
+  onNavigate={setCurrentDate}     // AJOUTER
+  onView={setCurrentView}         // AJOUTER
+  defaultView={Views.MONTH}       // GARDER pour vue initiale
+  views={[Views.MONTH, Views.WEEK, Views.AGENDA]}
+  messages={messages}
+  culture="fr"
+  onSelectEvent={handleSelectEvent}
+  onSelectSlot={handleSelectSlot}
+  selectable
+  eventPropGetter={eventStyleGetter}
+  popup
+  className="assignments-calendar"
+/>
+```
+
+**Différences clés vs prompt original** :
+1. **Import oublié** : `View` type nécessaire pour state TypeScript
+2. **defaultView gardé** : Utile pour vue initiale même avec state
+3. **setCurrentDate/setCurrentView** : Passer directement les setters (pas de useCallback nécessaire)
+```
+
+---
+
+### Prompt Optimal CAL-5 — Fixer vue Agenda
+
+> **Itérations réelles** : 1 (idéal = 1)
+
+```
+Ajoute la prop agendaLength au composant Calendar pour fixer la vue Agenda.
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modification ligne 157** :
+
+Ajouter dans les props de <Calendar> :
+```tsx
+<Calendar
+  // ... props existantes
+  views={[Views.MONTH, Views.WEEK, Views.AGENDA]}
+  agendaLength={30}  // AJOUTER : affiche 30 jours en mode agenda
+  // ... reste
+/>
+```
+
+**Note** : Par défaut, react-big-calendar affiche 1 mois en mode Agenda.
+La prop `agendaLength={30}` force 30 jours exactement.
+```
+
+---
+
+### Prompt Optimal CAL-6 — Navigation fonctionne
+
+> **Itérations réelles** : 0 (déjà fixé par CAL-4)
+
+```
+La navigation (Aujourd'hui/Précédent/Suivant) fonctionne automatiquement grâce aux props ajoutées dans CAL-4 :
+
+- `date={currentDate}` : Affiche le mois/semaine courant
+- `onNavigate={setCurrentDate}` : Met à jour la date quand on navigue
+
+Rien à faire de plus !
+```
+
+---
+
+### Prompt Optimal CAL-7 — UX/UI améliorée
+
+> **Itérations réelles** : 3 (idéal = 1)  
+> **Problèmes rencontrés** : 
+> - Message vide déjà ajouté dans CAL-2
+> - Couleurs définies dans CSS custom
+> - Besoin de préciser quels changements visuels
+
+```
+Améliore le design du calendrier avec des couleurs cohérentes et un espacement aéré.
+
+**Contexte** :
+- Le message vide est déjà géré dans CAL-2
+- Les couleurs de priorité sont définies dans eventStyleGetter
+- Besoin d'améliorer l'apparence des pastilles deadline
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modification ligne 107** (eventStyleGetter) :
+
+AVANT :
+```typescript
+const eventStyleGetter = useCallback((event: CalendarEvent) => {
+  const priority = event.resource.priority;
+  const colors = PRIORITY_COLORS[priority] || PRIORITY_COLORS.MEDIUM;
+  
+  return {
+    className: `${colors.bg} ${colors.text} rounded px-1 text-xs`,
+    style: {
+      border: 'none',
+    },
+  };
+}, []);
+```
+
+APRÈS :
+```typescript
+const eventStyleGetter = useCallback((event: CalendarEvent) => {
+  const priority = event.resource.priority;
+  const colors = PRIORITY_COLORS[priority] || PRIORITY_COLORS.MEDIUM;
+  
+  return {
+    className: `${colors.bg} ${colors.text} rounded-full px-2 py-0.5 text-xs font-medium shadow-sm`,
+    style: {
+      border: 'none',
+      minHeight: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  };
+}, []);
+```
+
+**Changements** :
+- `rounded` → `rounded-full` : Pastilles arrondies
+- `px-1` → `px-2 py-0.5` : Meilleur padding
+- `font-medium shadow-sm` : Texte plus visible + ombre légère
+- `minHeight: '20px'` : Hauteur minimum lisible
+- `display: flex + alignItems/justifyContent` : Centrage texte
+
+**CSS custom** (optionnel) :
+
+Créer `src/styles/calendar.css` (si pas déjà fait) :
+```css
+.assignments-calendar .rbc-event {
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.assignments-calendar .rbc-event:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.assignments-calendar .rbc-today {
+  background-color: #fffbeb;
+}
+
+.assignments-calendar .rbc-toolbar button {
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+```
+
+Importer dans AssignmentsCalendar.tsx ligne 12 :
+```typescript
+import '@/styles/calendar.css';
+```
+```
+
+---
+
+### Prompt Optimal CAL-8 — Tooltips au survol
+
+> **Itérations réelles** : 2 (idéal = 1)  
+> **Problèmes rencontrés** : Tooltip shadcn/ui pas installé, import oublié
+
+```
+Ajoute des tooltips au survol des événements pour afficher les détails.
+
+**Pré-requis** : Installer le composant Tooltip de shadcn/ui
+
+Commande :
+```bash
+npx shadcn@latest add tooltip --yes
+```
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Étape 1** : Ajouter imports
+
+Ligne 8 :
+```typescript
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+```
+
+**Étape 2** : Créer composant CustomEvent
+
+Ligne 120, AVANT la fonction AssignmentsCalendar :
+```typescript
+const CustomEvent = ({ event }: { event: CalendarEvent }) => (
+  <TooltipProvider delayDuration={300}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="text-xs truncate w-full">
+          {event.title}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        <div className="space-y-1 text-xs">
+          <p className="font-semibold">{event.resource.title}</p>
+          <p className="text-muted-foreground">
+            📖 {event.resource.Course.title}
+          </p>
+          <p className="text-muted-foreground">
+            📅 Deadline: {format(new Date(event.resource.dueDate), 'dd/MM/yyyy')}
+          </p>
+          {event.resource.Class && (
+            <p className="text-muted-foreground">
+              👥 {event.resource.Class.name}
+            </p>
+          )}
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+```
+
+**Étape 3** : Utiliser CustomEvent dans Calendar
+
+Ligne 157, ajouter prop :
+```tsx
+<Calendar
+  // ... props existantes
+  components={{
+    event: CustomEvent,
+  }}
+  // ... reste
+/>
+```
+
+**Différences clés vs prompt original** :
+1. **Installation oubliée** : `npx shadcn@latest add tooltip` nécessaire
+2. **delayDuration** : 300ms pour éviter tooltips trop rapides
+3. **side="top"** : Afficher au-dessus pour éviter débordement
+4. **max-w-xs** : Limiter largeur pour long texte
+5. **space-y-1** : Espacement vertical entre lignes
+6. **format import** : Ajouter `import { format } from 'date-fns'` ligne 5
+```
+
+---
+
+## 🎨 CAL-COLOR — Gestion Couleurs Classes (01/01/2026)
+
+### Prompt Optimal CAL-COLOR-1 — Ajouter champ color dans Class
+
+> **Itérations réelles** : 1 (idéal = 1)
+
+```
+Ajoute un champ `color` au modèle Class pour gérer les couleurs des classes.
+
+**Contexte** :
+- Chaque classe doit avoir une couleur unique pour être identifiable visuellement
+- Les couleurs s'affichent sur les cartes d'assignation et dans le calendrier
+- Couleur par défaut : `#3b82f6` (bleu)
+
+**Fichier** : `prisma/schema.prisma`
+
+**Modification modèle Class** :
+
+Trouver le modèle Class (ligne ~180) et ajouter le champ color :
+
+```prisma
+model Class {
+  id        String   @id @default(cuid())
+  name      String
+  level     String?
+  color     String?  @default("#3b82f6")  // Couleur hex pour le calendrier et cartes
+  
+  // Relations
+  Students               StudentProfile[]
+  TeacherAssignments     TeacherAssignment[]
+  CourseAssignments      CourseAssignment[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([name])
+}
+```
+
+**Migration** :
+```bash
+npx prisma db push
+```
+
+**Vérification** :
+```bash
+# Vérifier que toutes les classes existantes ont la couleur par défaut
+npx prisma studio
+# Ouvrir table Class, vérifier colonne color
+```
+```
+
+---
+
+### Prompt Optimal CAL-COLOR-2 — Interface admin couleurs
+
+> **Itérations réelles** : 3 (idéal = 1)  
+> **Problèmes rencontrés** :
+> - Oubli d'ajouter `color` dans l'interface TypeScript
+> - API PUT ne gérait pas le champ color
+> - Aucun aperçu visuel de la couleur choisie
+
+```
+Ajoute un color picker dans l'interface admin pour gérer les couleurs des classes.
+
+**Contexte** :
+- L'admin peut choisir une couleur pour chaque classe
+- Utiliser input HTML5 natif `<input type="color" />`
+- Afficher un aperçu en temps réel
+- Sauvegarder via API PUT
+
+**Étape 1** : Modifier l'interface TypeScript
+
+Fichier : `src/app/(dashboard)/admin/classes/page.tsx`
+
+Trouver l'interface Class (ligne ~10) et ajouter color :
+```typescript
+interface Class {
+  id: string;
+  name: string;
+  level: string | null;
+  color: string | null;  // AJOUTER
+  _count?: {
+    Students: number;
+    CourseAssignments: number;
+  };
+}
+```
+
+**Étape 2** : Ajouter colonne couleur dans le tableau
+
+Ligne ~150, après la colonne "Niveau" :
+```tsx
+<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+  Couleur
+</th>
+```
+
+Dans le tbody (ligne ~170), après `<td>{c.level || '-'}</td>` :
+```tsx
+<td className="px-4 py-3">
+  <div className="flex items-center gap-2">
+    <div 
+      className="h-6 w-6 rounded-full border-2 border-white shadow-sm"
+      style={{ backgroundColor: c.color || '#3b82f6' }}
+    />
+    <code className="text-xs text-muted-foreground">
+      {c.color || '#3b82f6'}
+    </code>
+  </div>
+</td>
+```
+
+**Étape 3** : Ajouter color picker dans la modale
+
+Fichier : `src/app/(dashboard)/admin/classes/page.tsx`
+
+Dans formData state (ligne ~50), ajouter :
+```typescript
+const [formData, setFormData] = useState({
+  name: '',
+  level: '',
+  color: '#3b82f6',  // AJOUTER avec valeur par défaut
+});
+```
+
+Dans la modale (ligne ~250), après le champ "Niveau" :
+```tsx
+<div className="space-y-2">
+  <Label htmlFor="color">Couleur de la classe</Label>
+  <div className="flex items-center gap-3">
+    <input
+      type="color"
+      id="color"
+      value={formData.color}
+      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+      className="h-10 w-20 rounded border cursor-pointer"
+    />
+    <div 
+      className="h-10 flex-1 rounded border flex items-center px-3"
+      style={{ backgroundColor: formData.color }}
+    >
+      <span className="text-white font-medium drop-shadow-md">
+        Aperçu : {formData.name || 'Classe'}
+      </span>
+    </div>
+  </div>
+  <p className="text-xs text-muted-foreground">
+    Cette couleur sera utilisée dans le calendrier et les cartes d'assignation
+  </p>
+</div>
+```
+
+**Étape 4** : Initialiser formData lors de l'édition
+
+Ligne ~100, dans handleEdit :
+```typescript
+const handleEdit = (classItem: Class) => {
+  setEditingClass(classItem);
+  setFormData({
+    name: classItem.name,
+    level: classItem.level || '',
+    color: classItem.color || '#3b82f6',  // AJOUTER
+  });
+  setIsModalOpen(true);
+};
+```
+
+**Étape 5** : Modifier l'API pour supporter color
+
+Fichier : `src/app/api/admin/classes/[id]/route.ts`
+
+Ligne ~40, dans PUT handler, ajouter color :
+```typescript
+const { name, level, color } = await req.json();
+
+// Validation
+if (!name?.trim()) {
+  return NextResponse.json(
+    { success: false, error: 'Le nom est requis' },
+    { status: 400 }
+  );
+}
+
+const updated = await prisma.class.update({
+  where: { id: params.id },
+  data: {
+    name: name.trim(),
+    level: level?.trim() || null,
+    color: color || '#3b82f6',  // AJOUTER
+    updatedAt: new Date(),
+  },
+  // ... reste
+});
+```
+
+Fichier : `src/app/api/admin/classes/route.ts`
+
+Ligne ~60, dans POST handler :
+```typescript
+const { name, level, color } = await req.json();
+
+const newClass = await prisma.class.create({
+  data: {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    level: level?.trim() || null,
+    color: color || '#3b82f6',  // AJOUTER
+    updatedAt: new Date(),
+  },
+  // ... reste
+});
+```
+
+**Différences clés vs prompt original** :
+1. **Interface TypeScript** : Ne pas oublier d'ajouter `color: string | null`
+2. **formData** : Initialiser avec valeur par défaut `#3b82f6`
+3. **handleEdit** : Initialiser formData.color avec valeur existante
+4. **API** : Gérer color dans POST et PUT
+5. **Aperçu** : Div avec backgroundColor + texte blanc pour visualiser
+```
+
+---
+
+### Prompt Optimal CAL-COLOR-3 — Seed couleurs
+
+> **Itérations réelles** : 1 (idéal = 1)
+
+```
+Ajoute des couleurs par défaut pour les classes de test dans le seed.
+
+**Fichier** : `prisma/seed.ts`
+
+**Palette de couleurs** :
+
+Ligne ~50, avant la création des classes, définir :
+```typescript
+const CLASS_COLORS: Record<string, string> = {
+  '6ème A': '#3b82f6',  // Bleu
+  '6ème B': '#8b5cf6',  // Violet
+  '5ème A': '#ec4899',  // Rose
+  '5ème B': '#f59e0b',  // Orange
+  '4ème A': '#10b981',  // Vert
+  '4ème B': '#06b6d4',  // Cyan
+  '3ème A': '#ef4444',  // Rouge
+  '3ème B': '#6366f1',  // Indigo
+};
+```
+
+**Modifier les créations de classes** :
+
+Exemple pour class6A (ligne ~100) :
+```typescript
+const class6A = await prisma.class.create({
+  data: {
+    id: crypto.randomUUID(),
+    name: '6ème A',
+    level: '6ème',
+    color: CLASS_COLORS['6ème A'],  // AJOUTER
+    updatedAt: new Date(),
+  },
+});
+```
+
+Répéter pour toutes les classes (6A, 6B, 5A, 5B, 4A, 4B, 3A, 3B).
+
+**Exécuter le seed** :
+```bash
+npx prisma db seed
+```
+
+**Vérification** :
+```bash
+npx prisma studio
+# Vérifier que chaque classe a une couleur unique
+```
+```
+
+---
+
+### Prompt Optimal CAL-COLOR-4 — Couleur sur cartes
+
+> **Itérations réelles** : 2 (idéal = 1)  
+> **Problèmes rencontrés** :
+> - Oubli d'ajouter `color` dans le select de l'API
+> - Lisibilité texte blanc sur fond clair
+
+```
+Affiche la couleur de la classe sur les cartes d'assignation.
+
+**Contexte** :
+- Bordure gauche colorée avec la couleur de la classe
+- Badge classe avec fond coloré
+- Fallback bleu si pas de couleur définie
+
+**Étape 1** : Modifier l'API pour inclure Class.color
+
+Fichier : `src/app/api/teacher/assignments/route.ts`
+
+Ligne ~80, dans le select de Class :
+```typescript
+Class: {
+  select: {
+    id: true,
+    name: true,
+    color: true,  // AJOUTER
+  },
+},
+```
+
+**Étape 2** : Modifier l'interface TypeScript
+
+Fichier : `src/app/(dashboard)/teacher/assignments/page.tsx`
+
+Ligne ~25, dans AssignmentWithDetails :
+```typescript
+Class: { id: string; name: string; color: string | null } | null;
+```
+
+**Étape 3** : Ajouter bordure colorée sur la carte
+
+Fichier : `src/components/features/assignments/AssignmentCard.tsx`
+
+Ligne ~140, modifier le Card :
+```tsx
+<Card 
+  className="relative overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+  style={{
+    borderLeft: assignment.Class?.color 
+      ? `4px solid ${assignment.Class.color}` 
+      : undefined
+  }}
+  onClick={handleCardClick}
+>
+```
+
+**Étape 4** : Badge classe avec fond coloré
+
+Ligne ~180, modifier le badge classe :
+```tsx
+{assignment.Class && (
+  <>
+    <span 
+      className="flex items-center gap-1 px-2 py-0.5 rounded text-white text-xs font-medium shadow-sm"
+      style={{ 
+        backgroundColor: assignment.Class.color || '#3b82f6',
+        // Assurer lisibilité texte
+        color: 'white',
+        textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+      }}
+    >
+      <Users className="h-3 w-3" />
+      {assignment.Class.name}
+    </span>
+    {/* ... reste du code pour le popover élèves ... */}
+  </>
+)}
+```
+
+**Différences clés vs prompt original** :
+1. **API select** : Ne pas oublier `color: true` dans Class select
+2. **Interface** : Ajouter `color: string | null` dans type Class
+3. **textShadow** : Améliore lisibilité du texte blanc sur fonds clairs
+4. **Fallback** : Toujours avoir `|| '#3b82f6'` en cas de null
+```
+
+---
+
+### Prompt Optimal CAL-COLOR-5 — Couleur sur calendrier
+
+> **Itérations réelles** : 3 (idéal = 1)  
+> **Problèmes rencontrés** :
+> - Logique priorité couleur classe vs couleur priorité mal définie
+> - Légende statique ne reflétait pas les classes visibles
+> - Déduplication classes dans légende non fonctionnelle
+
+```
+Affiche la couleur de la classe sur les événements du calendrier.
+
+**Contexte** :
+- Si assignation de classe → utiliser couleur classe
+- Si assignation individuelle (élève) → utiliser couleur priorité
+- Légende dynamique montrant les classes visibles + priorités
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Étape 1** : Modifier eventStyleGetter
+
+Ligne ~107, remplacer complètement :
+```typescript
+const eventStyleGetter = useCallback((event: CalendarEvent) => {
+  const assignment = event.resource;
+  
+  // Priorité 1 : Si assignation de classe, utiliser couleur classe
+  if (assignment.Class?.color) {
+    return {
+      className: 'text-white rounded-full px-2 py-0.5 text-xs font-medium shadow-sm',
+      style: {
+        backgroundColor: assignment.Class.color,
+        border: 'none',
+        minHeight: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+      },
+    };
+  }
+  
+  // Priorité 2 : Assignation individuelle → couleur priorité
+  const priority = assignment.priority;
+  const colors = PRIORITY_COLORS[priority] || PRIORITY_COLORS.MEDIUM;
+  
+  return {
+    className: `${colors.bg} ${colors.text} rounded-full px-2 py-0.5 text-xs font-medium shadow-sm`,
+    style: {
+      border: 'none',
+      minHeight: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  };
+}, []);
+```
+
+**Étape 2** : Créer légende dynamique
+
+Ligne ~175, après le </Calendar>, remplacer la légende par :
+```tsx
+{/* Légende dynamique */}
+<div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm">
+  {/* Classes visibles */}
+  {Array.from(
+    new Map(
+      assignments
+        .filter(a => a.Class)
+        .map(a => [a.Class!.id, a.Class])
+    ).values()
+  ).map((classItem) => (
+    <div key={classItem!.id} className="flex items-center gap-2">
+      <div 
+        className="h-3 w-3 rounded-full shadow-sm" 
+        style={{ backgroundColor: classItem!.color || '#3b82f6' }}
+      />
+      <span className="text-muted-foreground">{classItem!.name}</span>
+    </div>
+  ))}
+  
+  {/* Séparateur si classes ET priorités */}
+  {assignments.some(a => a.Class) && assignments.some(a => !a.Class) && (
+    <div className="w-px h-4 bg-border" />
+  )}
+  
+  {/* Priorités (assignations individuelles) */}
+  {assignments.some(a => !a.Class) && (
+    <>
+      <div className="flex items-center gap-2">
+        <div className="h-3 w-3 rounded bg-red-500 shadow-sm" />
+        <span className="text-muted-foreground">Haute priorité</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-3 w-3 rounded bg-orange-500 shadow-sm" />
+        <span className="text-muted-foreground">Moyenne</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-3 w-3 rounded bg-green-500 shadow-sm" />
+        <span className="text-muted-foreground">Basse</span>
+      </div>
+    </>
+  )}
+</div>
+```
+
+**Différences clés vs prompt original** :
+1. **Déduplication classes** : Utiliser `new Map()` avec `[id, Class]` puis `.values()`
+2. **Conditions légende** : N'afficher priorités que si assignations individuelles existent
+3. **Séparateur conditionnel** : Afficher uniquement si les 2 types existent
+4. **textShadow** : Ajouter pour lisibilité sur fonds clairs
+5. **Tri logique** : Classes d'abord, puis séparateur, puis priorités
+```
+
+---
+
 ## 🔗 Références
 
 | Ressource | Lien |
 |:----------|:-----|
-| TODO | [todo/phase-07-quater-assignments.md](../todo/phase-07-quater-assignments.md) |
+| TODO | [todo/phase-07-quinquies-assignments.md](../todo/phase-07-quinquies-assignments.md) |
 | react-big-calendar | [Docs](https://jquense.github.io/react-big-calendar/) |
 | rrule | [GitHub](https://github.com/jakubroztocil/rrule) |
 | date-fns | [Docs](https://date-fns.org/) |

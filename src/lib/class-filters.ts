@@ -23,9 +23,9 @@ export function filterClasses(
       }
     }
 
-    // Filtre par niveau
-    if (filters.level !== null) {
-      if (classItem.level !== filters.level) {
+    // Filtre par classe spécifique
+    if (filters.classId !== null) {
+      if (classItem.id !== filters.classId) {
         return false;
       }
     }

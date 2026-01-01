@@ -7,8 +7,8 @@
 export interface ClassFilters {
   /** IDs des matières sélectionnées ([] = toutes) */
   subjectIds: string[];
-  /** Niveau sélectionné (null = tous) */
-  level: string | null;
+  /** ID de la classe filtrée (null = toutes) */
+  classId: string | null;
   /** Recherche par nom de classe */
   search: string;
   /** IDs des classes sélectionnées pour stats */
@@ -17,7 +17,7 @@ export interface ClassFilters {
 
 export const DEFAULT_CLASS_FILTERS: ClassFilters = {
   subjectIds: [],
-  level: null,
+  classId: null,
   search: '',
   selectedClassIds: [],
 };
@@ -47,6 +47,7 @@ export interface ClassWithStats {
   id: string;
   name: string;
   level: string;
+  color?: string | null;
   studentsCount: number;
   subjects: { id: string; name: string }[];
   stats: {

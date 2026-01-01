@@ -185,10 +185,15 @@ export function AssignmentCard({
     <>
       <Card 
         className={cn(
-          'transition-colors hover:bg-muted/50',
+          'transition-colors hover:bg-muted/50 relative overflow-hidden',
           isOverdue && 'border-red-200 bg-red-50/30',
           onEdit && 'cursor-pointer'
         )}
+        style={{
+          borderLeft: assignment.Class?.color 
+            ? `4px solid ${assignment.Class.color}` 
+            : undefined
+        }}
         onClick={() => onEdit?.(assignment)}
       >
         <CardContent className={cn('p-4', compact && 'p-3')}>
@@ -218,7 +223,14 @@ export function AssignmentCard({
                   </span>
                   {assignment.Class && (
                     <>
-                      <span className="flex items-center gap-1 text-blue-600">
+                      <span 
+                        className="flex items-center gap-1 px-2 py-0.5 rounded text-white text-xs font-medium shadow-sm"
+                        style={{ 
+                          backgroundColor: assignment.Class.color || '#3b82f6',
+                          color: 'white',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        }}
+                      >
                         <Users className="h-3 w-3" />
                         {assignment.Class.name}
                       </span>

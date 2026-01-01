@@ -621,11 +621,508 @@ function getDeadlineStatus(dueDate: Date) {
 
 ---
 
+### 🔄 CAL — Amélioration du Calendrier (01/01/2026) 🔴
+
+**Problèmes identifiés** :
+1. Affichage des plages (`startDate` → `dueDate`) surcharge le calendrier
+2. Tous les événements affichés même sans filtre → confusion
+3. Click cellule vide ne fait rien
+4. Vue Semaine ne fonctionne pas
+5. Vue Agenda ne fonctionne pas
+6. Navigation (Aujourd'hui/Précédent/Suivant) inactive
+7. Design basique, peu agréable
+8. Pas de tooltip au survol
+
+---
+
+#### CAL-1 — Afficher uniquement les deadlines (pas les plages) (15min) ⬜
+
+**Problème** : `start = startDate` et `end = dueDate` → barre longue qui surcharge
+**Solution** : `start = dueDate` et `end = dueDate` → pastille unique
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modification** :
+```tsx
+// Ligne 75-79 - AVANT
+start: new Date(assignment.startDate || assignment.dueDate),
+end: new Date(assignment.dueDate),
+
+// APRÈS
+start: new Date(assignment.dueDate),
+end: new Date(assignment.dueDate),
+```
+
+**Critères** :
+- [ ] Événements affichés comme points/pastilles
+- [ ] Calendrier épuré et lisible
+
+---
+
+#### CAL-2 — Masquer événements si filtres vides (30min) ⬜
+
+**Problème** : Calendrier surchargé si aucun filtre actif
+**Solution** : `events = []` si aucun filtre
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modifications** :
+1. Ajouter prop `filters` dans AssignmentsCalendarProps
+2. Calculer `hasActiveFilters` via useMemo
+3. Retourner `events = []` si pas de filtres
+4. Afficher message centré "Sélectionnez au moins un filtre"
+
+**Code** :
+```tsx
+const hasActiveFilters = useMemo(() => {
+  return filters.subjectIds.length > 0 || 
+         filters.courseIds.length > 0 ||
+         filters.classIds.length > 0 ||
+         filters.priorities.length > 0 ||
+         filters.dateRange !== null;
+}, [filters]);
+
+const events = useMemo(() => {
+  if (!hasActiveFilters) return [];
+  return assignments.map(/* ... */);
+}, [assignments, hasActiveFilters]);
+```
+
+**Critères** :
+- [ ] Calendrier vide si aucun filtre
+- [ ] Message explicatif affiché
+- [ ] Force utilisateur à filtrer
+
+---
+
+#### CAL-3 — Click cellule vide → redirection Liste avec date (20min) ⬜
+
+**Problème** : Click cellule ne fait rien si filtres vides
+**Solution** : Rediriger vers vue Liste avec cette date
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modification** :
+```tsx
+const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
+  if (!hasActiveFilters) {
+    // Rediriger vers Liste avec ce jour
+    onSelectDate(slotInfo.start);
+  } else {
+    onSelectDate(slotInfo.start);
+  }
+}, [hasActiveFilters, onSelectDate]);
+```
+
+**Critères** :
+- [ ] Click cellule → basculer vue Liste
+- [ ] Date appliquée dans filtres
+- [ ] Calendrier = outil de navigation
+
+---
+
+#### CAL-4 — Fixer vue Semaine (30min) ⬜
+
+**Problème** : `Views.WEEK` ne s'affiche pas
+**Solution** : Ajouter state `currentDate` et `currentView`
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modifications** :
+```tsx
+const [currentDate, setCurrentDate] = useState(new Date());
+const [currentView, setCurrentView] = useState<View>(Views.MONTH);
+
+<Calendar
+  date={currentDate}
+  view={currentView}
+  onNavigate={(date) => setCurrentDate(date)}
+  onView={(view) => setCurrentView(view)}
+  // ... reste
+/>
+```
+
+**Critères** :
+- [ ] Vue Semaine fonctionne
+- [ ] Changement vue via toolbar
+
+---
+
+#### CAL-5 — Fixer vue Agenda (15min) ⬜
+
+**Problème** : `Views.AGENDA` ne fonctionne pas
+**Solution** : Ajouter prop `agendaLength`
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modification** :
+```tsx
+<Calendar
+  views={[Views.MONTH, Views.WEEK, Views.AGENDA]}
+  agendaLength={30}
+  // ...
+/>
+```
+
+**Critères** :
+- [ ] Vue Agenda affiche 30 jours
+- [ ] Liste chronologique des événements
+
+---
+
+#### CAL-6 — Fixer navigation (Aujourd'hui/Précédent/Suivant) (15min) ⬜
+
+**Problème** : Boutons toolbar inactifs
+**Solution** : Utiliser prop `date` + `onNavigate` (cf. CAL-4)
+
+**Critères** :
+- [ ] Bouton "Aujourd'hui" fonctionne
+- [ ] Flèches Précédent/Suivant fonctionnent
+- [ ] Navigation selon vue (mois/semaine/jour)
+
+---
+
+#### CAL-7 — Améliorer UX/UI calendrier (45min) ⬜
+
+**Améliorations** :
+1. Indicateur "Aucun filtre" centré si `events = []`
+2. Pastilles deadline (dot au lieu de barre)
+3. Couleurs améliorées (dégradés pour priorités)
+4. Légende interactive (click → filtrer par priorité)
+5. Mode compact (réduire hauteur cellules)
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Code message vide** :
+```tsx
+{events.length === 0 && (
+  <div className="flex h-[600px] items-center justify-center text-muted-foreground">
+    <div className="text-center">
+      <Calendar className="mx-auto h-12 w-12 opacity-20" />
+      <p className="mt-4">Sélectionnez au moins un filtre pour afficher le calendrier</p>
+    </div>
+  </div>
+)}
+```
+
+**Critères** :
+- [ ] Message vide élégant
+- [ ] Couleurs cohérentes
+- [ ] Espacement aéré
+- [ ] Design professionnel
+
+---
+
+#### CAL-8 — Ajouter tooltip survol événement (30min) ⬜
+
+**Solution** : Utiliser `components.event` personnalisé avec Tooltip shadcn
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Code** :
+```tsx
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+const CustomEvent = ({ event }: { event: CalendarEvent }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="text-xs truncate">{event.title}</div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p><strong>{event.resource.title}</strong></p>
+        <p>Cours: {event.resource.Course.title}</p>
+        <p>Deadline: {format(new Date(event.resource.dueDate), 'dd/MM/yyyy')}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+<Calendar
+  components={{ event: CustomEvent }}
+  // ...
+/>
+```
+
+**Critères** :
+- [ ] Tooltip au survol
+- [ ] Infos : titre, cours, deadline
+- [ ] Pas besoin de cliquer
+
+---
+
+### 🎨 CAL-COLOR — Gestion Couleurs Classes (3h30) ⬜
+
+**Contexte** :
+- Chaque classe doit avoir une couleur unique pour être facilement identifiable
+- Les couleurs s'affichent sur les cartes d'assignation et dans le calendrier
+- L'admin gère les couleurs depuis l'interface admin
+- Si aucune couleur définie, une couleur est attribuée automatiquement
+
+**Avantages** :
+- Identification visuelle rapide des classes
+- Calendrier plus lisible avec code couleur
+- Personnalisation par établissement
+
+---
+
+#### CAL-COLOR-1 — Ajouter champ `color` dans modèle Class (30min) ⬜
+
+**Fichier** : `prisma/schema.prisma`
+
+**Modification modèle Class** :
+```prisma
+model Class {
+  id        String   @id @default(cuid())
+  name      String
+  level     String?
+  color     String?  @default("#3b82f6")  // Bleu par défaut
+  // ... reste inchangé
+}
+```
+
+**Migration** :
+```bash
+npx prisma db push
+```
+
+**Critères** :
+- [ ] Champ `color` ajouté
+- [ ] Valeur par défaut `#3b82f6` (bleu)
+- [ ] Migration appliquée
+
+---
+
+#### CAL-COLOR-2 — Interface admin pour gérer couleurs (1h) ⬜
+
+**Fichier** : `src/app/(dashboard)/admin/classes/page.tsx`
+
+**Modifications** :
+1. Ajouter colonne "Couleur" dans le tableau des classes
+2. Afficher badge coloré avec la couleur de la classe
+3. Dans la modale d'édition, ajouter un color picker
+
+**Color Picker** : Utiliser `<input type="color" />` natif HTML5
+
+**Code modale** :
+```tsx
+<div className="space-y-2">
+  <Label htmlFor="color">Couleur de la classe</Label>
+  <div className="flex items-center gap-3">
+    <input
+      type="color"
+      id="color"
+      value={formData.color || '#3b82f6'}
+      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+      className="h-10 w-20 rounded border cursor-pointer"
+    />
+    <div 
+      className="h-10 flex-1 rounded border flex items-center px-3"
+      style={{ backgroundColor: formData.color || '#3b82f6' }}
+    >
+      <span className="text-white font-medium drop-shadow-md">
+        Aperçu : {formData.name || 'Classe'}
+      </span>
+    </div>
+  </div>
+  <p className="text-xs text-muted-foreground">
+    Cette couleur sera utilisée dans le calendrier et les cartes d'assignation
+  </p>
+</div>
+```
+
+**Tableau des classes** :
+```tsx
+<td>
+  <div className="flex items-center gap-2">
+    <div 
+      className="h-6 w-6 rounded-full border-2 border-white shadow"
+      style={{ backgroundColor: classItem.color || '#3b82f6' }}
+    />
+    <code className="text-xs">{classItem.color || '#3b82f6'}</code>
+  </div>
+</td>
+```
+
+**Critères** :
+- [ ] Colonne couleur dans tableau
+- [ ] Color picker dans modale
+- [ ] Aperçu temps réel
+- [ ] API PUT `/api/admin/classes/[id]` supporte `color`
+
+---
+
+#### CAL-COLOR-3 — Seed couleurs par défaut (30min) ⬜
+
+**Fichier** : `prisma/seed.ts`
+
+**Palette couleurs** :
+```typescript
+const CLASS_COLORS = {
+  '6ème A': '#3b82f6',  // Bleu
+  '6ème B': '#8b5cf6',  // Violet
+  '5ème A': '#ec4899',  // Rose
+  '5ème B': '#f59e0b',  // Orange
+  '4ème A': '#10b981',  // Vert
+  '4ème B': '#06b6d4',  // Cyan
+  '3ème A': '#ef4444',  // Rouge
+  '3ème B': '#6366f1',  // Indigo
+};
+```
+
+**Modification seed** :
+```typescript
+const class6A = await prisma.class.create({
+  data: {
+    id: crypto.randomUUID(),
+    name: '6ème A',
+    level: '6ème',
+    color: CLASS_COLORS['6ème A'],
+    updatedAt: new Date(),
+  },
+});
+```
+
+**Critères** :
+- [ ] Palette de 8 couleurs distinctes
+- [ ] Toutes les classes test ont une couleur
+- [ ] Seed réussi sans erreur
+
+---
+
+#### CAL-COLOR-4 — Couleur classe sur cartes assignations (45min) ⬜
+
+**Fichier** : `src/components/features/assignments/AssignmentCard.tsx`
+
+**Modifications** :
+1. Récupérer `Class.color` dans les données
+2. Afficher une bordure colorée sur la carte
+3. Badge classe avec fond coloré
+
+**Code** :
+```tsx
+// En-tête de la carte (ligne ~140)
+<Card 
+  className="relative overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+  style={{
+    borderLeft: assignment.Class?.color 
+      ? `4px solid ${assignment.Class.color}` 
+      : undefined
+  }}
+  onClick={handleCardClick}
+>
+```
+
+**Badge classe** :
+```tsx
+{assignment.Class && (
+  <span 
+    className="flex items-center gap-1 px-2 py-0.5 rounded text-white text-xs font-medium"
+    style={{ backgroundColor: assignment.Class.color || '#3b82f6' }}
+  >
+    <Users className="h-3 w-3" />
+    {assignment.Class.name}
+  </span>
+)}
+```
+
+**Critères** :
+- [ ] Bordure gauche colorée
+- [ ] Badge classe avec fond couleur classe
+- [ ] Texte blanc sur badge coloré
+- [ ] Fallback bleu si pas de couleur
+
+---
+
+#### CAL-COLOR-5 — Couleur classe sur événements calendrier (45min) ⬜
+
+**Fichier** : `src/components/features/assignments/AssignmentsCalendar.tsx`
+
+**Modifications** :
+1. Modifier `eventStyleGetter` pour utiliser couleur classe en priorité
+2. Fallback sur couleur priorité si pas de classe
+3. Garder couleur priorité si assignation individuelle (élève)
+
+**Code ligne ~107** :
+```typescript
+const eventStyleGetter = useCallback((event: CalendarEvent) => {
+  const assignment = event.resource;
+  
+  // Si assignation de classe, utiliser couleur classe
+  if (assignment.Class?.color) {
+    return {
+      className: 'text-white rounded-full px-2 py-0.5 text-xs font-medium shadow-sm',
+      style: {
+        backgroundColor: assignment.Class.color,
+        border: 'none',
+        minHeight: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+    };
+  }
+  
+  // Sinon, utiliser couleur priorité (assignations individuelles)
+  const priority = assignment.priority;
+  const colors = PRIORITY_COLORS[priority] || PRIORITY_COLORS.MEDIUM;
+  
+  return {
+    className: `${colors.bg} ${colors.text} rounded-full px-2 py-0.5 text-xs font-medium shadow-sm`,
+    style: {
+      border: 'none',
+      minHeight: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  };
+}, []);
+```
+
+**Légende mise à jour** :
+```tsx
+{/* Légende dynamique basée sur classes visibles */}
+<div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm">
+  {Array.from(new Set(assignments.map(a => a.Class).filter(Boolean)))
+    .map((classItem) => (
+      <div key={classItem!.id} className="flex items-center gap-2">
+        <div 
+          className="h-3 w-3 rounded-full" 
+          style={{ backgroundColor: classItem!.color || '#3b82f6' }}
+        />
+        <span>{classItem!.name}</span>
+      </div>
+    ))}
+  <div className="w-px h-4 bg-border" />
+  <div className="flex items-center gap-2">
+    <div className="h-3 w-3 rounded bg-red-500" />
+    <span>Haute priorité (individuel)</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <div className="h-3 w-3 rounded bg-orange-500" />
+    <span>Moyenne priorité</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <div className="h-3 w-3 rounded bg-green-500" />
+    <span>Basse priorité</span>
+  </div>
+</div>
+```
+
+**Critères** :
+- [ ] Événements classe = couleur classe
+- [ ] Événements individuels = couleur priorité
+- [ ] Légende dynamique avec classes visibles
+- [ ] Séparation visuelle légende classe vs priorité
+
+---
+
 ## 📁 Fichiers créés/modifiés (récap)
 
 | Action | Fichier | Statut |
 |:-------|:--------|:-------|
-| Modifier | `prisma/schema.prisma` (Assignment, StudentSubmission) | ⬜ |
+| Modifier | `prisma/schema.prisma` (Assignment, StudentSubmission, Class.color) | ⬜ |
 | Créer | `src/app/api/teacher/assignments/route.ts` | ⬜ |
 | Créer | `src/app/api/teacher/assignments/[id]/route.ts` | ⬜ |
 | Créer | `src/app/api/teacher/assignments/calendar/route.ts` | ⬜ |
@@ -644,6 +1141,11 @@ function getDeadlineStatus(dueDate: Date) {
 | Créer | `src/lib/recurrence.ts` | ⬜ |
 | Modifier | `src/components/layout/Sidebar.tsx` | ⬜ |
 | Modifier | `src/components/features/teacher/CoursesTable.tsx` | ⬜ |
+| Modifier | `src/app/(dashboard)/admin/classes/page.tsx` (color picker) | ⬜ |
+| Modifier | `src/app/api/admin/classes/[id]/route.ts` (support color) | ⬜ |
+| Modifier | `prisma/seed.ts` (couleurs classes) | ⬜ |
+| Modifier | `src/components/features/assignments/AssignmentCard.tsx` (bordure colorée) | ⬜ |
+| Modifier | `src/components/features/assignments/AssignmentsCalendar.tsx` (événements colorés) | ⬜ |
 
 ---
 

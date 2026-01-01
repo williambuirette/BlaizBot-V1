@@ -88,6 +88,20 @@ export function AssignmentsList({
 
   return (
     <div className="space-y-4">
+      {/* Indicateur de date sélectionnée */}
+      {selectedDate && (
+        <Card className="border-blue-500 bg-blue-50/50">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center gap-2 text-sm">
+              <CalendarDays className="h-4 w-4 text-blue-600" />
+              <span className="font-medium">
+                Vue filtrée : {format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats rapides */}
       <div className="grid grid-cols-4 gap-4">
         <StatCard

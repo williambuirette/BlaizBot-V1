@@ -19,6 +19,7 @@ interface UseAssignmentFormReturn {
   selectedClasses: string[];
   selectedStudents: string[];
   dueDate?: Date;
+  dueTime?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   instructions: string;
   
@@ -38,6 +39,7 @@ interface UseAssignmentFormReturn {
   setSelectedClasses: (ids: string[]) => void;
   setSelectedStudents: (ids: string[]) => void;
   setDueDate: (date: Date | undefined) => void;
+  setDueTime: (time: string) => void;
   setPriority: (priority: 'LOW' | 'MEDIUM' | 'HIGH') => void;
   setInstructions: (instructions: string) => void;
   
@@ -69,6 +71,7 @@ export function useAssignmentForm(open: boolean): UseAssignmentFormReturn {
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [dueTime, setDueTime] = useState<string>('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [instructions, setInstructions] = useState('');
 
@@ -84,6 +87,7 @@ export function useAssignmentForm(open: boolean): UseAssignmentFormReturn {
     setSelectedClasses([]);
     setSelectedStudents([]);
     setDueDate(undefined);
+    setDueTime('');
     setPriority('MEDIUM');
     setInstructions('');
     // Reset refs too
@@ -298,6 +302,7 @@ export function useAssignmentForm(open: boolean): UseAssignmentFormReturn {
     selectedClasses,
     selectedStudents,
     dueDate,
+    dueTime,
     priority,
     instructions,
     filteredCourses,
@@ -311,6 +316,7 @@ export function useAssignmentForm(open: boolean): UseAssignmentFormReturn {
     setSelectedClasses,
     setSelectedStudents,
     setDueDate,
+    setDueTime,
     setPriority,
     setInstructions,
     toggleSelection,

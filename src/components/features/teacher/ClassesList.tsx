@@ -17,9 +17,6 @@ interface ClassesListProps {
 export function ClassesList({ classes, subjects }: ClassesListProps) {
   const [filters, setFilters] = useState<ClassFilters>(DEFAULT_CLASS_FILTERS);
 
-  // Extraire les niveaux uniques
-  const levels = useMemo(() => extractLevelsFromClasses(classes), [classes]);
-
   // Appliquer filtres
   const filteredClasses = useMemo(() => {
     return filterClasses(classes, filters);
@@ -72,7 +69,7 @@ export function ClassesList({ classes, subjects }: ClassesListProps) {
       {/* Filtres */}
       <ClassFilterBar
         subjects={subjects}
-        levels={levels}
+        classes={classes}
         filters={filters}
         onFiltersChange={setFilters}
         resultCount={filteredClasses.length}
