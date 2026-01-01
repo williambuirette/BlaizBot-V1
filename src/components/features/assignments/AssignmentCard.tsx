@@ -15,6 +15,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -35,6 +40,7 @@ import {
   RefreshCw,
   ClipboardEdit,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExamGradeDialog } from '@/components/features/teacher/ExamGradeDialog';
@@ -126,6 +132,7 @@ export function AssignmentCard({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [examDialogOpen, setExamDialogOpen] = useState(false);
   const [savingExam, setSavingExam] = useState(false);
+  const [studentsPopoverOpen, setStudentsPopoverOpen] = useState(false);
 
   const priorityConfig = PRIORITY_CONFIG[assignment.priority];
   const targetConfig = TARGET_TYPE_CONFIG[assignment.targetType] || { label: assignment.targetType, icon: '📋' };
@@ -210,10 +217,67 @@ export function AssignmentCard({
                     {assignment.Course.title}
                   </span>
                   {assignment.Class && (
-                    <span className="flex items-center gap-1 text-blue-600">
-                      <Users className="h-3 w-3" />
-                      {assignment.Class.name}
-                    </span>
+                    <>
+                      <span className="flex items-center gap-1 text-blue-600">
+                        <Users className="h-3 w-3" />
+                        {assignment.Class.name}
+                      </span>
+                      {/* Bouton pour voir la liste des élèves */}
+                      {assignment.StudentProgress && assignment.StudentProgress.length > 0 && (
+                        <Popover open={studentsPopoverOpen} onOpenChange={setStudentsPopoverOpen}>
+                          <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-1 -ml-1 hover:bg-blue-100"
+                            >
+                              <ChevronDown className="h-3 w-3 text-blue-600" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent 
+                            className="w-64 p-3" 
+                            align="start"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-sm flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Élèves assignés ({assignment.StudentProgress.length})
+                              </h4>
+                              <div className="max-h-64 overflow-y-auto space-y-1">
+                                {assignment.StudentProgress
+                                  .filter(p => p.User)
+                                  .sort((a, b) => {
+                                    const nameA = `${a.User?.lastName} ${a.User?.firstName}`;
+                                    const nameB = `${b.User?.lastName} ${b.User?.firstName}`;
+                                    return nameA.localeCompare(nameB);
+                                  })
+                                  .map((progress) => (
+                                    <div
+                                      key={progress.id}
+                                      className="flex items-center justify-between p-2 rounded hover:bg-muted text-sm"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <User className="h-3 w-3 text-muted-foreground" />
+                                        <span>
+                                          {progress.User?.firstName} {progress.User?.lastName}
+                                        </span>
+                                      </div>
+                                      <Badge 
+                                        variant="outline" 
+                                        className="text-[10px] px-1 py-0"
+                                      >
+                                        {progress.status === 'COMPLETED' ? '✓' : 
+                                         progress.status === 'IN_PROGRESS' ? '⏳' : '○'}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </>
                   )}
                   {student && (
                     <span className="flex items-center gap-1 text-purple-600">

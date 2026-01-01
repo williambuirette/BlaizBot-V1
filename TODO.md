@@ -52,6 +52,11 @@ PHASE 6   PHASE 7   PHASE 8   PHASE 9   PHASE 10
 | AS-FIX7 | Fix dueDate null + afficher nom élève | ✅ |
 | AS-FIX8 | Fix seed assignations (dates manquantes) | ✅ |
 | AS-FIX9 | Click titre carte → navigation vers cours | ✅ |
+| AS-FIX10 | Menu déroulant liste élèves sur cartes | ✅ |
+| AS-FIX6 | Uniformiser cartes assignations (prof/élève) | ✅ |
+| AS-FIX7 | Fix dueDate null + afficher nom élève | ✅ |
+| AS-FIX8 | Fix seed assignations (dates manquantes) | ✅ |
+| AS-FIX9 | Click titre carte → navigation vers cours | ✅ |
 
 ---
 

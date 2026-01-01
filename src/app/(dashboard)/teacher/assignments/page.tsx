@@ -28,6 +28,12 @@ export interface AssignmentWithDetails {
   Class: { id: string; name: string } | null;
   Team: { id: string; name: string } | null;
   User_CourseAssignment_studentIdToUser?: { id: string; firstName: string; lastName: string } | null;
+  StudentProgress?: Array<{
+    id: string;
+    studentId: string;
+    status: string;
+    User?: { id: string; firstName: string; lastName: string };
+  }>;
   stats?: {
     total: number;
     completed: number;

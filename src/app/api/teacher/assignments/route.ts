@@ -187,7 +187,8 @@ export async function GET(request: NextRequest) {
 
       return {
         ...a,
-        StudentProgress: undefined, // Ne pas exposer la liste complète
+        // Inclure StudentProgress pour afficher la liste des élèves
+        StudentProgress: a.StudentProgress,
         stats: {
           total,
           completed,

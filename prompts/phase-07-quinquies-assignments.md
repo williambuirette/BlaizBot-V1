@@ -1399,6 +1399,117 @@ Refactore NewAssignmentModal.tsx (1039 lignes) en plusieurs fichiers < 350 ligne
 
 ---
 
+### Prompt Optimal AS-FIX10 — Menu Déroulant Liste Élèves
+
+> **Itérations réelles** : 4 (idéal = 1)  
+> **Problèmes rencontrés** :
+> - StudentProgress undefined dans la réponse API (ligne 190 route.ts)
+> - Bouton imbriqué dans un span inline (problème HTML/accessibilité)
+> - Interface TypeScript manquante dans page.tsx
+
+**Prompt optimal qui aurait fonctionné du premier coup** :
+
+```
+Ajoute un menu déroulant sur les cartes d'assignation pour afficher la liste des élèves assignés.
+
+**Contexte** :
+- Les cartes affichent le nom de la classe (👥 3ème A)
+- Besoin de voir la liste complète des élèves assignés avec leur statut
+- Utiliser un Popover de shadcn/ui pour le menu déroulant
+
+**Étape 1** : Modifier l'API pour inclure StudentProgress
+
+Fichier : `src/app/api/teacher/assignments/route.ts`
+
+Ligne 190, remplacer :
+StudentProgress: undefined,  // Ne pas exposer la liste complète
+
+Par :
+StudentProgress: a.StudentProgress,  // Inclure StudentProgress pour afficher la liste des élèves
+
+**Étape 2** : Ajouter StudentProgress dans l'interface TypeScript
+
+Fichier : `src/app/(dashboard)/teacher/assignments/page.tsx`
+
+Dans interface AssignmentWithDetails, ajouter :
+StudentProgress?: Array<{
+  id: string;
+  studentId: string;
+  status: string;
+  User?: { id: string; firstName: string; lastName: string };
+}>;
+
+**Étape 3** : Modifier AssignmentCard pour ajouter le Popover
+
+Fichier : `src/components/features/assignments/AssignmentCard.tsx`
+
+1. Ajouter imports (ligne ~10) :
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronDown } from 'lucide-react';
+
+2. Ajouter state (ligne ~127) :
+const [studentsPopoverOpen, setStudentsPopoverOpen] = useState(false);
+
+3. Modifier la section Class (IMPORTANT : sortir le bouton du span pour éviter HTML invalide) :
+{assignment.Class && (
+  <>
+    <span className="flex items-center gap-1 text-blue-600">
+      <Users className="h-3 w-3" />
+      {assignment.Class.name}
+    </span>
+    {assignment.StudentProgress && assignment.StudentProgress.length > 0 && (
+      <Popover open={studentsPopoverOpen} onOpenChange={setStudentsPopoverOpen}>
+        <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" className="h-5 px-1 -ml-1 hover:bg-blue-100">
+            <ChevronDown className="h-3 w-3 text-blue-600" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-3" align="start" onClick={(e) => e.stopPropagation()}>
+          <div className="space-y-2">
+            <h4 className="font-semibold text-sm flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Élèves assignés ({assignment.StudentProgress.length})
+            </h4>
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {assignment.StudentProgress
+                .filter(p => p.User)
+                .sort((a, b) => {
+                  const nameA = \`\${a.User?.lastName} \${a.User?.firstName}\`;
+                  const nameB = \`\${b.User?.lastName} \${b.User?.firstName}\`;
+                  return nameA.localeCompare(nameB);
+                })
+                .map((progress) => (
+                  <div key={progress.id} className="flex items-center justify-between p-2 rounded hover:bg-muted text-sm">
+                    <div className="flex items-center gap-2">
+                      <User className="h-3 w-3 text-muted-foreground" />
+                      <span>{progress.User?.firstName} {progress.User?.lastName}</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] px-1 py-0">
+                      {progress.status === 'COMPLETED' ? '✓' : 
+                       progress.status === 'IN_PROGRESS' ? '⏳' : '○'}
+                    </Badge>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    )}
+  </>
+)}
+```
+
+**Différences clés vs prompt original** :
+1. **API modifiée** : StudentProgress passé de `undefined` à `a.StudentProgress` (ligne 190)
+2. **Interface ajoutée** : StudentProgress dans AssignmentWithDetails de page.tsx
+3. **Structure HTML** : Bouton HORS du `<span>` avec Fragment `<>` (évite problème de rendu)
+4. **État local** : `studentsPopoverOpen` pour contrôler l'ouverture
+5. **Tri** : Liste triée alphabétiquement par lastName puis firstName
+6. **Icônes de statut** : ✓ (COMPLETED), ⏳ (IN_PROGRESS), ○ (NOT_STARTED)
+7. **stopPropagation** : Sur les clics pour éviter la redirection vers la page de détail
+
+---
+
 ## 🔗 Références
 
 | Ressource | Lien |
