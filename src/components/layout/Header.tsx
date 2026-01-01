@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { signOut } from 'next-auth/react';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, User, Settings, LogOut } from 'lucide-react';
 import { NotificationBell } from '@/components/features/shared/NotificationBell';
+import { ProfileModal, SettingsModal } from '@/components/features/user';
 
 // -----------------------------------------------------
 // TYPES
@@ -52,6 +53,10 @@ const getInitials = (name?: string | null): string => {
 export function Header({ user }: HeaderProps) {
   const isClient = useIsClient();
   const initials = getInitials(user?.name);
+
+  // États pour les modales
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-6">
@@ -92,11 +97,17 @@ export function Header({ user }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={() => setProfileOpen(true)}
+            >
               <User className="mr-2 h-4 w-4" />
               Mon profil
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={() => setSettingsOpen(true)}
+            >
               <Settings className="mr-2 h-4 w-4" />
               Paramètres
             </DropdownMenuItem>
@@ -118,6 +129,10 @@ export function Header({ user }: HeaderProps) {
         </Avatar>
       )}
       </div>
+
+      {/* Modales Profil & Paramètres */}
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </header>
   );
 }
