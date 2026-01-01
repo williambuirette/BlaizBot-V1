@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -122,11 +122,19 @@ export function ProgressSheet({
     setLoading(false);
   }, [assignment.id]);
 
-  useEffect(() => {
-    if (open) {
+  // Ref pour tracker si les données ont été chargées pour cet assignment
+  const loadedAssignmentIdRef = React.useRef<string | null>(null);
+
+  // Charger les données une fois quand le sheet s'ouvre (via ref, pas state)
+  React.useEffect(() => {
+    if (open && loadedAssignmentIdRef.current !== assignment.id) {
+      loadedAssignmentIdRef.current = assignment.id;
       fetchProgress();
     }
-  }, [open, fetchProgress]);
+    if (!open) {
+      loadedAssignmentIdRef.current = null;
+    }
+  }, [open, assignment.id, fetchProgress]);
 
   // Filter progress
   const filteredProgress = progress.filter((p) => {

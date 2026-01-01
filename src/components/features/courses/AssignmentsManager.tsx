@@ -21,7 +21,6 @@ import {
   Users,
   User,
   Calendar,
-  Pencil,
   Trash2,
   Eye,
   Loader2,
@@ -89,15 +88,34 @@ const targetTypeConfig = {
   STUDENT: { icon: User, label: 'Élève', color: 'bg-green-100 text-green-800' },
 };
 
-// Content type icons
-const getContentIcon = (assignment: Assignment) => {
+// Content type icon mapping - retourne le type comme string pour éviter de créer un composant pendant le render
+type ContentIconType = 'exercise' | 'quiz' | 'lesson';
+
+const getContentIconType = (assignment: Assignment): ContentIconType => {
   if (assignment.section) {
     const type = assignment.section.type;
-    if (type === 'EXERCISE') return PenTool;
-    if (type === 'QUIZ') return FileQuestion;
+    if (type === 'EXERCISE') return 'exercise';
+    if (type === 'QUIZ') return 'quiz';
   }
-  return BookOpen;
+  return 'lesson';
 };
+
+// Composant stable pour l'icône de contenu
+interface ContentIconProps {
+  type: ContentIconType;
+  className?: string;
+}
+
+function ContentIcon({ type, className }: ContentIconProps) {
+  switch (type) {
+    case 'exercise':
+      return <PenTool className={className} />;
+    case 'quiz':
+      return <FileQuestion className={className} />;
+    default:
+      return <BookOpen className={className} />;
+  }
+}
 
 export function AssignmentsManager({ courseId }: AssignmentsManagerProps) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -281,7 +299,7 @@ interface AssignmentCardProps {
 }
 
 function AssignmentCard({ assignment, onViewProgress, onDelete }: AssignmentCardProps) {
-  const ContentIcon = getContentIcon(assignment);
+  const contentIconType = getContentIconType(assignment);
   const targetConfig = targetTypeConfig[assignment.targetType];
   const TargetIcon = targetConfig.icon;
 
@@ -317,8 +335,8 @@ function AssignmentCard({ assignment, onViewProgress, onDelete }: AssignmentCard
     <div className="border rounded-lg p-4 hover:bg-muted/30 transition-colors">
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className="p-2 rounded bg-muted flex-shrink-0">
-          <ContentIcon className="h-5 w-5" />
+        <div className="p-2 rounded bg-muted shrink-0">
+          <ContentIcon type={contentIconType} className="h-5 w-5" />
         </div>
 
         {/* Content */}

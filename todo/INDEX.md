@@ -6,10 +6,28 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : Phase 7 Quinquies — Assignations & Calendrier (FINALISATION)  
-**Prompts** : [prompts/phase-07-quinquies-assignments.md](../prompts/phase-07-quinquies-assignments.md)  
-**Étape en cours** : AS-CAL3 — Finaliser comportement vue Agenda  
-**Dernière MAJ** : 2026-01-01
+**Phase actuelle** : Phase 7 Audit — Corrections TypeScript & Refactoring  
+**Prompts** : [prompts/phase-07-audit-refactoring.md](../prompts/phase-07-audit-refactoring.md)  
+**Étape en cours** : AUD-TS1 — Corriger `Class.color` manquant  
+**Dernière MAJ** : 2026-01-02
+
+### 🔴 BLOCKERS identifiés
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| AUD-TS1 | Corriger `Class.color` manquant | ⬜ |
+| AUD-TS2 | Corriger type `CustomToolbar` | ⬜ |
+| AUD-TS3 | Corriger `hours` undefined | ⬜ |
+| AUD-TS4 | Corriger prop `levels` manquante | ⬜ |
+| AUD-RH1 | Composant créé pendant render (AssignmentsManager) | ⬜ |
+| AUD-RH2 | Composant créé pendant render (ClassStudentsList) | ⬜ |
+| AUD-RH3 | setState dans useEffect (ProgressSheet) | ⬜ |
+| AUD-RH4 | setState dans useEffect (ProfileModal) | ⬜ |
+| AUD-RH5 | setState dans useEffect (useAssignDialogState) | ⬜ |
+
+---
+
+## 🟢 FINALISÉ — Phase 7 Quinquies (Précédent)
 
 ---
 

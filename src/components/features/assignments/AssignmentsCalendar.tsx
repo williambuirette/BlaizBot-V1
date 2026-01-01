@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback } from 'react';
 import { Calendar, dateFnsLocalizer, Views, SlotInfo, View, ToolbarProps } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -75,8 +75,16 @@ const messages = {
   showMore: (total: number) => `+${total} de plus`,
 };
 
+// Messages pour l'affichage des vues
+const viewLabels: Record<string, string> = {
+  month: 'Mois',
+  week: 'Semaine',
+  day: 'Jour',
+  agenda: 'Agenda',
+};
+
 // Toolbar personnalisée sans le bouton "Aujourd'hui"
-const CustomToolbar = ({ label, onNavigate, onView, view }: ToolbarProps) => {
+const CustomToolbar = ({ label, onNavigate, onView, view }: ToolbarProps<CalendarEvent, object>) => {
   return (
     <div className="rbc-toolbar">
       <span className="rbc-btn-group">
@@ -111,7 +119,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view }: ToolbarProps) => {
             onClick={() => onView(viewName)}
             className="rbc-btn"
           >
-            {messages[viewName as keyof typeof messages]}
+            {viewLabels[viewName] || viewName}
           </Button>
         ))}
       </span>

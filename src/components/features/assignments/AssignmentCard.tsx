@@ -63,7 +63,7 @@ export interface AssignmentCardData {
   Course: { id: string; title: string };
   Chapter?: { id: string; title: string } | null;
   Section?: { id: string; title: string } | null;
-  Class?: { id: string; name: string } | null;
+  Class?: { id: string; name: string; color?: string } | null;
   Team?: { id: string; name: string } | null;
   User_CourseAssignment_studentIdToUser?: { id: string; firstName: string; lastName: string } | null;
   StudentProgress?: Array<{

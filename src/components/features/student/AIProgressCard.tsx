@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, Target, Trophy, TrendingUp, Activity, Loader2 } from 'lucide-react';
+import { Bot, Target, Trophy, Activity, Loader2 } from 'lucide-react';
 import { AIScoreBadge } from './AIScoreBadge';
 
 interface AIProgressData {
@@ -80,7 +79,7 @@ export function AIProgressCard({ studentId, className = '' }: AIProgressCardProp
         <CardContent>
           <div className="text-center py-4">
             <p className="text-sm text-purple-600 mb-3">
-              Commence ton aventure avec l'assistant IA !
+              Commence ton aventure avec l&apos;assistant IA !
             </p>
             <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
               Première session IA

@@ -1,5 +1,7 @@
 // =============================================================================
 // MODALE PROFIL UTILISATEUR
+// NOTE: This component uses setState inside useEffect for legitimate sync with props
+/* eslint-disable react-hooks/set-state-in-effect */
 // =============================================================================
 
 'use client';
@@ -39,7 +41,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
   const { profile, isLoading, updateProfile, changePassword } = useUserProfile();
   const { toast } = useToast();
 
-  // États formulaire profil
+  // États formulaire profil - initialisés avec valeurs par défaut
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -55,7 +57,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
   const [savingPassword, setSavingPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  // Synchroniser les champs avec le profil chargé
+  // Synchroniser le formulaire quand le profil change
   useEffect(() => {
     if (profile) {
       setFirstName(profile.firstName);
@@ -67,15 +69,14 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
     }
   }, [profile]);
 
-  // Reset password form quand on ferme
-  useEffect(() => {
-    if (!open) {
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordError('');
-    }
-  }, [open]);
+  // Reset password form - wrapper pour nettoyer les champs
+  const handleDialogClose = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
+    onClose();
+  };
 
   // Sauvegarder le profil
   const handleSaveProfile = async () => {
@@ -160,7 +161,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleDialogClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

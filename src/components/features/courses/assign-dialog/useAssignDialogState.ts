@@ -1,5 +1,7 @@
 // src/components/features/courses/assign-dialog/useAssignDialogState.ts
 // Hook pour gérer l'état du formulaire d'assignation
+// NOTE: This hook uses setState inside useEffect for legitimate async fetch patterns
+/* eslint-disable react-hooks/set-state-in-effect */
 
 'use client';
 
@@ -65,9 +67,8 @@ export function useAssignDialogState(
     setDueDate('');
   }, []);
 
-  useEffect(() => {
-    if (!open) reset();
-  }, [open, reset]);
+  // Note: Le reset est exposé et doit être appelé par le parent via onOpenChange
+  // Cela évite les cascading renders avec setState dans useEffect
 
   // Fetch chapters
   useEffect(() => {

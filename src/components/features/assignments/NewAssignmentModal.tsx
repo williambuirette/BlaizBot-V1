@@ -109,7 +109,9 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
       // Combiner date + heure
       let finalDueDate = form.dueDate;
       if (finalDueDate && form.dueTime) {
-        const [hours, minutes] = form.dueTime.split(':').map(Number);
+        const timeParts = form.dueTime.split(':').map(Number);
+        const hours = timeParts[0] ?? 23;
+        const minutes = timeParts[1] ?? 59;
         finalDueDate = new Date(finalDueDate);
         finalDueDate.setHours(hours, minutes, 0, 0);
       } else if (finalDueDate) {

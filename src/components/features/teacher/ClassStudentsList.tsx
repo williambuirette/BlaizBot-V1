@@ -41,6 +41,28 @@ interface ClassStudentsListProps {
 
 type SortKey = 'name' | 'aiAverage' | 'aiSessionsCount';
 
+// Composant SortableHeader extrait pour éviter re-création pendant le render
+interface SortableHeaderProps {
+  sortKey: SortKey;
+  children: React.ReactNode;
+  onSort: (key: SortKey) => void;
+}
+
+function SortableHeader({ sortKey, children, onSort }: SortableHeaderProps) {
+  return (
+    <TableHead>
+      <Button
+        variant="ghost"
+        onClick={() => onSort(sortKey)}
+        className="h-auto p-0 hover:bg-transparent"
+      >
+        {children}
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    </TableHead>
+  );
+}
+
 export function ClassStudentsList({ students, className }: ClassStudentsListProps) {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -110,20 +132,6 @@ export function ClassStudentsList({ students, className }: ClassStudentsListProp
   };
 
   const isAllSelected = selectedRowIds.length === filteredStudents.length && filteredStudents.length > 0;
-  const isSomeSelected = selectedRowIds.length > 0 && selectedRowIds.length < filteredStudents.length;
-
-  const SortableHeader = ({ sortKey: key, children }: { sortKey: SortKey; children: React.ReactNode }) => (
-    <TableHead>
-      <Button
-        variant="ghost"
-        onClick={() => handleSort(key)}
-        className="h-auto p-0 hover:bg-transparent"
-      >
-        {children}
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    </TableHead>
-  );
 
   return (
     <Card>
@@ -171,9 +179,9 @@ export function ClassStudentsList({ students, className }: ClassStudentsListProp
                     aria-label="Select all"
                   />
                 </TableHead>
-                <SortableHeader sortKey="name">Nom</SortableHeader>
-                <SortableHeader sortKey="aiAverage">Score IA</SortableHeader>
-                <SortableHeader sortKey="aiSessionsCount">Sessions IA</SortableHeader>
+                <SortableHeader sortKey="name" onSort={handleSort}>Nom</SortableHeader>
+                <SortableHeader sortKey="aiAverage" onSort={handleSort}>Score IA</SortableHeader>
+                <SortableHeader sortKey="aiSessionsCount" onSort={handleSort}>Sessions IA</SortableHeader>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>

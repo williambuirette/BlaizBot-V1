@@ -27,8 +27,16 @@ export function AssignDialog({
 }: AssignDialogProps) {
   const state = useAssignDialogState(open, courseId, onSuccess, onOpenChange);
 
+  // Gérer la fermeture avec reset
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      state.reset();
+    }
+    onOpenChange(isOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Nouvelle assignation</DialogTitle>
