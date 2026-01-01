@@ -53,28 +53,28 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
-        course: {
+        Course: {
           select: { id: true, title: true },
         },
-        chapter: {
+        Chapter: {
           select: { id: true, title: true },
         },
-        section: {
+        Section: {
           select: { id: true, title: true, type: true },
         },
-        class: {
+        Class: {
           select: { id: true, name: true },
         },
-        team: {
+        Team: {
           select: { id: true, name: true },
         },
-        student: {
+        User_CourseAssignment_studentIdToUser: {
           select: { id: true, firstName: true, lastName: true },
         },
         _count: {
-          select: { progress: true },
+          select: { StudentProgress: true },
         },
-        progress: {
+        StudentProgress: {
           select: {
             status: true,
           },
@@ -84,13 +84,13 @@ export async function GET(request: NextRequest) {
 
     // Calculer les stats de progression pour chaque assignation
     const assignmentsWithStats = assignments.map((a) => {
-      const total = a.progress.length;
-      const completed = a.progress.filter((p) => p.status === 'COMPLETED' || p.status === 'GRADED').length;
-      const inProgress = a.progress.filter((p) => p.status === 'IN_PROGRESS').length;
+      const total = a.StudentProgress.length;
+      const completed = a.StudentProgress.filter((p) => p.status === 'COMPLETED' || p.status === 'GRADED').length;
+      const inProgress = a.StudentProgress.filter((p) => p.status === 'IN_PROGRESS').length;
 
       return {
         ...a,
-        progress: undefined, // Ne pas exposer la liste complète
+        StudentProgress: undefined, // Ne pas exposer la liste complète
         stats: {
           total,
           completed,
@@ -164,6 +164,7 @@ export async function POST(request: NextRequest) {
     // Créer l'assignation
     const assignment = await prisma.courseAssignment.create({
       data: {
+        id: crypto.randomUUID(),
         teacherId: userId,
         title: title.trim(),
         instructions: instructions?.trim() || null,
@@ -175,6 +176,7 @@ export async function POST(request: NextRequest) {
         teamId: targetType === 'TEAM' ? teamId : null,
         studentId: targetType === 'STUDENT' ? studentId : null,
         dueDate: dueDate ? new Date(dueDate) : null,
+        updatedAt: new Date(),
       },
     });
 
@@ -201,10 +203,12 @@ export async function POST(request: NextRequest) {
     if (studentIds.length > 0) {
       await prisma.studentProgress.createMany({
         data: studentIds.map((sid) => ({
+          id: crypto.randomUUID(),
           assignmentId: assignment.id,
           studentId: sid,
           sectionId: sectionId || null,
           status: 'NOT_STARTED' as ProgressStatus,
+          updatedAt: new Date(),
         })),
         skipDuplicates: true,
       });
@@ -214,13 +218,13 @@ export async function POST(request: NextRequest) {
     const fullAssignment = await prisma.courseAssignment.findUnique({
       where: { id: assignment.id },
       include: {
-        course: { select: { id: true, title: true } },
-        chapter: { select: { id: true, title: true } },
-        section: { select: { id: true, title: true, type: true } },
-        class: { select: { id: true, name: true } },
-        team: { select: { id: true, name: true } },
-        student: { select: { id: true, firstName: true, lastName: true } },
-        _count: { select: { progress: true } },
+        Course: { select: { id: true, title: true } },
+        Chapter: { select: { id: true, title: true } },
+        Section: { select: { id: true, title: true, type: true } },
+        Class: { select: { id: true, name: true } },
+        Team: { select: { id: true, name: true } },
+        User_CourseAssignment_studentIdToUser: { select: { id: true, firstName: true, lastName: true } },
+        _count: { select: { StudentProgress: true } },
       },
     });
 

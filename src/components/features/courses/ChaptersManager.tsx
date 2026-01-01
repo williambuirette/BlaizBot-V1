@@ -20,14 +20,11 @@ import {
   Pencil,
   Trash2,
   BookOpen,
-  Video,
-  FileQuestion,
-  PenTool,
   Loader2,
 } from 'lucide-react';
 import { ChapterFormDialog } from './ChapterFormDialog';
 import { SectionFormDialog } from './SectionFormDialog';
-import { SectionItem, type Section } from './SectionItem';
+import { SectionCard, type Section } from './SectionCard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,32 +49,11 @@ interface ChaptersManagerProps {
   courseId: string;
 }
 
-// Mapping des icônes par type de section
-const sectionTypeIcons = {
-  LESSON: BookOpen,
-  VIDEO: Video,
-  QUIZ: FileQuestion,
-  EXERCISE: PenTool,
-};
-
-const sectionTypeLabels = {
-  LESSON: 'Leçon',
-  VIDEO: 'Vidéo',
-  QUIZ: 'Quiz',
-  EXERCISE: 'Exercice',
-};
-
-const sectionTypeColors = {
-  LESSON: 'bg-blue-100 text-blue-800',
-  VIDEO: 'bg-purple-100 text-purple-800',
-  QUIZ: 'bg-orange-100 text-orange-800',
-  EXERCISE: 'bg-green-100 text-green-800',
-};
-
 export function ChaptersManager({ courseId }: ChaptersManagerProps) {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+  const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
 
   // Dialogs state
   const [chapterDialogOpen, setChapterDialogOpen] = useState(false);
@@ -182,23 +158,33 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
     try {
       if (editingSection) {
         // Update
+        console.log('Updating section:', editingSection.id, 'data:', data);
         const res = await fetch(`/api/teacher/sections/${editingSection.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
+        console.log('Section update response:', res.status);
         if (res.ok) {
           await fetchChapters();
+        } else {
+          const errorText = await res.text();
+          console.error('Section update error:', errorText);
         }
       } else if (selectedChapterId) {
         // Create
+        console.log('Creating section for chapter:', selectedChapterId, 'data:', data);
         const res = await fetch(`/api/teacher/chapters/${selectedChapterId}/sections`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
+        console.log('Section create response:', res.status);
         if (res.ok) {
           await fetchChapters();
+        } else {
+          const errorText = await res.text();
+          console.error('Section create error:', errorText);
         }
       }
     } catch (error) {
@@ -211,13 +197,24 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
 
   // Delete section
   const handleDeleteSection = async () => {
-    if (!deleteSectionId) return;
+    console.log('handleDeleteSection called, deleteSectionId:', deleteSectionId);
+    if (!deleteSectionId) {
+      console.log('No deleteSectionId, returning');
+      return;
+    }
     try {
+      console.log('Calling DELETE /api/teacher/sections/' + deleteSectionId);
       const res = await fetch(`/api/teacher/sections/${deleteSectionId}`, {
         method: 'DELETE',
       });
+      console.log('DELETE response status:', res.status);
       if (res.ok) {
+        console.log('DELETE successful, fetching chapters...');
         await fetchChapters();
+        console.log('Chapters refetched');
+      } else {
+        const errorText = await res.text();
+        console.error('DELETE failed:', errorText);
       }
     } catch (error) {
       console.error('Erreur delete section:', error);
@@ -291,6 +288,8 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
                   onEditSection={openEditSection}
                   onDeleteSection={(sectionId) => setDeleteSectionId(sectionId)}
                   onContentSaved={fetchChapters}
+                  expandedSectionId={expandedSectionId}
+                  onToggleSection={(sectionId) => setExpandedSectionId(expandedSectionId === sectionId ? null : sectionId)}
                 />
               ))}
             </div>
@@ -365,6 +364,8 @@ interface ChapterItemProps {
   onEditSection: (section: Section) => void;
   onDeleteSection: (sectionId: string) => void;
   onContentSaved: () => void;
+  expandedSectionId: string | null;
+  onToggleSection: (sectionId: string) => void;
 }
 
 function ChapterItem({
@@ -377,7 +378,24 @@ function ChapterItem({
   onEditSection,
   onDeleteSection,
   onContentSaved,
+  expandedSectionId,
+  onToggleSection,
 }: ChapterItemProps) {
+  // Handler pour update section inline
+  const handleUpdateSection = async (sectionId: string, data: Partial<Section>) => {
+    try {
+      const res = await fetch(`/api/teacher/sections/${sectionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        onContentSaved();
+      }
+    } catch (error) {
+      console.error('Erreur update section:', error);
+    }
+  };
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <div className="border rounded-lg">
@@ -402,7 +420,7 @@ function ChapterItem({
             )}
           </div>
           <Badge variant="secondary" className="text-xs">
-            {chapter.sections.length} section{chapter.sections.length > 1 ? 's' : ''}
+            {chapter.sections?.length || 0} section{(chapter.sections?.length || 0) > 1 ? 's' : ''}
           </Badge>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
@@ -417,16 +435,20 @@ function ChapterItem({
         {/* Sections */}
         <CollapsibleContent>
           <div className="p-3 pt-0 space-y-2">
-            {chapter.sections.length === 0 ? (
+            {!chapter.sections || chapter.sections.length === 0 ? (
               <p className="text-sm text-muted-foreground italic py-2 pl-8">
                 Aucune section dans ce chapitre
               </p>
             ) : (
               chapter.sections.map((section) => (
-                <SectionItem
+                <SectionCard
                   key={section.id}
                   section={section}
+                  chapterId={chapter.id}
+                  isExpanded={expandedSectionId === section.id}
+                  onToggle={() => onToggleSection(section.id)}
                   onEdit={() => onEditSection(section)}
+                  onUpdate={(data) => handleUpdateSection(section.id, data)}
                   onDelete={() => onDeleteSection(section.id)}
                   onContentSaved={onContentSaved}
                 />

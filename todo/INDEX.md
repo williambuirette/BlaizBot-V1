@@ -6,23 +6,94 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : [phase-07bis-scoring.md](phase-07bis-scoring.md) — Compteurs & Sélection (C1-C4)  
-**Prompts** : [prompts/phase-07bis-scoring.md](../prompts/phase-07bis-scoring.md)  
-**Étape en cours** : C1 — Types & calculs stats  
-**Dernière MAJ** : 2025-12-30
+**Phase actuelle** : [phase-08-blocs-structure.md](phase-08-blocs-structure.md) — Blocs Dépliables Structure Cours  
+**Prompts** : [prompts/phase-08-blocs-structure.md](../prompts/phase-08-blocs-structure.md)  
+**Étape en cours** : BL11 — Simplification terminée  
+**Dernière MAJ** : 2025-12-31
 
 ---
 
-## 🆕 Compteurs & Sélection Groupe (C1-C4) — EN COURS
+## 🆕 Blocs Dépliables Structure (BL1-BL11) — ✅ TERMINÉ
 
 | Tâche | Description | Statut |
 |:------|:------------|:-------|
-| C1 | Types & calculs stats | ⬜ |
-| C2 | Composant StatsCounters | ⬜ |
-| C3 | Boutons sélection groupe | ⬜ |
-| C4 | Intégration StudentsList | ⬜ |
+| BL1 | Composant SectionCard accordéon | ✅ |
+| BL2 | Éditeurs inline (LessonEditorInline) | ✅ |
+| BL3 | Formulaire section inline (SectionFormDialog) | ✅ |
+| BL4 | Chargement contenu existant | ✅ |
+| BL5 | Boutons Save/Cancel | ✅ |
+| BL6 | Animations transitions | ✅ |
+| BL7 | Intégration ChaptersManager | ✅ |
+| BL8 | Tests et validation (CRUD sections) | ✅ |
+| **BL9** | **Fichiers base de connaissance par section** | ✅ |
+| **BL10** | **Instructions IA par section** | ⬜ (reporté) |
+| **BL11** | **Simplification menu (2 options)** | ✅ |
 
-**Prompts** : [prompts/phase-07bis-scoring.md](../prompts/phase-07bis-scoring.md#-compteurs--sélection-groupe-c1-c4)
+**Résumé des corrections effectuées** :
+- ✅ Création sections (POST 201)
+- ✅ Affichage cartes après création (transform Section→sections)
+- ✅ Suppression sections (fix PascalCase Chapter/Course)
+- ✅ Modification sections (fix PascalCase)
+- ✅ Upload fichiers ressources (fix TeacherProfile)
+- ✅ Suppression fichiers (fix TeacherProfile)
+- ✅ Statistiques _count (transform camelCase)
+- ✅ Menu simplifié (Modifier le cours + Supprimer)
+- ✅ Suppression page /edit obsolète
+
+**Prompts** : [prompts/phase-08-blocs-structure.md](../prompts/phase-08-blocs-structure.md)
+
+---
+
+## ✅ Compteurs Performance Cours (CP1-CP6) — TERMINÉ
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| CP1 | Types CoursePerformance | ✅ |
+| CP2 | API stats cours enrichie | ✅ |
+| CP3 | Badge Performance A+/A/B/C/D | ✅ |
+| CP4 | Header Stats vue d'ensemble | ✅ |
+| CP5 | Intégration page courses | ✅ |
+| CP6 | Tests et validation | ✅ |
+
+**Fichiers créés** :
+- `src/types/course-stats.ts`
+- `src/components/features/teacher/CoursePerformanceBadge.tsx`
+- `src/components/features/teacher/CoursesStatsHeader.tsx`
+
+**Prompts** : [prompts/phase-07ter-ai-evaluation.md](../prompts/phase-07ter-ai-evaluation.md#phase-cp--compteurs-performance-cours)
+
+---
+
+## ✅ Messagerie Avancée (AI5.ter) — TERMINÉ
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| AI5.ter.1 | Affichage bulles chat | ✅ |
+| AI5.ter.2 | Bouton fichiers joints | ✅ |
+| AI5.ter.3 | API upload fichiers | ✅ |
+| AI5.ter.4.1-6 | Téléchargement complet | ✅ |
+
+**Tests validés** :
+- ✅ Upload multi-fichiers Excel, PDF
+- ✅ Stockage physique `/public/uploads/messages/`
+- ✅ Téléchargement nouveaux fichiers
+- ✅ Debugging système avec logs détaillés
+
+**Prompts** : [prompts/phase-07ter-ai-evaluation.md](../prompts/phase-07ter-ai-evaluation.md#-amélioration-messagerie-ai5ter)
+
+---
+
+## ⏸️ Évaluation Automatique IA (AI1-AI7) — EN PAUSE
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| AI1.1 | Modèle BDD AIActivityScore | ⬜ |
+| AI1.2 | Relations User/Course/ChatSession | ⬜ |
+| AI2.1 | Service évaluation IA | ⬜ |
+| AI2.2 | Prompts templates | ⬜ |
+| AI2.3 | Agrégation scores | ⬜ |
+
+**Prompts** : [prompts/phase-07ter-ai-evaluation.md](../prompts/phase-07ter-ai-evaluation.md#-tâche-ai11--modèle-bdd-aiactivityscore)
 
 ---
 

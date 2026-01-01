@@ -366,9 +366,24 @@ model Section {
   CourseAssignment CourseAssignment[]
   Chapter          Chapter            @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   StudentProgress  StudentProgress[]
+  files            SectionFile[]
 
   @@index([chapterId])
   @@index([order])
+}
+
+// Fichiers de base de connaissance liés à une section
+model SectionFile {
+  id        String   @id @default(cuid())
+  sectionId String
+  filename  String
+  fileType  String
+  url       String
+  size      Int?
+  createdAt DateTime @default(now())
+  Section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
 }
 
 model StudentProfile {

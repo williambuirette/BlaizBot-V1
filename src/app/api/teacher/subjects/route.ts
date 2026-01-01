@@ -18,7 +18,7 @@ export async function GET() {
     const teacherProfile = await prisma.teacherProfile.findUnique({
       where: { userId: session.user.id },
       include: {
-        subjects: {
+        Subject: {
           select: {
             id: true,
             name: true,
@@ -32,7 +32,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
     }
 
-    return NextResponse.json({ subjects: teacherProfile.subjects });
+    return NextResponse.json({ subjects: teacherProfile.Subject || [] });
   } catch (error) {
     console.error('Erreur API GET /api/teacher/subjects:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

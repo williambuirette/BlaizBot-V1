@@ -159,10 +159,13 @@ export function calculateClassGroupStats(
     dangerCount: 0,
     noDataCount: 0,
     averageGrade: null,
+    averageAI: null,
   };
 
   let gradeSum = 0;
   let gradeCount = 0;
+  let aiSum = 0;
+  let aiCount = 0;
 
   classes.forEach(classItem => {
     // Agréger les compteurs
@@ -184,11 +187,22 @@ export function calculateClassGroupStats(
       gradeSum += classItem.stats.averageGrade * classItem.studentsCount;
       gradeCount += classItem.studentsCount;
     }
+
+    // Accumuler pour la moyenne IA pondérée
+    if (classItem.stats.aiAverageScore !== null) {
+      aiSum += classItem.stats.aiAverageScore * classItem.studentsCount;
+      aiCount += classItem.studentsCount;
+    }
   });
 
   // Calculer la moyenne pondérée par nombre d'élèves
   if (gradeCount > 0) {
     stats.averageGrade = gradeSum / gradeCount;
+  }
+
+  // Calculer la moyenne IA pondérée
+  if (aiCount > 0) {
+    stats.averageAI = aiSum / aiCount;
   }
 
   return stats;

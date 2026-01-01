@@ -82,9 +82,11 @@ export async function POST(req: Request) {
             where: { id: activityId },
           });
           if (exercise) {
+            // Le content est un JSON, on essaie d'extraire une description
+            const exerciseContent = exercise.content as { description?: string; instructions?: string } | null;
             evaluation = await evaluateExerciseSession(chatHistory, {
               title: exercise.title,
-              description: exercise.statement,
+              description: exerciseContent?.description || exerciseContent?.instructions || exercise.title,
             });
             break;
           }

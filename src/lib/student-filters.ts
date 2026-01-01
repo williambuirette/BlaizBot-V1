@@ -164,6 +164,8 @@ export interface GroupStats {
   noDataCount: number;
   /** Moyenne générale du groupe (/6), null si aucune note */
   averageGrade: number | null;
+  /** Moyenne compréhension IA du groupe (0-100), null si aucune activité */
+  averageAI: number | null;
 }
 
 /**
@@ -179,14 +181,18 @@ export function calculateGroupStats<T extends FilterableStudent>(
     dangerCount: 0,
     noDataCount: 0,
     averageGrade: null,
+    averageAI: null,
   };
 
   let gradeSum = 0;
   let gradeCount = 0;
+  let aiSum = 0;
+  let aiCount = 0;
 
   students.forEach(student => {
     const alertLevel = student.stats?.alertLevel ?? 'no-data';
     const grade = student.stats?.averageGrade;
+    const aiScore = student.stats?.aiComprehension;
 
     // Compter par niveau d'alerte
     switch (alertLevel) {
@@ -203,16 +209,25 @@ export function calculateGroupStats<T extends FilterableStudent>(
         stats.noDataCount++;
     }
 
-    // Accumuler pour la moyenne
+    // Accumuler pour la moyenne notes
     if (grade !== null && grade !== undefined) {
       gradeSum += grade;
       gradeCount++;
     }
+
+    // Accumuler pour la moyenne IA
+    if (aiScore !== null && aiScore !== undefined) {
+      aiSum += aiScore;
+      aiCount++;
+    }
   });
 
-  // Calculer la moyenne
+  // Calculer les moyennes
   if (gradeCount > 0) {
     stats.averageGrade = gradeSum / gradeCount;
+  }
+  if (aiCount > 0) {
+    stats.averageAI = aiSum / aiCount;
   }
 
   return stats;

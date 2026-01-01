@@ -21,18 +21,18 @@ async function verifySectionOwnership(sectionId: string, userId: string) {
   const section = await prisma.section.findFirst({
     where: {
       id: sectionId,
-      chapter: {
-        course: {
+      Chapter: {
+        Course: {
           teacherId: teacherProfile.id,
         },
       },
     },
     include: {
-      chapter: {
+      Chapter: {
         select: {
           id: true,
           title: true,
-          course: {
+          Course: {
             select: { id: true, title: true },
           },
         },
@@ -132,11 +132,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       where: { id: sectionId },
       data: updateData,
       include: {
-        chapter: {
+        Chapter: {
           select: {
             id: true,
             title: true,
-            course: {
+            Course: {
               select: { id: true, title: true },
             },
           },

@@ -3,7 +3,7 @@
  * @module student-filters
  */
 
-import type { Class, User, StudentProfile } from '@prisma/client'
+import type { Class, StudentProfile } from '@prisma/client'
 
 // ============================================================================
 // FILTRES
@@ -70,6 +70,8 @@ export interface StudentStats {
   totalCourses: number
   /** Niveau d'alerte basé sur la moyenne */
   alertLevel: 'success' | 'warning' | 'danger' | 'no-data'
+  /** Moyenne compréhension IA (0-100), null si aucune activité */
+  aiComprehension: number | null
 }
 
 /**

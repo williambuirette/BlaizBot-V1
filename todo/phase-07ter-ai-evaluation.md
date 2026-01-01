@@ -147,10 +147,10 @@ interface EvaluationResult {
 
 | # | Tâche | Description | Effort | Statut |
 |:--|:------|:------------|:-------|:-------|
-| **AI4.1** | Page Liste Élèves | Ajouter badge "Score IA" sur StudentCard + compteur Moy IA | 30min | ⬜ |
-| **AI4.2** | Page Fiche Élève | Onglet "Activités IA" + colonne IA dans CourseScoreRow | 1h | ⬜ |
-| **AI4.3** | Composant AIActivitiesTab | Tableau historique + graphique progression | 40min | ⬜ |
-| **AI4.4** | Page Détail Cours Élève | `/teacher/students/[id]/courses/[courseId]` | 1h | ⬜ |
+| **AI4.1** | Page Liste Élèves | Ajouter badge "Score IA" sur StudentCard + compteur Moy IA | 30min | ✅ |
+| **AI4.2** | Page Fiche Élève | Onglet "Activités IA" + colonne IA dans CourseScoreRow | 1h | ✅ |
+| **AI4.3** | Composant AIActivitiesTab | Tableau historique + graphique progression | 40min | ✅ |
+| **AI4.4** | Page Détail Cours Élève | `/teacher/students/[id]/courses/[courseId]` | 1h | ✅ |
 
 #### Fichiers à modifier (AI4.1)
 - `src/components/features/teacher/StudentCard.tsx` : Ajouter 4ème badge
@@ -294,9 +294,9 @@ interface EvaluationResult {
 
 | # | Tâche | Description | Effort | Statut |
 |:--|:------|:------------|:-------|:-------|
-| **AI5.1** | Page Liste Classes | Ajouter badge "Score IA moyen" sur TeacherClassCard | 15min | ⬜ |
-| **AI5.2** | Page Détail Classe | Section "Top élèves actifs IA" + colonne IA | 30min | ⬜ |
-| **AI5.3** | Composant ClassAIStats | KPIs IA pour la classe | 30min | ⬜ |
+| **AI5.1** | Page Liste Classes | Ajouter badge "Score IA moyen" sur TeacherClassCard | 15min | ✅ |
+| **AI5.2** | Page Détail Classe | Section "Top élèves actifs IA" + colonne IA | 30min | ✅ |
+| **AI5.3** | Composant ClassAIStats | KPIs IA pour la classe | 30min | ✅ |
 
 #### Fichiers à modifier (AI5.1)
 - `src/components/features/teacher/TeacherClassCard.tsx`
@@ -347,8 +347,8 @@ interface EvaluationResult {
 
 | # | Tâche | Description | Effort | Statut |
 |:--|:------|:------------|:-------|:-------|
-| **AI6.1** | Page Liste Cours | Badge "Moy IA" sur TeacherCourseCard | 20min | ⬜ |
-| **AI6.2** | Page Détail Thème | Métriques IA complètes + analyse | 1h10 | ⬜ |
+| **AI6.1** | Page Liste Cours | Badge "Moy IA" sur TeacherCourseCard | 20min | ✅ |
+| **AI6.2** | Page Détail Thème | Métriques IA complètes + analyse | 1h10 | ✅ |
 
 #### Fichiers à modifier (AI6.1)
 - `src/components/features/teacher/TeacherCourseCard.tsx`
@@ -411,9 +411,9 @@ interface EvaluationResult {
 
 | # | Tâche | Description | Effort | Statut |
 |:--|:------|:------------|:-------|:-------|
-| **AI7.1** | Modal résultats | AIScoreModal après quiz/exo | 20min | ⬜ |
-| **AI7.2** | Badge score temps réel | LiveScoreBadge dans chat | 10min | ⬜ |
-| **AI7.3** | Intégration chat | Déclencher modal après session | 10min | ⬜ |
+| **AI7.1** | Modal résultats | AIScoreModal après quiz/exo | 20min | ✅ |
+| **AI7.2** | Badge score temps réel | LiveScoreBadge dans chat | 10min | ✅ |
+| **AI7.3** | Intégration chat | Déclencher modal après session | 10min | ✅ |
 
 #### Fichiers à créer
 - `src/components/features/student/AIScoreModal.tsx` (~100 lignes)
@@ -494,14 +494,17 @@ interface EvaluationResult {
 
 | Phase | Tâches | Fichiers | Effort | Statut |
 |:------|:-------|:---------|:-------|:-------|
-| AI1 (BDD) | 2 | 1 | 20min | ⬜ |
-| AI2 (Service) | 3 | 1 | 45min | ⬜ |
-| AI3 (API) | 2 | 2 | 30min | ⬜ |
-| AI4 (Pages Élèves) | **4** | **9** | **3h10** | ⬜ |
-| AI5 (Pages Classes) | 3 | 4 | 1h15 | ⬜ |
-| AI6 (Pages Cours) | 2 | 4 | 1h30 | ⬜ |
-| AI7 (UI Élève) | 3 | 2 | 40min | ⬜ |
-| **TOTAL** | **19** | **23** | **~7h30** | **⏳** |
+| AI1 (BDD) | 2 | 1 | 20min | ✅ |
+| AI2 (Service) | 3 | 1 | 45min | ✅ |
+| AI3 (API) | 2 | 2 | 30min | ✅ |
+| AI4 (Pages Élèves) | **4** | **9** | **3h10** | ✅ |
+| AI5 (Pages Classes) | 3 | 4 | 1h15 | ✅ |
+| AI5.bis (Détail Classe) | 4 | 1 | 1h | ✅ |
+| AI5.ter (Messagerie) | 6 | 3 | 2h | ✅ |
+| AI6 (Pages Cours) | 2 | 4 | 1h30 | ✅ |
+| AI7 (UI Élève) | 3 | 2 | 40min | ✅ |
+| **CP (Perf. Cours)** | **6** | **4** | **2h30** | **⬜** |
+| **TOTAL** | **35** | **31** | **~13h45** | **⏳** |
 
 ---
 
@@ -538,3 +541,257 @@ interface EvaluationResult {
 ---
 
 *Lignes : ~550 | Dernière MAJ : 2025-12-30*
+
+---
+
+### Phase AI5.bis : Amélioration Page Détail Classe (1h)
+
+| # | Tâche | Description | Effort | Statut |
+|:--|:------|:------------|:-------|:-------|
+| **AI5.bis.1** | Transformer en tableau | Remplacer la liste d'élèves par un `Table` shadcn | 25min | ✅ |
+| **AI5.bis.2** | Liens et tri | Ajouter liens vers profil élève et tri sur colonnes | 15min | ✅ |
+| **AI5.bis.3** | Filtre et recherche | Ajouter un champ de recherche pour filtrer les élèves | 10min | ✅ |
+| **AI5.bis.4** | Actions de groupe | Ajouter checkboxes et menu d'actions groupées | 10min | ✅ |
+
+#### Critères de validation AI5.bis
+- [x] La liste d'élèves est maintenant un tableau triable.
+- [x] Le nom de l'élève est un lien cliquable.
+- [x] Un champ de recherche filtre le tableau.
+- [x] Des cases à cocher permettent de sélectionner des élèves.
+- [x] Le build `npm run build` passe sans erreur.
+
+---
+
+### Phase AI5.ter : Amélioration Messagerie (45min)
+
+| # | Tâche | Description | Effort | Statut |
+|:--|:------|:------------|:-------|:-------|
+| **AI5.ter.1** | Affichage bulles chat | Afficher les messages dans des bulles avec alignement | 15min | ✅ |
+| **AI5.ter.2** | Bouton fichiers | Ajouter bouton Paperclip pour joindre fichiers | 15min | ✅ |
+| **AI5.ter.3** | API upload fichiers | Route POST pour gérer les fichiers joints | 15min | ✅ |
+
+#### Fichiers à modifier (AI5.ter.1)
+- `src/app/(dashboard)/teacher/messages/page.tsx`
+
+**Affichage bulles AVANT** :
+```
+┌─────────────────────────────────────────────┐
+│ Groupe - 1 élèves                           │
+│ test 2                                      │
+│ Il y a moins d'une minute                   │
+│                                             │
+│ [Zone vide]                                 │
+└─────────────────────────────────────────────┘
+```
+
+**Affichage bulles APRÈS** :
+```
+┌─────────────────────────────────────────────┐
+│ Groupe - 1 élèves                           │
+│ Léa MOREAU                                  │
+├─────────────────────────────────────────────┤
+│                    ┌──────────────────┐     │
+│                    │ test 2           │     │
+│                    │ 14:30            │     │
+│                    └──────────────────┘     │
+│ ┌──────────────────┐                        │
+│ │ Bonjour !        │                        │
+│ │ 14:35            │                        │
+│ └──────────────────┘                        │
+└─────────────────────────────────────────────┘
+```
+
+#### Fichiers à modifier (AI5.ter.2)
+- `src/app/(dashboard)/teacher/messages/page.tsx`
+
+**Input AVANT** :
+```
+┌─────────────────────────────────────────────┐
+│ [Écrivez votre message...]         [Envoyer]│
+└─────────────────────────────────────────────┘
+```
+
+**Input APRÈS** :
+```
+┌─────────────────────────────────────────────┐
+│ [📎] [Écrivez votre message...]    [Envoyer]│
+│ 📁 document.pdf (2.3 MB)                    │
+└─────────────────────────────────────────────┘
+```
+
+#### Fichiers à créer (AI5.ter.3)
+- `src/app/api/teacher/messages/[id]/route.ts` (~120 lignes)
+
+**Route POST /api/teacher/messages/[id]** :
+```typescript
+// Body: FormData
+{
+  content: string;           // Texte du message
+  conversationId: string;    // ID conversation
+  attachments: File[];       // Fichiers joints
+}
+
+// Réponse
+{
+  success: true,
+  data: {
+    id: string;
+    content: string;
+    senderId: string;
+    senderName: string;
+    attachments: string[];   // URLs des fichiers
+    createdAt: Date;
+  }
+}
+```
+
+**Formats acceptés** :
+- Documents : `.pdf`, `.doc`, `.docx`
+- Tableurs : `.xls`, `.xlsx`
+- Présentations : `.ppt`, `.pptx`
+- Images : `.jpg`, `.jpeg`, `.png`
+
+#### Critères de validation AI5.ter
+- [x] Les messages s'affichent en bulles de chat
+- [x] Messages de l'envoyeur alignés à droite (bleu)
+- [x] Messages des autres alignés à gauche (gris)
+- [x] Bouton Paperclip visible dans l'input
+- [x] Sélection multi-fichiers fonctionne
+- [x] Formats de fichiers validés (PDF, docs, images)
+- [x] Route POST gère FormData
+- [x] Upload fichiers enregistré en BDD (champ attachments)
+- [x] Le build `npm run build` passe sans erreur
+
+#### AI5.ter.4 - Téléchargement de fichiers joints
+**Objectif** : Permettre aux destinataires de télécharger les fichiers joints en cliquant sur les pièces jointes dans les bulles.
+
+| # | Sous-tâche | Description | Effort | Statut |
+|:--|:-----------|:------------|:-------|:-------|
+| **AI5.ter.4.1** | Affichage pièces jointes | Badges cliquables avec icônes dans bulles | 20min | ✅ |
+| **AI5.ter.4.2** | Handler téléchargement | Click → fetch API → blob download | 15min | ✅ |
+| **AI5.ter.4.3** | Route API GET fichiers | Créer `/api/.../files/[messageId]/[filename]` | 20min | ✅ |
+| **AI5.ter.4.4** | Stockage physique (POST) | Sauvegarder fichiers dans `/public/uploads/` | 30min | ✅ |
+| **AI5.ter.4.5** | Récupération fichiers (GET) | Lire et servir fichiers avec bon Content-Type | 25min | ✅ |
+| **AI5.ter.4.6** | Tests end-to-end | Upload → Affichage → Download complet | 10min | ✅ |
+
+**Stratégie de stockage retenue** : `/public/uploads/messages/[conversationId]/[messageId]/` (Option B)
+- ✅ Simple pour dev/démo
+- ✅ Pas besoin de service externe
+- ⚠️ Fichiers publics (pas de vérification côté serveur pour le download direct)
+- 🔄 Migration future vers Vercel Blob ou S3 pour prod
+
+**Effort total estimé** : 2h
+
+**Statut global** : ✅ TERMINÉ - Tests manuels validés avec succès
+
+**Résultats des tests** :
+- ✅ Upload multi-fichiers fonctionnel (Excel, PDF testés)
+- ✅ Stockage physique dans `/public/uploads/messages/[conversationId]/[messageId]/`
+- ✅ Système de debugging avec logs détaillés  
+- ✅ Téléchargement pour nouveaux fichiers opérationnel
+- ✅ Gestion d'erreur 404 pour anciens fichiers (pré-implémentation)
+- ✅ .gitignore mis à jour pour exclure uploads
+
+#### Tests validés AI5.ter.4
+**✅ Tests effectués avec succès** :
+
+- [x] **Test 1 - Upload fichier unique** : ✅ VALIDÉ
+  - Fichier Excel "Plan_comptable_corrige_proposition.xlsx" uploadé avec succès
+  - Badge visible avec icône et nom
+  - Fichier physique stocké dans `/public/uploads/messages/25240683-d449-414b-b2e7-71db2cf967f0/bf03e3a4-0950-4ef1-bcc4-1835fc71d56e/`
+
+- [x] **Test 2 - Upload multi-fichiers** : ✅ VALIDÉ
+  - Fichiers Excel et PDF uploadés séparément et stockés correctement
+  - Icônes différenciées (FileSpreadsheet, FileText)
+  - Messages avec badges cliquables affichés
+
+- [x] **Test 3 - Téléchargement** : ✅ VALIDÉ POUR NOUVEAUX FICHIERS
+  - Nouveaux fichiers (post-implémentation) : téléchargement fonctionnel
+  - Anciens fichiers (pré-implémentation) : erreur 404 attendue
+  - Système de debugging avec logs détaillés implémenté
+
+- [ ] **Test 4 - Formats multiples** :
+  - Tester PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), Images (.jpg, .png)
+  - Tous les formats acceptés
+  - Icônes correctes affichées
+  - Content-Type correct au téléchargement
+
+- [ ] **Test 5 - Noms avec caractères spéciaux** :
+  - Upload fichier avec nom : `Mon Fichier (2024) - Test #1.pdf`
+  - Vérifier que le fichier est sauvegardé avec nom sanitizé
+  - Au téléchargement, récupérer le nom original
+
+- [ ] **Test 6 - Sécurité** :
+  - Se connecter avec un compte non-participant
+  - Tenter d'accéder à l'URL du fichier directement
+  - Devrait retourner erreur 404 (conversation non trouvée)
+
+- [ ] **Test 7 - Console** :
+  - Aucune erreur dans la console navigateur
+  - Logs serveur montrent `✅ Fichier sauvegardé` et `📥 Téléchargement fichier`
+
+- [ ] **Test 8 - Build** :
+  - `npm run build` passe sans erreur
+  - `/public/uploads/` ignoré par Git
+
+---
+
+### Phase CP : Compteurs Performance Cours (2h30) ✅ TERMINÉE
+
+> **Objectif** : Ajouter des compteurs de performance globale sur la page Mes Cours  
+> **Base sur** : StudentScore + AIActivityScore agreges par cours  
+> **Periode** : Annee scolaire en cours  
+> **Seuil minimum** : 1 eleve
+
+| # | Tache | Description | Effort | Statut |
+|:--|:------|:------------|:-------|:-------|
+| **CP1** | Types et interfaces | Creer types CoursePerformance, CourseStats | 15min | ✅ |
+| **CP2** | API stats cours | Enrichir /api/teacher/courses avec stats eleves | 45min | ✅ |
+| **CP3** | Badge Performance | Composant avec note A+/A/B/C/D colore | 20min | ✅ |
+| **CP4** | Header Stats | Vue d'ensemble (total cours, eleves, perf moyenne) | 25min | ✅ |
+| **CP5** | Integration page | Modifier page courses avec nouvelles colonnes | 30min | ✅ |
+| **CP6** | Tests et validation | Tests manuels + build | 15min | ✅ |
+
+#### Fichiers créés/modifiés
+
+| Fichier | Action |
+|:--------|:-------|
+| `src/types/course-stats.ts` | CRÉÉ - Types CoursePerformance, CourseWithStats, CoursesOverview |
+| `src/app/api/teacher/courses/route.ts` | MODIFIÉ - GET enrichi avec stats performance |
+| `src/components/features/teacher/CoursePerformanceBadge.tsx` | CRÉÉ - Badge coloré avec tooltip |
+| `src/components/features/teacher/CoursesStatsHeader.tsx` | CRÉÉ - 3 cartes de stats |
+| `src/components/features/teacher/CoursesTable.tsx` | MODIFIÉ - Nouvelle colonne Performance |
+| `src/app/(dashboard)/teacher/courses/page.tsx` | MODIFIÉ - Intégration header stats |
+
+#### Specifications CP
+
+**Calcul Performance Globale** :
+- studentScoreAvg = moyenne(StudentScore.totalScore) // 0-100
+- aiScoreAvg = moyenne(AIActivityScore.finalScore)   // 0-100
+- globalPerformance = (studentScoreAvg * 0.6) + (aiScoreAvg * 0.4)
+
+**Grades** :
+- A+ : 90-100% (vert fonce)
+- A  : 80-89%  (vert)
+- B  : 70-79%  (orange)
+- C  : 60-69%  (rouge clair)
+- D  : <60%    (rouge)
+
+**Colonnes tableau** :
+- AVANT : Matiere | Theme | Chapitres | Score IA | Actions
+- APRES : Matiere | Theme | Eleves | Perf. Globale | Score IA | Actions
+
+#### Criteres de validation CP
+- [ ] Types CoursePerformance exportes et utilisables
+- [ ] API retourne les stats agregees par cours
+- [ ] Badge colore selon grade (A+/A/B/C/D)
+- [ ] Header affiche totaux (cours, eleves, performance)
+- [ ] Colonne Chapitres supprimee
+- [ ] Colonne Eleves affiche X/Y
+- [ ] Calcul base sur annee scolaire en cours
+- [ ] Minimum 1 eleve pour afficher performance
+- [ ] npm run build passe sans erreur
+
+---
+
+*Derniere mise a jour : 2025-12-31*

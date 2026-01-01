@@ -52,8 +52,8 @@ export function ClassStatsCounters({ stats, selectedCount, totalCount }: ClassSt
         </h3>
       </div>
 
-      {/* 4 cartes KPI */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 5 cartes KPI */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {STAT_CARDS.map((card) => {
           const count = card.key === 'success' 
             ? stats.successCount 
@@ -89,6 +89,20 @@ export function ClassStatsCounters({ stats, selectedCount, totalCount }: ClassSt
             </div>
             <div className="text-xs text-blue-600">
               Moyenne
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Carte moyenne IA */}
+        <Card className="bg-purple-50 border-purple-200 border">
+          <CardContent className="p-3 text-center">
+            <div className="text-2xl font-bold text-purple-700">
+              🤖 {stats.averageAI !== null 
+                ? `${stats.averageAI.toFixed(0)}%` 
+                : '—'}
+            </div>
+            <div className="text-xs text-purple-600">
+              Moy IA
             </div>
           </CardContent>
         </Card>

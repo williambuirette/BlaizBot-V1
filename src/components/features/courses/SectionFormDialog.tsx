@@ -8,6 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -97,6 +98,11 @@ export function SectionFormDialog({
           <DialogTitle>
             {section ? 'Modifier la section' : 'Nouvelle section'}
           </DialogTitle>
+          <DialogDescription>
+            {section 
+              ? 'Modifiez les informations de cette section.'
+              : 'Créez une nouvelle section pour ce chapitre.'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="space-y-2">

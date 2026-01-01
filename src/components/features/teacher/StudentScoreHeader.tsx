@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ScoreBadge, PercentageBadge, AlertDot } from "@/components/ui/score-badge";
 import { THRESHOLDS } from "@/lib/stats-service";
-import { TrendingUp, ClipboardCheck, Award } from "lucide-react";
+import { TrendingUp, ClipboardCheck, Award, Bot } from "lucide-react";
 
 interface GlobalStats {
   continuous: number;
@@ -11,6 +11,7 @@ interface GlobalStats {
   final: number | null;
   courseCount: number;
   examCount: number;
+  aiAverage?: number | null;
 }
 
 interface StudentScoreHeaderProps {
@@ -28,7 +29,7 @@ export function StudentScoreHeader({ globalStats }: StudentScoreHeaderProps) {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Évaluation Continue */}
       <Card>
         <CardContent className="flex items-center gap-4 p-6">
@@ -39,6 +40,25 @@ export function StudentScoreHeader({ globalStats }: StudentScoreHeaderProps) {
             <p className="text-sm text-muted-foreground">Évaluation Continue</p>
             <div className="mt-1">
               <PercentageBadge percentage={globalStats.continuous} size="lg" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Moyenne IA */}
+      <Card>
+        <CardContent className="flex items-center gap-4 p-6">
+          <div className="rounded-lg bg-purple-100 p-3">
+            <Bot className="h-6 w-6 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Compréhension IA</p>
+            <div className="mt-1">
+              {globalStats.aiAverage !== null && globalStats.aiAverage !== undefined ? (
+                <PercentageBadge percentage={globalStats.aiAverage} size="lg" />
+              ) : (
+                <span className="text-lg font-medium text-muted-foreground">—</span>
+              )}
             </div>
           </div>
         </CardContent>

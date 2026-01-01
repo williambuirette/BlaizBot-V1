@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export async function GET(req: Request, { params }: RouteParams) {
     // 1. Vérifier que le prof a accès à cet élève
     const teacherProfile = await prisma.teacherProfile.findUnique({
       where: { userId: session.user.id },
-      include: { classes: { select: { id: true } } },
+      include: { Class: { select: { id: true } } },
     });
 
     if (!teacherProfile) {
@@ -35,10 +36,10 @@ export async function GET(req: Request, { params }: RouteParams) {
     const student = await prisma.studentProfile.findUnique({
       where: { userId: studentId },
       include: {
-        user: {
+        User: {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
-        class: { select: { id: true, name: true, level: true } },
+        Class: { select: { id: true, name: true, level: true } },
       },
     });
 
@@ -46,7 +47,7 @@ export async function GET(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Élève non trouvé" }, { status: 404 });
     }
 
-    const hasAccess = teacherProfile.classes.some((c) => c.id === student.classId);
+    const hasAccess = teacherProfile.Class.some((c) => c.id === student.classId);
     if (!hasAccess) {
       return NextResponse.json({ error: "Accès non autorisé" }, { status: 403 });
     }
@@ -55,48 +56,103 @@ export async function GET(req: Request, { params }: RouteParams) {
     const scores = await prisma.studentScore.findMany({
       where: { studentId },
       include: {
-        course: {
+        Course: {
           select: {
             id: true,
             title: true,
-            subject: { select: { id: true, name: true } },
+            Subject: { select: { id: true, name: true } },
           },
         },
       },
-      orderBy: { course: { title: "asc" } },
+      orderBy: { Course: { title: "asc" } },
     });
 
     // 4. Récupérer les détails de progression (Quiz/Exercices)
     const progressDetails = await prisma.studentProgress.findMany({
       where: { studentId },
       include: {
-        assignment: {
+        CourseAssignment: {
           include: {
-            course: { select: { id: true, title: true } },
+            Course: { select: { id: true, title: true } },
           },
         },
-        section: {
+        Section: {
           select: { id: true, title: true, type: true },
         },
       },
       orderBy: { updatedAt: "desc" },
     });
 
-    // 5. Calculer les statistiques globales
+    // 5. Récupérer les activités IA
+    const aiActivities = await prisma.aIActivityScore.findMany({
+      where: { studentId },
+      include: {
+        Course: { select: { id: true, title: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50, // Limiter aux 50 dernières activités
+    });
+
+    // 6. Calculer les statistiques globales
     const globalStats = calculateGlobalStats(scores);
+
+    // 7. Transformer les données pour le frontend (camelCase)
+    const courseScores = scores.map((score) => ({
+      ...score,
+      course: score.Course ? {
+        id: score.Course.id,
+        title: score.Course.title,
+        subject: score.Course.Subject ? {
+          id: score.Course.Subject.id,
+          name: score.Course.Subject.name,
+        } : null,
+      } : null,
+      Course: undefined, // Supprimer la version PascalCase
+    }));
+
+    const progressDetailsTransformed = progressDetails.map((progress) => ({
+      ...progress,
+      courseAssignment: progress.CourseAssignment ? {
+        ...progress.CourseAssignment,
+        course: progress.CourseAssignment.Course,
+        Course: undefined,
+      } : null,
+      section: progress.Section,
+      CourseAssignment: undefined,
+      Section: undefined,
+    }));
+
+    // Transformer aiActivities pour le frontend
+    const aiActivitiesTransformed = aiActivities.map((activity) => ({
+      id: activity.id,
+      activityType: activity.activityType,
+      themeId: activity.themeId,
+      courseName: activity.Course?.title ?? null,
+      comprehensionScore: activity.comprehensionScore,
+      accuracyScore: activity.accuracyScore,
+      autonomyScore: activity.autonomyScore,
+      finalScore: activity.finalScore,
+      duration: activity.duration,
+      messageCount: activity.messageCount,
+      strengths: activity.strengths,
+      weaknesses: activity.weaknesses,
+      recommendation: activity.recommendation,
+      createdAt: activity.createdAt.toISOString(),
+    }));
 
     return NextResponse.json({
       student: {
-        id: student.user.id,
-        firstName: student.user.firstName,
-        lastName: student.user.lastName,
-        email: student.user.email,
-        className: student.class.name,
-        classLevel: student.class.level,
+        id: student.User.id,
+        firstName: student.User.firstName,
+        lastName: student.User.lastName,
+        email: student.User.email,
+        className: student.Class.name,
+        classLevel: student.Class.level,
       },
       globalStats,
-      courseScores: scores,
-      progressDetails,
+      courseScores,
+      progressDetails: progressDetailsTransformed,
+      aiActivities: aiActivitiesTransformed,
     });
   } catch (error) {
     console.error("Erreur API GET /api/teacher/students/[id]/scores:", error);
@@ -122,7 +178,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     // Vérifier accès
     const teacherProfile = await prisma.teacherProfile.findUnique({
       where: { userId: session.user.id },
-      include: { classes: { select: { id: true } } },
+      include: { Class: { select: { id: true } } },
     });
 
     if (!teacherProfile) {
@@ -138,7 +194,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Élève non trouvé" }, { status: 404 });
     }
 
-    const hasAccess = teacherProfile.classes.some((c) => c.id === student.classId);
+    const hasAccess = teacherProfile.Class.some((c) => c.id === student.classId);
     if (!hasAccess) {
       return NextResponse.json({ error: "Accès non autorisé" }, { status: 403 });
     }
@@ -187,6 +243,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     const score = await prisma.studentScore.upsert({
       where: { studentId_courseId: { studentId, courseId } },
       create: {
+        id: randomUUID(),
         studentId,
         courseId,
         examGrade: examGradeValue,
@@ -194,6 +251,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
         examComment: examComment || null,
         finalScore,
         finalGrade,
+        updatedAt: new Date(),
       },
       update: {
         examGrade: examGradeValue,
@@ -201,15 +259,30 @@ export async function PUT(req: Request, { params }: RouteParams) {
         examComment: examComment || null,
         finalScore,
         finalGrade,
+        updatedAt: new Date(),
       },
       include: {
-        course: { select: { id: true, title: true } },
+        Course: { select: { id: true, title: true } },
       },
     });
 
+    // Transformer pour le frontend (camelCase)
+    type ScoreWithCourse = typeof score & { Course?: { id: string; title: string } };
+    const scoreWithCourse = score as ScoreWithCourse;
+    
     return NextResponse.json({
       success: true,
-      score,
+      score: {
+        id: score.id,
+        studentId: score.studentId,
+        courseId: score.courseId,
+        examGrade: score.examGrade,
+        examDate: score.examDate,
+        examComment: score.examComment,
+        finalScore: score.finalScore,
+        finalGrade: score.finalGrade,
+        course: scoreWithCourse.Course ? { id: scoreWithCourse.Course.id, title: scoreWithCourse.Course.title } : null,
+      },
     });
   } catch (error) {
     console.error("Erreur API PUT /api/teacher/students/[id]/scores:", error);
@@ -225,6 +298,7 @@ interface StudentScoreData {
   continuousScore: number;
   examGrade: number | null;
   finalGrade: number | null;
+  aiComprehension: number;
 }
 
 function calculateGlobalStats(scores: StudentScoreData[]) {
@@ -235,12 +309,17 @@ function calculateGlobalStats(scores: StudentScoreData[]) {
       final: null,
       courseCount: 0,
       examCount: 0,
+      aiAverage: null,
     };
   }
 
   // Moyenne du score continu (0-100)
   const avgContinuous =
     scores.reduce((acc, s) => acc + s.continuousScore, 0) / scores.length;
+
+  // Moyenne IA (0-100)
+  const avgAI =
+    scores.reduce((acc, s) => acc + s.aiComprehension, 0) / scores.length;
 
   // Moyenne des examens (seulement ceux qui ont une note)
   const examsWithGrade = scores.filter((s) => s.examGrade !== null);
@@ -262,5 +341,6 @@ function calculateGlobalStats(scores: StudentScoreData[]) {
     final: avgFinal !== null ? Math.round(avgFinal * 10) / 10 : null,
     courseCount: scores.length,
     examCount: examsWithGrade.length,
+    aiAverage: Math.round(avgAI * 10) / 10,
   };
 }

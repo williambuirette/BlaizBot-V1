@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { ScoreBadge, PercentageBadge, AlertDot } from "@/components/ui/score-badge";
 import { THRESHOLDS } from "@/lib/stats-service";
-import { Pencil } from "lucide-react";
+import { Pencil, ExternalLink } from "lucide-react";
 
 // ============================================
 // TYPES
@@ -17,6 +18,7 @@ import { Pencil } from "lucide-react";
 
 export interface CourseScoreData {
   id: string;
+  courseId?: string;
   quizAvg: number;
   exerciseAvg: number;
   aiComprehension: number;
@@ -31,12 +33,13 @@ export interface CourseScoreData {
   course: {
     id: string;
     title: string;
-    subject: { id: string; name: string };
-  };
+    subject: { id: string; name: string } | null;
+  } | null;
 }
 
 interface CourseScoreRowProps {
   courseScore: CourseScoreData;
+  studentId: string;
   onEditExam: () => void;
 }
 
@@ -44,7 +47,7 @@ interface CourseScoreRowProps {
 // COMPOSANT PRINCIPAL
 // ============================================
 
-export function CourseScoreRow({ courseScore, onEditExam }: CourseScoreRowProps) {
+export function CourseScoreRow({ courseScore, studentId, onEditExam }: CourseScoreRowProps) {
   const getAlertLevel = (
     grade: number | null,
     continuous: number
@@ -70,9 +73,9 @@ export function CourseScoreRow({ courseScore, onEditExam }: CourseScoreRowProps)
             <div className="flex items-center gap-3">
               <AlertDot level={level} />
               <div className="text-left">
-                <p className="font-medium">{courseScore.course.title}</p>
+                <p className="font-medium">{courseScore.course?.title || 'Cours inconnu'}</p>
                 <p className="text-sm text-muted-foreground">
-                  {courseScore.course.subject.name}
+                  {courseScore.course?.subject?.name || 'Matière inconnue'}
                 </p>
               </div>
             </div>
@@ -82,6 +85,10 @@ export function CourseScoreRow({ courseScore, onEditExam }: CourseScoreRowProps)
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">Continu</p>
                 <PercentageBadge percentage={courseScore.continuousScore} size="sm" />
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">🤖 IA</p>
+                <PercentageBadge percentage={courseScore.aiComprehension} size="sm" />
               </div>
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">Examen</p>
@@ -176,6 +183,16 @@ export function CourseScoreRow({ courseScore, onEditExam }: CourseScoreRowProps)
             Score Continu = (Quiz × 35%) + (Exercices × 40%) + (IA × 25%) = {courseScore.continuousScore.toFixed(1)}%
           </p>
         </div>
+
+        {/* Bouton voir détails */}
+        <div className="mt-4 flex justify-end">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/teacher/students/${studentId}/courses/${courseScore.course?.id || courseScore.courseId}`}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Voir détails
+            </Link>
+          </Button>
+        </div>
       </AccordionContent>
     </AccordionItem>
   );
@@ -222,10 +239,11 @@ function ScoreDetailCard({
 
 interface CourseScoreListProps {
   courseScores: CourseScoreData[];
+  studentId: string;
   onEditExam: (course: { id: string; title: string; examGrade: number | null }) => void;
 }
 
-export function CourseScoreList({ courseScores, onEditExam }: CourseScoreListProps) {
+export function CourseScoreList({ courseScores, studentId, onEditExam }: CourseScoreListProps) {
   if (courseScores.length === 0) {
     return (
       <div className="border rounded-lg p-8 text-center text-muted-foreground">
@@ -240,10 +258,11 @@ export function CourseScoreList({ courseScores, onEditExam }: CourseScoreListPro
         <CourseScoreRow
           key={cs.id}
           courseScore={cs}
+          studentId={studentId}
           onEditExam={() =>
             onEditExam({
-              id: cs.course.id,
-              title: cs.course.title,
+              id: cs.course?.id || cs.courseId || '',
+              title: cs.course?.title || 'Cours',
               examGrade: cs.examGrade,
             })
           }

@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, RefreshCw, Mail } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, RefreshCw, Mail, BookOpen, Bot } from "lucide-react";
 import { StudentScoreHeader } from "./StudentScoreHeader";
 import { CourseScoreList, CourseScoreData } from "./CourseScoreRow";
 import { ExamGradeDialog } from "./ExamGradeDialog";
 import { ScoreFilterBar } from "./ScoreFilterBar";
+import { AIActivitiesTab, AIActivity } from "./AIActivitiesTab";
 import {
   ScoreFilters,
   ScoreSort,
@@ -37,6 +39,7 @@ interface GlobalStats {
   final: number | null;
   courseCount: number;
   examCount: number;
+  aiAverage: number | null;
 }
 
 interface ScoresData {
@@ -50,6 +53,7 @@ interface ScoresData {
   };
   globalStats: GlobalStats;
   courseScores: CourseScoreData[];
+  aiActivities?: AIActivity[];
 }
 
 interface SelectedCourse {
@@ -188,28 +192,49 @@ export function StudentScorePage({
       {/* KPIs globaux */}
       <StudentScoreHeader globalStats={data?.globalStats ?? null} />
 
-      {/* Liste des cours avec filtres */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Scores par cours</h2>
+      {/* Tabs : Scores / Activités IA */}
+      <Tabs defaultValue="scores" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="scores" className="gap-2">
+            <BookOpen className="h-4 w-4" />
+            Scores par cours
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="gap-2">
+            <Bot className="h-4 w-4" />
+            Activités IA
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Barre de filtres */}
-        {courseScores.length > 0 && (
-          <ScoreFilterBar
-            subjects={subjects}
-            filters={filters}
-            sort={sort}
-            onFiltersChange={setFilters}
-            onSortChange={setSort}
-            resultCount={sortedScores.length}
-            totalCount={courseScores.length}
+        {/* Onglet Scores */}
+        <TabsContent value="scores" className="space-y-4">
+          {/* Barre de filtres */}
+          {courseScores.length > 0 && (
+            <ScoreFilterBar
+              subjects={subjects}
+              filters={filters}
+              sort={sort}
+              onFiltersChange={setFilters}
+              onSortChange={setSort}
+              resultCount={sortedScores.length}
+              totalCount={courseScores.length}
+            />
+          )}
+
+          <CourseScoreList
+            courseScores={sortedScores}
+            studentId={studentId}
+            onEditExam={handleEditExam}
           />
-        )}
+        </TabsContent>
 
-        <CourseScoreList
-          courseScores={sortedScores}
-          onEditExam={handleEditExam}
-        />
-      </div>
+        {/* Onglet Activités IA */}
+        <TabsContent value="ai">
+          <AIActivitiesTab
+            studentName={studentName}
+            activities={data?.aiActivities ?? []}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog saisie examen */}
       <ExamGradeDialog

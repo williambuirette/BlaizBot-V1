@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const teacherProfile = await prisma.teacherProfile.findUnique({
       where: { userId },
       include: {
-        classes: {
+        Class: {
           where: { id: classId },
           select: { id: true },
         },
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
     }
 
-    if (teacherProfile.classes.length === 0) {
+    if (teacherProfile.Class.length === 0) {
       return NextResponse.json(
         { error: 'Vous n\'enseignez pas dans cette classe' },
         { status: 403 }
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const students = await prisma.studentProfile.findMany({
       where: { classId },
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             firstName: true,
@@ -62,17 +62,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         },
       },
       orderBy: {
-        user: { lastName: 'asc' },
+        User: { lastName: 'asc' },
       },
     });
 
     // Transformer pour une réponse plus simple
     const result = students.map((student) => ({
       id: student.id,
-      userId: student.user.id,
-      firstName: student.user.firstName,
-      lastName: student.user.lastName,
-      email: student.user.email,
+      userId: student.User.id,
+      firstName: student.User.firstName,
+      lastName: student.User.lastName,
+      email: student.User.email,
     }));
 
     return NextResponse.json({ students: result });

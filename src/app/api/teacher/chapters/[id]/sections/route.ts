@@ -21,7 +21,7 @@ async function verifyChapterOwnership(chapterId: string, userId: string) {
   const chapter = await prisma.chapter.findFirst({
     where: {
       id: chapterId,
-      course: {
+      Course: {
         teacherId: teacherProfile.id,
       },
     },
@@ -119,14 +119,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const newOrder = (maxOrder._max.order ?? -1) + 1;
 
+    // Générer un ID unique
+    const sectionId = `section-${chapterId}-${Date.now()}`;
+
     const section = await prisma.section.create({
       data: {
+        id: sectionId,
         chapterId,
         title: title.trim(),
         type: sectionType,
         content: content || null,
         duration: duration ? parseInt(duration, 10) : null,
         order: newOrder,
+        updatedAt: new Date(),
       },
     });
 

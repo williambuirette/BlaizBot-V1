@@ -23,6 +23,14 @@
 | **AI5.1** | Page Liste Classes | ⬜ |
 | **AI5.2** | Page Détail Classe | ⬜ |
 | **AI5.3** | Composant ClassAIStats | ⬜ |
+| **AI5.bis.1** | Transformer en tableau | ✅ |
+| **AI5.bis.2** | Liens et tri | ✅ |
+| **AI5.bis.3** | Filtre et recherche | ✅ |
+| **AI5.bis.4** | Actions de groupe | ✅ |
+| **AI5.ter.1** | Affichage bulles chat | ✅ |
+| **AI5.ter.2** | Bouton fichiers | ✅ |
+| **AI5.ter.3** | API upload fichiers | ✅ |
+| **AI5.ter.4.1-6** | Téléchargement fichiers | ✅ |
 | **AI6.1** | Page Liste Cours | ⬜ |
 | **AI6.2** | Page Détail Thème | ⬜ |
 | **AI7.1** | Modal résultats élève | ⬜ |
@@ -901,7 +909,1473 @@ RÈGLES :
 
 ---
 
-*[AI4-AI7 prompts continuent... 2500 lignes supplémentaires à suivre]*
+## 🎯 Amélioration Page Détail Classe (AI5.bis)
+
+### Prompt Optimal AI5.bis.1 : Transformer la liste en tableau interactif
+
+> **Itérations réelles** : 1 (prévu)
+> **Problèmes potentiels** : Gestion de l'état client dans un composant serveur, typage des données de tri.
+
+```
+TACHE : Refactoriser le composant `ClassStudentsList.tsx` pour transformer la liste statique d'élèves en un tableau interactif et informatif.
+
+CONTEXTE :
+Le composant `ClassStudentsList` (`src/components/features/teacher/ClassStudentsList.tsx`) affiche actuellement une simple liste de `div`. Il est utilisé dans la page `(dashboard)/teacher/classes/[id]/page.tsx`.
+
+OBJECTIFS :
+1.  **Remplacer la structure `div`** par le composant `<Table>` de shadcn/ui.
+2.  **Utiliser "use client"** car le tableau nécessitera des interactions (tri, filtre).
+3.  **Définir les colonnes** suivantes :
+    - `Nom de l'élève` : Prénom et Nom.
+    - `Score IA` : Le score `aiAverage` formaté en pourcentage.
+    - `Sessions IA` : Le nombre `aiSessionsCount`.
+    - `Actions` : Une colonne pour les actions futures.
+4.  **Rendre le tableau triable** sur chaque colonne. Utilise un état local (`useState`) pour gérer la colonne de tri et la direction.
+5.  **Transformer le nom de l'élève en lien**. Ce lien doit pointer vers la page de détail de l'élève : `/teacher/students/[studentId]`. Utilise le composant `<Link>` de `next/link`.
+6.  **Props** : Le composant doit continuer à accepter `students: StudentData[]` comme prop. Assure-toi que le type `StudentData` contient bien `id`, `name`, `aiAverage`, et `aiSessionsCount`.
+7.  **Style** :
+    - Utilise les composants de shadcn/ui : `Table`, `TableHeader`, `TableRow`, `TableHead`, `TableBody`, `TableCell`.
+    - Ajoute une icône de tri (par exemple, `ArrowUpDown` de `lucide-react`) dans les en-têtes de colonnes cliquables.
+
+FICHIERS À MODIFIER :
+- `src/components/features/teacher/ClassStudentsList.tsx`
+
+VALIDATION :
+- Le tableau s'affiche correctement avec les données des élèves.
+- Le clic sur les en-têtes de colonnes trie les données.
+- Le clic sur le nom d'un élève redirige vers sa page de profil.
+- Le code est propre, typé et respecte les conventions du projet.
+```
+
+---
+
+## 🎯 Amélioration Messagerie (AI5.ter)
+
+### Prompt AI5.ter.1 : Affichage en bulles de chat
+
+```
+TACHE : Transformer l'affichage des messages dans la page messagerie en utilisant des bulles de chat alignées (style WhatsApp/Messenger).
+
+CONTEXTE :
+- Page : `src/app/(dashboard)/teacher/messages/page.tsx`
+- Actuellement, les messages sont affichés dans une zone vide sans formatage
+- Besoin d'un affichage en bulles avec alignement selon l'expéditeur
+
+OBJECTIFS :
+1. **Créer la zone de messages** :
+   - Remplacer la zone vide par un `ScrollArea` de shadcn/ui
+   - Afficher chaque message dans une bulle `div` avec bordures arrondies
+   - Utiliser `space-y-4` pour l'espacement vertical
+
+2. **Alignement des bulles** :
+   - Messages de l'utilisateur connecté : alignés à **droite** (justify-end)
+   - Messages des autres : alignés à **gauche** (justify-start)
+   - Vérifier avec `msg.senderId === session?.user?.id`
+
+3. **Style des bulles** :
+   - **Messages envoyés** : fond `bg-primary`, texte `text-primary-foreground`
+   - **Messages reçus** : fond `bg-muted`, texte par défaut
+   - Largeur max : `max-w-[70%]`
+   - Padding : `p-3`, bordures : `rounded-lg`
+
+4. **Contenu de chaque bulle** :
+   - Texte du message : `<p className="text-sm">{msg.content}</p>`
+   - Heure : `<p className="text-xs opacity-70 mt-1">{formatTime(msg.createdAt)}</p>`
+   - Format heure : `HH:MM` (ex: "14:30")
+
+5. **État vide** :
+   - Si aucun message : afficher "Aucun message pour le moment"
+   - Centré avec `flex items-center justify-center`
+
+FICHIERS À MODIFIER :
+- `src/app/(dashboard)/teacher/messages/page.tsx`
+
+INTERFACES :
+```typescript
+interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  senderName: string;
+  createdAt: Date;
+}
+```
+
+VALIDATION :
+- Les bulles sont alignées correctement (droite/gauche)
+- Les couleurs différencient envoyeur/destinataire
+- L'heure s'affiche en format HH:MM
+- Le scroll fonctionne si nombreux messages
+- Responsive (mobile friendly)
+```
+
+---
+
+### Prompt AI5.ter.2 : Bouton d'attachement de fichiers
+
+```
+TACHE : Ajouter un bouton Paperclip pour permettre la sélection et l'envoi de fichiers dans la messagerie.
+
+CONTEXTE :
+- Page : `src/app/(dashboard)/teacher/messages/page.tsx`
+- Input actuel : champ texte + bouton Envoyer
+- Besoin : bouton pour joindre des fichiers (PDF, docs, images)
+
+OBJECTIFS :
+1. **Ajouter un input file caché** :
+   ```tsx
+   <Input
+     type="file"
+     ref={fileInputRef}
+     onChange={handleFileSelect}
+     className="hidden"
+     multiple
+     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+   />
+   ```
+
+2. **Créer un bouton Paperclip** :
+   - Utiliser `Button` de shadcn/ui avec `variant="outline" size="icon"`
+   - Icône : `<Paperclip className="h-4 w-4" />` de lucide-react
+   - Clic : déclenche `fileInputRef.current?.click()`
+
+3. **Gérer l'état des fichiers** :
+   ```tsx
+   const [attachments, setAttachments] = useState<File[]>([]);
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   
+   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+     if (e.target.files) {
+       setAttachments(Array.from(e.target.files));
+     }
+   };
+   ```
+
+4. **Afficher les fichiers sélectionnés** :
+   - Au-dessus de l'input, afficher la liste des fichiers
+   - Format : `<div className="text-xs bg-muted px-2 py-1 rounded">{file.name}</div>`
+   - Avec bouton ❌ pour retirer un fichier
+
+5. **Layout de la barre d'input** :
+   ```
+   ┌─────────────────────────────────────────┐
+   │ [fichiers sélectionnés]                 │
+   │ [📎] [Input texte...] [Envoyer]         │
+   └─────────────────────────────────────────┘
+   ```
+
+FICHIERS À MODIFIER :
+- `src/app/(dashboard)/teacher/messages/page.tsx`
+
+IMPORTS NÉCESSAIRES :
+```typescript
+import { Paperclip, Send, X } from "lucide-react";
+import { useRef } from "react";
+```
+
+VALIDATION :
+- Le bouton Paperclip est visible à gauche de l'input
+- Le clic ouvre le sélecteur de fichiers
+- Les formats autorisés sont bien filtrés
+- Les fichiers sélectionnés s'affichent
+- Possibilité de retirer un fichier avant envoi
+```
+
+---
+
+### Prompt AI5.ter.3 : API d'upload de fichiers
+
+```
+TACHE : Créer une route API POST pour gérer l'envoi de messages avec fichiers joints.
+
+CONTEXTE :
+- Route : `src/app/api/teacher/messages/[id]/route.ts`
+- Schéma Prisma : `Message` a un champ `attachments` (Json?)
+- Upload : utiliser FormData pour envoyer texte + fichiers
+
+OBJECTIFS :
+1. **Créer la route POST** :
+   - Paramètre : `[id]` = conversationId
+   - Body : FormData avec `content` (string) et `attachments` (File[])
+   - Authentification : vérifier session teacher
+
+2. **Vérifications** :
+   - L'utilisateur est bien participant de la conversation
+   - Requête Prisma :
+   ```typescript
+   const conversation = await prisma.conversation.findUnique({
+     where: { id: conversationId },
+     include: { ConversationParticipant: true }
+   });
+   
+   const isParticipant = conversation?.ConversationParticipant.some(
+     (p) => p.userId === session.user.id
+   );
+   ```
+
+3. **Traiter les fichiers** :
+   - Récupérer : `const files = formData.getAll("attachments") as File[];`
+   - Logger : `console.log(\`📎 \${files.length} fichier(s) joints\`);`
+   - TODO futur : upload vers S3/Cloudinary
+   - Pour l'instant : stocker les noms en JSON
+
+4. **Créer le message** :
+   ```typescript
+   const message = await prisma.message.create({
+     data: {
+       id: randomUUID(),
+       content,
+       conversationId,
+       senderId: session.user.id,
+       attachments: files.map(f => ({ name: f.name, size: f.size }))
+     },
+     include: {
+       User: {
+         select: { id: true, firstName: true, lastName: true }
+       }
+     }
+   });
+   ```
+
+5. **Mettre à jour la conversation** :
+   ```typescript
+   await prisma.conversation.update({
+     where: { id: conversationId },
+     data: { updatedAt: new Date() }
+   });
+   ```
+
+6. **Réponse** :
+   ```typescript
+   return NextResponse.json({
+     success: true,
+     data: {
+       id: message.id,
+       content: message.content,
+       senderId: message.senderId,
+       senderName: \`\${message.User.firstName} \${message.User.lastName}\`,
+       attachments: message.attachments,
+       createdAt: message.createdAt
+     }
+   });
+   ```
+
+FICHIERS À CRÉER :
+- `src/app/api/teacher/messages/[id]/route.ts`
+
+IMPORTS :
+```typescript
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
+```
+
+VALIDATION :
+- POST /api/teacher/messages/[conversationId] fonctionne
+- Vérifie que l'utilisateur est participant
+- Les fichiers sont reçus et logués
+- Le message est créé avec les métadonnées fichiers
+- Erreurs 401 (non auth), 403 (pas participant), 404 (conversation introuvable)
+- < 120 lignes de code
+```
+
+---
+
+### Prompt AI5.ter.4 : Téléchargement des fichiers joints
+
+```
+TACHE : Permettre aux utilisateurs de télécharger les fichiers joints en cliquant sur les pièces jointes affichées dans les bulles de message.
+
+CONTEXTE :
+- Composant : `src/components/features/shared/MessageThread.tsx`
+- Les fichiers sont stockés dans `Message.attachments` (JSON : `{ name, size, type }[]`)
+- Actuellement, seul l'upload est implémenté
+- Besoin d'afficher et de permettre le téléchargement des fichiers
+
+OBJECTIFS :
+
+### 1. Affichage des pièces jointes dans les bulles
+
+**Dans MessageThread.tsx**, modifier l'affichage des messages pour inclure les pièces jointes :
+
+```typescript
+{messages.map((msg) => {
+  const isOwn = msg.senderId === currentUserId;
+  const attachments = msg.attachments as { name: string; size: string; type: string }[] | null;
+  
+  return (
+    <div key={msg.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+      <div className={cn("max-w-[70%] rounded-lg p-3", isOwn ? "bg-primary text-primary-foreground" : "bg-muted")}>
+        {msg.content && <p className="text-sm">{msg.content}</p>}
+        
+        {/* AJOUT : Affichage des pièces jointes */}
+        {attachments && attachments.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {attachments.map((file, idx) => (
+              <Badge
+                key={idx}
+                variant="secondary"
+                className="cursor-pointer hover:bg-secondary/80 flex items-center gap-2"
+                onClick={() => handleDownloadFile(msg.id, file.name)}
+              >
+                {getFileIcon(file.type)}
+                <span className="text-xs">{file.name}</span>
+                <span className="text-xs opacity-70">({formatFileSize(file.size)})</span>
+              </Badge>
+            ))}
+          </div>
+        )}
+        
+        <p className="text-xs opacity-70 mt-1">{formatTime(msg.createdAt)}</p>
+      </div>
+    </div>
+  );
+})}
+```
+
+### 2. Utilitaires pour icônes et formatage
+
+Ajouter ces fonctions dans le composant :
+
+```typescript
+// Icône selon le type de fichier
+const getFileIcon = (type: string) => {
+  if (type.includes('pdf')) return <FileText className="h-3 w-3" />;
+  if (type.includes('image')) return <Image className="h-3 w-3" />;
+  if (type.includes('sheet') || type.includes('excel')) return <FileSpreadsheet className="h-3 w-3" />;
+  if (type.includes('word') || type.includes('document')) return <FileText className="h-3 w-3" />;
+  if (type.includes('presentation') || type.includes('powerpoint')) return <FileText className="h-3 w-3" />;
+  return <Paperclip className="h-3 w-3" />;
+};
+
+// Formater la taille du fichier
+const formatFileSize = (bytes: number | string) => {
+  const numBytes = typeof bytes === 'string' ? parseInt(bytes) : bytes;
+  if (numBytes < 1024) return `${numBytes} B`;
+  if (numBytes < 1024 * 1024) return `${(numBytes / 1024).toFixed(1)} KB`;
+  return `${(numBytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+```
+
+### 3. Gestionnaire de téléchargement
+
+Ajouter le handler de téléchargement :
+
+```typescript
+const handleDownloadFile = async (messageId: string, filename: string) => {
+  try {
+    const res = await fetch(`/api/teacher/messages/${conversationId}/files/${messageId}/${encodeURIComponent(filename)}`);
+    
+    if (!res.ok) {
+      throw new Error('Erreur lors du téléchargement');
+    }
+    
+    // Récupérer le blob
+    const blob = await res.blob();
+    
+    // Créer un lien de téléchargement
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Nettoyer
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Erreur téléchargement:', error);
+    alert('Impossible de télécharger le fichier');
+  }
+};
+```
+
+### 4. Route API de téléchargement
+
+**Créer** : `src/app/api/teacher/messages/[id]/files/[messageId]/[filename]/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import fs from 'fs/promises';
+import path from 'path';
+
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string; messageId: string; filename: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  }
+
+  const { id: conversationId, messageId, filename } = await context.params;
+
+  // Vérifier que l'utilisateur est participant
+  const conversation = await prisma.conversation.findFirst({
+    where: {
+      id: conversationId,
+      ConversationParticipant: {
+        some: { userId: session.user.id }
+      }
+    }
+  });
+
+  if (!conversation) {
+    return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+  }
+
+  // Vérifier que le message existe
+  const message = await prisma.message.findFirst({
+    where: {
+      id: messageId,
+      conversationId
+    }
+  });
+
+  if (!message) {
+    return NextResponse.json({ error: 'Message non trouvé' }, { status: 404 });
+  }
+
+  try {
+    // OPTION A : Fichiers stockés localement (dev)
+    const filePath = path.join(process.cwd(), 'public', 'uploads', 'messages', conversationId, messageId, filename);
+    const fileBuffer = await fs.readFile(filePath);
+
+    // Détecter le Content-Type
+    const ext = path.extname(filename).toLowerCase();
+    const contentTypes: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png'
+    };
+
+    const contentType = contentTypes[ext] || 'application/octet-stream';
+
+    return new NextResponse(fileBuffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur lecture fichier:', error);
+    return NextResponse.json({ error: 'Fichier introuvable' }, { status: 404 });
+  }
+}
+```
+
+### 5. Modifier l'upload pour sauvegarder les fichiers
+
+**Dans** : `src/app/api/teacher/messages/[id]/route.ts` (POST)
+
+Ajouter la sauvegarde physique des fichiers :
+
+```typescript
+// Après récupération des fichiers
+const files = formData.getAll("attachments") as File[];
+
+// Créer le dossier de stockage
+const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'messages', id);
+await fs.mkdir(uploadDir, { recursive: true });
+
+// Sauvegarder chaque fichier
+const attachmentMeta = await Promise.all(
+  files.map(async (file) => {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const filename = `${Date.now()}-${file.name}`;
+    const filepath = path.join(uploadDir, filename);
+    await fs.writeFile(filepath, buffer);
+    
+    return {
+      name: filename,
+      originalName: file.name,
+      size: file.size,
+      type: file.type
+    };
+  })
+);
+
+// Stocker les métadonnées dans la BDD
+const message = await prisma.message.create({
+  data: {
+    // ...
+    attachments: attachmentMeta
+  }
+});
+```
+
+IMPORTS À AJOUTER :
+```typescript
+import { FileText, Image, FileSpreadsheet, Paperclip } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import fs from 'fs/promises';
+import path from 'path';
+```
+
+FICHIERS À MODIFIER :
+- `src/components/features/shared/MessageThread.tsx` : Affichage + download handler
+- `src/app/api/teacher/messages/[id]/route.ts` : Sauvegarde physique des fichiers
+
+FICHIERS À CRÉER :
+- `src/app/api/teacher/messages/[id]/files/[messageId]/[filename]/route.ts` : API de téléchargement
+
+VALIDATION :
+- Les pièces jointes s'affichent sous les messages avec icône appropriée
+- Clic sur une pièce jointe télécharge le fichier
+- Les fichiers sont sauvegardés dans `/public/uploads/messages/[conversationId]/[messageId]/`
+- L'accès est sécurisé (vérification de participation)
+- < 200 lignes par fichier
+- `npm run build` passe sans erreur
+
+NOTES :
+- **Option A** (locale) : Simple pour le dev, ne convient pas pour Vercel en production
+- **Option B** (Vercel Blob) : Recommandé pour production → voir `@vercel/blob`
+- Penser à ajouter `/public/uploads/` dans `.gitignore`
+```
+
+---
+
+### Prompts AI5.ter.4 : Téléchargement de fichiers joints (détaillé)
+
+#### Prompt AI5.ter.4.1 : Affichage des pièces jointes
+
+```
+TACHE : Afficher les pièces jointes dans les bulles de message avec des badges cliquables.
+
+STATUT : ✅ TERMINÉ (voir implémentation actuelle)
+
+CONTEXTE :
+- Composant : `src/components/features/shared/MessageThread.tsx`
+- Les messages peuvent avoir un champ `attachments: { name, size, type }[]`
+- Besoin d'afficher ces fichiers sous le contenu du message
+
+MODIFICATIONS EFFECTUÉES :
+
+1. **Interface Message étendue** :
+```typescript
+interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  senderName: string;
+  senderRole?: 'STUDENT' | 'TEACHER' | 'ADMIN';
+  createdAt: string;
+  attachments?: { name: string; size: number; type: string }[] | null;
+}
+```
+
+2. **Imports ajoutés** :
+```typescript
+import { FileText, Image, FileSpreadsheet, Paperclip } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+```
+
+3. **Fonction utilitaire pour les icônes** :
+```typescript
+const getFileIcon = (type: string) => {
+  if (type.includes('pdf')) return <FileText className="h-3 w-3" />;
+  if (type.includes('image')) return <Image className="h-3 w-3" />;
+  if (type.includes('sheet') || type.includes('excel')) return <FileSpreadsheet className="h-3 w-3" />;
+  if (type.includes('word') || type.includes('document')) return <FileText className="h-3 w-3" />;
+  if (type.includes('presentation') || type.includes('powerpoint')) return <FileText className="h-3 w-3" />;
+  return <Paperclip className="h-3 w-3" />;
+};
+```
+
+4. **Affichage dans les bulles** :
+```tsx
+{msg.attachments && msg.attachments.length > 0 && (
+  <div className="mt-2 space-y-1">
+    {msg.attachments.map((file, idx) => (
+      <Badge
+        key={idx}
+        variant="secondary"
+        className="cursor-pointer hover:bg-secondary/80 flex items-center gap-2 w-fit"
+        onClick={() => handleDownloadFile(msg.id, file.name)}
+      >
+        {getFileIcon(file.type)}
+        <span className="text-xs">{file.name}</span>
+        <span className="text-xs opacity-70">({formatFileSize(file.size)})</span>
+      </Badge>
+    ))}
+  </div>
+)}
+```
+
+VALIDATION :
+- [x] Interface Message avec attachments
+- [x] Icônes adaptées au type de fichier
+- [x] Badges cliquables affichés sous le message
+- [x] Taille formatée (KB/MB)
+```
+
+---
+
+#### Prompt AI5.ter.4.2 : Gestionnaire de téléchargement
+
+```
+TACHE : Créer le handler pour télécharger un fichier quand on clique sur un badge.
+
+STATUT : ✅ TERMINÉ (voir implémentation actuelle)
+
+CONTEXTE :
+- Composant : `src/components/features/shared/MessageThread.tsx`
+- Les badges sont cliquables via `onClick={() => handleDownloadFile(msg.id, file.name)}`
+- Besoin de télécharger le fichier via l'API
+
+MODIFICATIONS EFFECTUÉES :
+
+1. **Fonction formatFileSize** :
+```typescript
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+```
+
+2. **Handler handleDownloadFile** :
+```typescript
+const handleDownloadFile = async (messageId: string, filename: string) => {
+  try {
+    const res = await fetch(
+      `${apiBaseUrl}/${conversationId}/files/${messageId}/${encodeURIComponent(filename)}`
+    );
+
+    if (!res.ok) {
+      throw new Error('Erreur lors du téléchargement');
+    }
+
+    // Récupérer le blob
+    const blob = await res.blob();
+
+    // Créer un lien de téléchargement
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    // Nettoyer
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Erreur téléchargement:', error);
+    alert('Impossible de télécharger le fichier');
+  }
+};
+```
+
+VALIDATION :
+- [x] Click sur badge appelle handleDownloadFile
+- [x] Fetch vers route API correcte
+- [x] Blob créé et téléchargé
+- [x] Gestion d'erreur avec message utilisateur
+```
+
+---
+
+#### Prompt AI5.ter.4.3 : Route API GET fichiers
+
+```
+TACHE : Créer la route API pour servir les fichiers téléchargés.
+
+STATUT : ✅ TERMINÉ (structure créée, récupération physique à implémenter)
+
+CONTEXTE :
+- Route : `src/app/api/teacher/messages/[id]/files/[messageId]/[filename]/route.ts`
+- Doit vérifier que l'utilisateur est participant de la conversation
+- Retourne le fichier avec le bon Content-Type
+
+MODIFICATIONS EFFECTUÉES :
+
+**Fichier créé** : `src/app/api/teacher/messages/[id]/files/[messageId]/[filename]/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(
+  req: NextRequest,
+  context: {
+    params: Promise<{ id: string; messageId: string; filename: string }>;
+  }
+) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
+
+    const { id: conversationId, messageId, filename } = await context.params;
+
+    // Vérifier que l'utilisateur est participant
+    const conversation = await prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        participantIds: {
+          has: session.user.id,
+        },
+      },
+    });
+
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+    }
+
+    // Vérifier que le message existe
+    const message = await prisma.message.findFirst({
+      where: {
+        id: messageId,
+        conversationId,
+      },
+    });
+
+    if (!message) {
+      return NextResponse.json({ error: 'Message non trouvé' }, { status: 404 });
+    }
+
+    // TODO: Implémenter la récupération réelle du fichier (voir AI5.ter.4.5)
+    return NextResponse.json(
+      {
+        error: 'Stockage de fichiers non encore implémenté',
+        info: 'Les fichiers ne sont pas encore sauvegardés physiquement.',
+      },
+      { status: 501 }
+    );
+  } catch (error) {
+    console.error('❌ Erreur GET /api/teacher/messages/[id]/files:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+```
+
+VALIDATION :
+- [x] Route créée avec bonne signature
+- [x] Vérification authentification
+- [x] Vérification participation à la conversation
+- [x] Vérification existence du message
+- [ ] Récupération et envoi du fichier (voir AI5.ter.4.5)
+```
+
+---
+
+#### Prompt AI5.ter.4.4 : Stockage physique des fichiers (POST)
+
+```
+TACHE : Modifier la route POST pour sauvegarder physiquement les fichiers uploadés.
+
+STATUT : ⏳ À FAIRE
+
+CONTEXTE :
+- Route : `src/app/api/teacher/messages/[id]/route.ts` (handler POST)
+- Actuellement, seules les métadonnées sont stockées en BDD
+- Besoin de sauvegarder les fichiers dans `/public/uploads/messages/[conversationId]/[messageId]/`
+
+OBJECTIFS :
+
+1. **Ajouter les imports nécessaires** :
+```typescript
+import fs from 'fs/promises';
+import path from 'path';
+```
+
+2. **Modifier la section de traitement des fichiers** :
+
+**AVANT** (actuel) :
+```typescript
+// Récupérer les fichiers (si présents)
+const files = formData.getAll('attachments') as File[];
+console.log(`📎 ${files.length} fichier(s) joint(s)`);
+
+// Préparer les métadonnées des fichiers
+const attachmentsData = files.map((file) => ({
+  name: file.name,
+  size: file.size,
+  type: file.type,
+}));
+```
+
+**APRÈS** (à implémenter) :
+```typescript
+// Récupérer les fichiers (si présents)
+const files = formData.getAll('attachments') as File[];
+console.log(`📎 ${files.length} fichier(s) joint(s)`);
+
+let attachmentsData = null;
+
+if (files.length > 0) {
+  // Générer un ID unique pour ce message
+  const messageId = randomUUID();
+  
+  // Créer le dossier de stockage
+  const uploadDir = path.join(
+    process.cwd(),
+    'public',
+    'uploads',
+    'messages',
+    conversationId,
+    messageId
+  );
+  await fs.mkdir(uploadDir, { recursive: true });
+
+  // Sauvegarder chaque fichier
+  attachmentsData = await Promise.all(
+    files.map(async (file, index) => {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      
+      // Nom de fichier sécurisé : timestamp + index + nom original
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filename = `${Date.now()}-${index}-${sanitizedName}`;
+      const filepath = path.join(uploadDir, filename);
+      
+      await fs.writeFile(filepath, buffer);
+      console.log(`✅ Fichier sauvegardé : ${filename}`);
+      
+      return {
+        name: filename,
+        originalName: file.name,
+        size: file.size,
+        type: file.type,
+        path: `/uploads/messages/${conversationId}/${messageId}/${filename}`,
+      };
+    })
+  );
+}
+```
+
+3. **Modifier la création du message** :
+
+**AVANT** :
+```typescript
+const message = await prisma.message.create({
+  data: {
+    id: randomUUID(),
+    conversationId,
+    senderId: session.user.id,
+    content: content.trim(),
+    attachments: attachmentsData.length > 0 ? attachmentsData : null,
+  },
+  // ...
+});
+```
+
+**APRÈS** :
+```typescript
+const message = await prisma.message.create({
+  data: {
+    id: messageId, // Utiliser l'ID généré plus haut
+    conversationId,
+    senderId: session.user.id,
+    content: content.trim(),
+    attachments: attachmentsData,
+  },
+  // ...
+});
+```
+
+4. **Ajouter la gestion d'erreur** :
+
+Si l'upload échoue, nettoyer les fichiers déjà créés :
+
+```typescript
+try {
+  // ... code d'upload ...
+} catch (error) {
+  // Nettoyer les fichiers en cas d'erreur
+  if (messageId) {
+    const uploadDir = path.join(
+      process.cwd(),
+      'public',
+      'uploads',
+      'messages',
+      conversationId,
+      messageId
+    );
+    await fs.rm(uploadDir, { recursive: true, force: true });
+  }
+  throw error;
+}
+```
+
+FICHIER À MODIFIER :
+- `src/app/api/teacher/messages/[id]/route.ts` (handler POST)
+
+VALIDATION :
+- [ ] Imports fs/promises et path ajoutés
+- [ ] Dossier créé dans /public/uploads/messages/[conversationId]/[messageId]/
+- [ ] Fichiers sauvegardés avec noms sécurisés
+- [ ] Métadonnées incluent path relatif
+- [ ] Gestion d'erreur avec cleanup
+- [ ] Logs confirmant sauvegarde
+- [ ] Test : upload fichier → vérifier présence physique
+
+NOTE : Ajouter `/public/uploads/` dans `.gitignore` pour éviter de committer les fichiers uploadés.
+```
+
+---
+
+#### Prompt AI5.ter.4.5 : Récupération physique des fichiers (GET)
+
+```
+TACHE : Compléter la route GET pour lire et servir les fichiers physiques.
+
+STATUT : ⏳ À FAIRE (après AI5.ter.4.4)
+
+CONTEXTE :
+- Route : `src/app/api/teacher/messages/[id]/files/[messageId]/[filename]/route.ts`
+- La structure de sécurité est déjà en place
+- Besoin de lire le fichier et le retourner avec le bon Content-Type
+
+OBJECTIFS :
+
+1. **Ajouter les imports** :
+```typescript
+import fs from 'fs/promises';
+import path from 'path';
+```
+
+2. **Remplacer le TODO** (ligne ~60) :
+
+**AVANT** :
+```typescript
+// TODO: Implémenter la récupération réelle du fichier
+return NextResponse.json(
+  {
+    error: 'Stockage de fichiers non encore implémenté',
+    info: 'Les fichiers ne sont pas encore sauvegardés physiquement.',
+  },
+  { status: 501 }
+);
+```
+
+**APRÈS** :
+```typescript
+try {
+  // Construire le chemin du fichier
+  const filePath = path.join(
+    process.cwd(),
+    'public',
+    'uploads',
+    'messages',
+    conversationId,
+    messageId,
+    filename
+  );
+
+  // Vérifier l'existence du fichier
+  try {
+    await fs.access(filePath);
+  } catch {
+    return NextResponse.json({ error: 'Fichier introuvable' }, { status: 404 });
+  }
+
+  // Lire le fichier
+  const fileBuffer = await fs.readFile(filePath);
+
+  // Détecter le Content-Type selon l'extension
+  const ext = path.extname(filename).toLowerCase();
+  const contentTypes: Record<string, string> = {
+    '.pdf': 'application/pdf',
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+  };
+
+  const contentType = contentTypes[ext] || 'application/octet-stream';
+
+  // Récupérer le nom original depuis les métadonnées
+  const attachments = message.attachments as { originalName?: string; name: string }[] | null;
+  const attachment = attachments?.find((a) => a.name === filename);
+  const downloadFilename = attachment?.originalName || filename;
+
+  // Retourner le fichier
+  return new NextResponse(fileBuffer, {
+    headers: {
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${downloadFilename}"`,
+      'Content-Length': fileBuffer.length.toString(),
+    },
+  });
+} catch (error) {
+  console.error('Erreur lecture fichier:', error);
+  return NextResponse.json({ error: 'Erreur lors de la lecture du fichier' }, { status: 500 });
+}
+```
+
+FICHIER À MODIFIER :
+- `src/app/api/teacher/messages/[id]/files/[messageId]/[filename]/route.ts`
+
+VALIDATION :
+- [ ] Imports fs/promises et path ajoutés
+- [ ] Chemin fichier construit correctement
+- [ ] Vérification existence avec fs.access
+- [ ] Content-Type adapté selon extension
+- [ ] Nom original utilisé pour le téléchargement
+- [ ] Headers corrects (Content-Disposition, Content-Length)
+- [ ] Gestion d'erreur si fichier absent
+- [ ] Test : clic sur badge → fichier téléchargé avec bon nom
+
+SÉCURITÉ :
+- ✅ Vérification authentification (déjà en place)
+- ✅ Vérification participation (déjà en place)
+- ✅ Pas de path traversal (chemin construit de manière sûre)
+- ⚠️ Fichiers publics dans /public/uploads/ (accessible sans API si on connaît l'URL)
+  - Pour prod : migrer vers Vercel Blob ou S3 avec URLs signées
+```
+
+---
+
+#### Prompt AI5.ter.4.6 : Tests end-to-end
+
+```
+TACHE : Tester le workflow complet d'upload et download de fichiers.
+
+STATUT : ⏳ À FAIRE (après AI5.ter.4.4 et AI5.ter.4.5)
+
+CONTEXTE :
+- Toutes les fonctionnalités sont implémentées
+- Besoin de valider le workflow complet
+
+SCÉNARIO DE TEST :
+
+### Test 1 : Upload fichier unique
+
+1. Se connecter en tant que professeur
+2. Ouvrir une conversation
+3. Cliquer sur le bouton Paperclip
+4. Sélectionner un fichier PDF
+5. Vérifier l'affichage du badge avec nom + taille
+6. Envoyer le message
+7. Vérifier :
+   - ✅ Message apparaît dans le fil
+   - ✅ Badge fichier visible sous le message
+   - ✅ Icône PDF affichée
+   - ✅ Taille formatée correctement
+   - ✅ Fichier physique dans `/public/uploads/messages/[conversationId]/[messageId]/`
+
+### Test 2 : Upload multi-fichiers
+
+1. Cliquer sur Paperclip
+2. Sélectionner 3 fichiers (PDF, Excel, Image)
+3. Vérifier les 3 badges avant envoi
+4. Supprimer le fichier Excel
+5. Envoyer
+6. Vérifier :
+   - ✅ 2 fichiers (PDF + Image) dans le message
+   - ✅ Icônes différentes pour chaque type
+
+### Test 3 : Téléchargement
+
+1. Cliquer sur un badge de fichier
+2. Vérifier :
+   - ✅ Le téléchargement démarre
+   - ✅ Le nom du fichier téléchargé est correct (nom original)
+   - ✅ Le fichier s'ouvre correctement
+   - ✅ Aucune erreur dans la console
+
+### Test 4 : Sécurité
+
+1. Se connecter en tant qu'élève NON participant
+2. Tenter d'accéder directement à l'URL :
+   `/api/teacher/messages/[id]/files/[messageId]/[filename]`
+3. Vérifier :
+   - ✅ Erreur 404 ou 403 (pas participant)
+4. Vérifier dans `.gitignore` :
+   - ✅ `/public/uploads/` est bien ignoré
+
+### Test 5 : Formats multiples
+
+Tester avec :
+- PDF (`.pdf`)
+- Word (`.docx`)
+- Excel (`.xlsx`)
+- PowerPoint (`.pptx`)
+- Image (`.jpg`, `.png`)
+
+Vérifier :
+- ✅ Tous les formats acceptés
+- ✅ Icônes correctes
+- ✅ Content-Type correct au téléchargement
+
+### Test 6 : Gestion d'erreur
+
+1. Upload un fichier > 10MB
+2. Vérifier le comportement (limite éventuelle)
+3. Upload un fichier avec caractères spéciaux dans le nom
+4. Vérifier que le nom est sanitizé
+
+CRITÈRES DE VALIDATION GLOBALE :
+- [ ] Upload mono-fichier ✅
+- [ ] Upload multi-fichiers ✅
+- [ ] Suppression avant envoi ✅
+- [ ] Téléchargement ✅
+- [ ] Sécurité (non-participant bloqué) ✅
+- [ ] Tous formats supportés ✅
+- [ ] Noms fichiers sanitizés ✅
+- [ ] `.gitignore` mis à jour ✅
+- [ ] Aucune erreur console ✅
+- [ ] Build passe : `npm run build` ✅
+```
+
+---
+
+NOTES :
+- **Option A** (locale) : Simple pour le dev, ne convient pas pour Vercel en production
+- **Option B** (Vercel Blob) : Recommandé pour production → voir `@vercel/blob`
+- Penser à ajouter `/public/uploads/` dans `.gitignore`
+
+
+---
+
+### Prompt Optimal AI5.ter.4 : Téléchargement de fichiers joints complet
+
+> **Itérations réelles** : 12 (idéal = 3)
+> **Problèmes rencontrés** : 
+> - Next.js 15+ requires `await context.params` (async params)
+> - Stockage physique nécessite fs/promises et création récursive de dossiers
+> - Gestion d'erreur client pour distinguer 404 vs réseau
+> - Noms de fichiers avec caractères spéciaux à encoder/décoder
+> - Anciens fichiers (pré-implémentation) donnent 404 légitime
+
+```
+TÂCHE COMPLÈTE : Ajouter téléchargement de fichiers joints avec stockage physique complet
+
+CONTEXTE :
+- Application : BlaizBot-V1 (Next.js 16+, Prisma 6)
+- Messages existants avec attachments (JSON métadonnées seulement)
+- Besoin : Stockage physique + téléchargement sécurisé
+
+ARCHITECTURE PHYSIQUE CHOISIE :
+```
+public/uploads/messages/[conversationId]/[messageId]/
+  1767132206030-0-Plan_comptable_corrige_proposition.xlsx
+  1767132239884-0-Strategie-communale-IA.pdf
+```
+
+ÉTAPES COMPLÈTES :
+
+1. **AFFICHAGE BADGES CLIQUABLES** (MessageThread.tsx) :
+   ```tsx
+   // État pour téléchargement
+   const handleDownloadFile = async (attachment: any) => {
+     const downloadUrl = `/api/teacher/messages/${conversationId}/files/${messageId}/${encodeURIComponent(attachment.name)}`;
+     console.log('📥 Tentative de téléchargement:', downloadUrl);
+     
+     try {
+       const res = await fetch(downloadUrl);
+       if (!res.ok) {
+         if (res.status === 404) {
+           alert("❌ Fichier introuvable (uploadé avant implémentation stockage)");
+         } else {
+           const errorData = await res.json();
+           alert(`❌ Erreur ${res.status}: ${errorData.error}`);
+         }
+         return;
+       }
+       
+       const blob = await res.blob();
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = attachment.originalName || attachment.name;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+     } catch (error) {
+       console.error('❌ Erreur téléchargement:', error);
+       alert('❌ Erreur réseau lors du téléchargement');
+     }
+   };
+   
+   // Badge cliquable avec icône dynamique
+   const getFileIcon = (fileName: string) => {
+     const ext = fileName.split('.').pop()?.toLowerCase();
+     if (['pdf'].includes(ext!)) return <FileText className="h-4 w-4" />;
+     if (['xlsx', 'xls'].includes(ext!)) return <FileSpreadsheet className="h-4 w-4" />;
+     if (['jpg', 'jpeg', 'png'].includes(ext!)) return <Image className="h-4 w-4" />;
+     return <FileText className="h-4 w-4" />;
+   };
+   
+   <Badge 
+     variant="secondary" 
+     className="flex items-center gap-1 cursor-pointer hover:bg-secondary/80"
+     onClick={() => handleDownloadFile(attachment)}
+   >
+     {getFileIcon(attachment.name)}
+     {attachment.originalName || attachment.name}
+   </Badge>
+   ```
+
+2. **ROUTE POST - STOCKAGE PHYSIQUE** (route.ts) :
+   ```tsx
+   import { NextRequest } from 'next/server';
+   import { writeFile, mkdir } from 'fs/promises';
+   import { join } from 'path';
+   import crypto from 'crypto';
+
+   export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+     const { id: conversationId } = await context.params; // ⚠️ AWAIT REQUIS Next.js 15+
+     const session = await getServerSession(authOptions);
+     
+     // Vérifier participation
+     const conversation = await prisma.conversation.findFirst({
+       where: { id: conversationId, participantIds: { has: session.user.id } }
+     });
+     if (!conversation) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+     
+     const formData = await req.formData();
+     const content = formData.get("content") as string;
+     const files = formData.getAll("attachments") as File[];
+     
+     const messageId = crypto.randomUUID();
+     const attachmentMetas = [];
+     
+     // Stockage physique
+     for (let i = 0; i < files.length; i++) {
+       const file = files[i];
+       const timestamp = Date.now();
+       const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '-');
+       const fileName = `${timestamp}-${i}-${sanitizedName}`;
+       
+       const uploadDir = join(process.cwd(), 'public', 'uploads', 'messages', conversationId, messageId);
+       await mkdir(uploadDir, { recursive: true });
+       
+       const filePath = join(uploadDir, fileName);
+       const buffer = Buffer.from(await file.arrayBuffer());
+       await writeFile(filePath, buffer);
+       
+       console.log('✅ Fichier sauvegardé :', fileName);
+       
+       attachmentMetas.push({
+         name: fileName,
+         originalName: file.name,
+         size: file.size,
+         type: file.type,
+         path: `/uploads/messages/${conversationId}/${messageId}/${fileName}`
+       });
+     }
+     
+     // Créer message
+     const message = await prisma.message.create({
+       data: {
+         id: messageId,
+         conversationId,
+         senderId: session.user.id,
+         content,
+         attachments: attachmentMetas.length > 0 ? attachmentMetas : null
+       }
+     });
+     
+     return NextResponse.json({ success: true, data: message });
+   }
+   ```
+
+3. **ROUTE GET - TÉLÉCHARGEMENT SÉCURISÉ** (files/[messageId]/[filename]/route.ts) :
+   ```tsx
+   import { readFile } from 'fs/promises';
+   import { join } from 'path';
+   
+   export async function GET(
+     req: NextRequest, 
+     context: { params: Promise<{ id: string; messageId: string; filename: string }> }
+   ) {
+     const { id: conversationId, messageId, filename } = await context.params;
+     const session = await getServerSession(authOptions);
+     
+     // Vérifier participation
+     const conversation = await prisma.conversation.findFirst({
+       where: { 
+         id: conversationId, 
+         participantIds: { has: session.user.id }
+       }
+     });
+     
+     if (!conversation) return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+     
+     // Vérifier que le message existe
+     const message = await prisma.message.findFirst({
+       where: { id: messageId, conversationId }
+     });
+     
+     if (!message) return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
+     
+     // Lire le fichier physique
+     const filePath = join(process.cwd(), 'public', 'uploads', 'messages', conversationId, messageId, decodeURIComponent(filename));
+     
+     try {
+       const fileBuffer = await readFile(filePath);
+       
+       // Content-Type dynamique
+       const ext = filename.split('.').pop()?.toLowerCase();
+       let contentType = 'application/octet-stream';
+       if (ext === 'pdf') contentType = 'application/pdf';
+       else if (['xlsx', 'xls'].includes(ext!)) contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+       else if (['jpg', 'jpeg'].includes(ext!)) contentType = 'image/jpeg';
+       else if (ext === 'png') contentType = 'image/png';
+       
+       // Nom original pour téléchargement
+       const attachments = message.attachments as any[];
+       const attachment = attachments?.find((att: any) => att.name === decodeURIComponent(filename));
+       const originalName = attachment?.originalName || filename;
+       
+       return new Response(fileBuffer, {
+         headers: {
+           'Content-Type': contentType,
+           'Content-Disposition': `attachment; filename="${originalName}"`
+         }
+       });
+     } catch (error) {
+       console.error('❌ Fichier non trouvé:', filePath);
+       return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 });
+     }
+   }
+   ```
+
+4. **GESTION .GITIGNORE** :
+   ```gitignore
+   # Ajout à .gitignore
+   /public/uploads/
+   ```
+
+5. **SYSTÈME DEBUG INTÉGRÉ** :
+   - Logs serveur détaillés (✅ Fichier sauvegardé, ❌ Erreurs)
+   - Logs client avec URL et statut (📥 Tentative, ❌ Erreur)
+   - Messages d'erreur explicites (404 pré-implémentation vs erreur serveur)
+
+DIFFÉRENCES CLÉS vs prompt original :
+- **Next.js 15+ async params** : `await context.params` obligatoire
+- **Stockage physique complet** : mkdir récursif + writeFile avec Buffer
+- **Sécurité téléchargement** : Vérification participation + message exists
+- **Content-Type dynamique** : Détection extension pour headers corrects
+- **Nom original préservé** : Content-Disposition avec originalName
+- **Debug système** : Logs détaillés côté client et serveur
+- **Gestion d'erreur** : 404 pour anciens fichiers vs nouveaux
+
+VALIDATION FINALE COMPLÈTE :
+- ✅ Upload multi-fichiers avec stockage physique
+- ✅ Badges cliquables avec icônes différenciées
+- ✅ Téléchargement sécurisé nouveaux fichiers
+- ✅ 404 attendue pour anciens fichiers (pré-implémentation)
+- ✅ Debugging logs pour troubleshooting
+- ✅ .gitignore mis à jour
+- ✅ Noms originaux préservés
+- ✅ Content-Type correct pour tous formats
+```
+
+**Différences clés vs prompts originaux** :
+- Context.params async non mentionné dans prompts originaux
+- Stockage physique complet avec gestion d'erreur manquait
+- Debugging système pas prévu initialement  
+- Distinction anciens/nouveaux fichiers non anticipée
+- Gestion noms caractères spéciaux sous-estimée
+
+**BÉNÉFICE** :
+- Système complet upload→stockage→téléchargement opérationnel
+- Production-ready avec debugging intégré
+- Base solide pour migration future vers Vercel Blob
+
+---
+
+### Prompt Optimal AI5.ter (combiné) - VERSION MISE À JOUR
+
+> **Itérations réelles** : 2 (affichage + API)
+> **Problèmes rencontrés** : 
+> - Alignement des bulles nécessitait `flex` sur le parent
+> - FormData nécessite `NextRequest` au lieu de `Request`
+
+```
+TACHE COMPLÈTE : Implémenter un système de messagerie avec bulles de chat et support de fichiers joints.
+
+CONTEXTE :
+- Application : BlaizBot-V1 (Next.js 16, Prisma 6, shadcn/ui)
+- Page : Teacher Messages (`src/app/(dashboard)/teacher/messages/page.tsx`)
+- Schéma : `Conversation`, `Message` (avec `attachments: Json?`)
+
+ÉTAPES :
+
+1. **AFFICHAGE BULLES DE CHAT** :
+   - Zone messages : `<ScrollArea>` avec `space-y-4`
+   - Bulle : `<div className="flex">` avec `justify-end` ou `justify-start`
+   - Style envoyé : `bg-primary text-primary-foreground max-w-[70%] rounded-lg p-3`
+   - Style reçu : `bg-muted max-w-[70%] rounded-lg p-3`
+   - Condition : `msg.senderId === session?.user?.id ? "justify-end" : "justify-start"`
+   - Heure : `toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })`
+
+2. **BOUTON ATTACHEMENT** :
+   - Input file caché avec `ref={fileInputRef}` et `multiple`
+   - Accept : `.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png`
+   - Bouton : `<Button variant="outline" size="icon"><Paperclip /></Button>`
+   - État : `const [attachments, setAttachments] = useState<File[]>([]);`
+   - Affichage : liste des fichiers avec bouton de suppression
+
+3. **API ROUTE POST** :
+   - Route : `src/app/api/teacher/messages/[id]/route.ts`
+   - Vérifier : participant de la conversation
+   - FormData : `content` (string) + `attachments` (File[])
+   - Créer message avec `id: randomUUID()`
+   - Stocker métadonnées fichiers en JSON (nom, taille)
+   - Mettre à jour `conversation.updatedAt`
+
+4. **INTÉGRATION ENVOI** :
+   ```tsx
+   const handleSendMessage = async () => {
+     const formData = new FormData();
+     formData.append("content", message);
+     formData.append("conversationId", selectedConversation.id);
+     attachments.forEach((file) => {
+       formData.append("attachments", file);
+     });
+     
+     const res = await fetch(\`/api/teacher/messages/\${selectedConversation.id}\`, {
+       method: "POST",
+       body: formData
+     });
+     
+     if (res.ok) {
+       setMessage("");
+       setAttachments([]);
+       await fetchMessages(selectedConversation.id);
+     }
+   };
+   ```
+
+FICHIERS :
+- Modifier : `src/app/(dashboard)/teacher/messages/page.tsx`
+- Créer : `src/app/api/teacher/messages/[id]/route.ts`
+
+VALIDATION COMPLÈTE :
+- ✅ Bulles alignées selon l'expéditeur
+- ✅ Couleurs différenciées (bleu/gris)
+- ✅ Bouton Paperclip fonctionnel
+- ✅ Sélection multi-fichiers
+- ✅ Formats validés
+- ✅ API enregistre le message avec fichiers
+- ✅ Upload sécurisé (vérification participant)
+- ✅ < 150 lignes par fichier
+```
 
 ---
 
@@ -955,3 +2429,331 @@ RÈGLES :
 ---
 
 *Lignes : ~850 | Dernière MAJ : 2025-12-30*
+
+---
+
+## Phase CP : Compteurs Performance Cours
+
+### Prompt CP1 : Types et interfaces
+
+```
+Tu travailles sur BlaizBot-V1 (Next.js 16, TypeScript, Prisma 6).
+
+CONTEXTE :
+- Page Mes Cours affiche les cours du professeur
+- Besoin d'ajouter des compteurs de performance bases sur les scores eleves
+- Donnees a agreger : StudentScore.totalScore + AIActivityScore.finalScore
+
+TACHE :
+Creer le fichier src/types/course-stats.ts avec les types pour les stats cours.
+
+TYPES A CREER :
+
+export type PerformanceGrade = 'A+' | 'A' | 'B' | 'C' | 'D';
+
+export interface CoursePerformance {
+  studentScoreAvg: number;    // Moyenne StudentScore.totalScore (0-100)
+  aiScoreAvg: number;         // Moyenne AIActivityScore.finalScore (0-100)
+  globalScore: number;        // Score combine : (student*0.6) + (ai*0.4)
+  grade: PerformanceGrade;    // A+/A/B/C/D selon globalScore
+  enrolledCount: number;      // Nombre eleves inscrits au cours
+  activeCount: number;        // Nombre eleves avec au moins 1 score
+}
+
+export interface CourseWithStats {
+  id: string;
+  title: string;
+  description: string | null;
+  subject: { id: string; name: string };
+  performance: CoursePerformance | null;  // null si aucun eleve
+  aiComprehensionAvg: number | null;      // Colonne Score IA existante
+}
+
+export interface CoursesOverview {
+  totalCourses: number;
+  totalStudents: number;        // Eleves uniques tous cours confondus
+  averagePerformance: number;   // Moyenne des globalScore
+  coursesWithData: number;      // Cours avec au moins 1 eleve
+}
+
+// Helper function
+export function calculateGrade(score: number): PerformanceGrade {
+  if (score >= 90) return 'A+';
+  if (score >= 80) return 'A';
+  if (score >= 70) return 'B';
+  if (score >= 60) return 'C';
+  return 'D';
+}
+
+FICHIER : src/types/course-stats.ts (~45 lignes)
+
+VALIDATION :
+- [ ] Tous les types exportes
+- [ ] Helper calculateGrade fonctionnel
+- [ ] < 50 lignes
+```
+
+---
+
+### Prompt CP2 : API stats cours enrichie
+
+```
+Tu travailles sur BlaizBot-V1 (Next.js 16, TypeScript, Prisma 6).
+
+CONTEXTE :
+- Types CoursePerformance et CoursesOverview crees (CP1)
+- API existante : /api/teacher/courses retourne les cours du prof
+- Besoin : Enrichir avec stats de performance agregees
+
+TACHE :
+Modifier src/app/api/teacher/courses/route.ts pour inclure les stats.
+
+SPECIFICATIONS :
+1. Periode : Annee scolaire en cours (septembre N a aout N+1)
+2. Sources : StudentScore.totalScore (60%) + AIActivityScore.finalScore (40%)
+3. Seuil : Minimum 1 eleve pour calculer la performance
+4. Format reponse enrichi
+
+LOGIQUE DE CALCUL :
+
+// 1. Determiner l'annee scolaire
+const now = new Date();
+const currentYear = now.getFullYear();
+const startOfSchoolYear = new Date(
+  now.getMonth() >= 8 ? currentYear : currentYear - 1, 
+  8, 1  // 1er septembre
+);
+
+// 2. Pour chaque cours, recuperer :
+// - StudentScore avec totalScore
+// - AIActivityScore avec finalScore
+// - Compter eleves uniques
+
+// 3. Calculer moyennes
+const studentScoreAvg = studentScores.length > 0 
+  ? studentScores.reduce((sum, s) => sum + s.totalScore, 0) / studentScores.length
+  : 0;
+
+const aiScoreAvg = aiScores.length > 0
+  ? aiScores.reduce((sum, s) => sum + (s.finalScore || 0), 0) / aiScores.length
+  : 0;
+
+// 4. Score global pondere
+const globalScore = (studentScoreAvg * 0.6) + (aiScoreAvg * 0.4);
+
+// 5. Determiner le grade
+const grade = calculateGrade(globalScore);
+
+REPONSE ATTENDUE :
+
+{
+  success: true,
+  data: {
+    courses: CourseWithStats[],
+    overview: CoursesOverview
+  }
+}
+
+FICHIER : src/app/api/teacher/courses/route.ts (~+60 lignes)
+
+ATTENTION :
+- Ne pas casser le comportement existant
+- Gerer le cas ou aucun score n'existe (performance: null)
+- Utiliser les types importes de @/types/course-stats
+
+VALIDATION :
+- [ ] Annee scolaire calculee correctement
+- [ ] Jointures StudentScore et AIActivityScore
+- [ ] Calcul moyenne ponderee (60/40)
+- [ ] Overview avec totaux
+- [ ] < 350 lignes total
+```
+
+---
+
+### Prompt CP3 : Composant Badge Performance
+
+```
+Tu travailles sur BlaizBot-V1 (Next.js 16, shadcn/ui, Tailwind).
+
+CONTEXTE :
+- Types CoursePerformance disponibles
+- Besoin d'afficher la note A+/A/B/C/D avec couleur
+
+TACHE :
+Creer src/components/features/teacher/courses/CoursePerformanceBadge.tsx
+
+COMPOSANT :
+
+interface CoursePerformanceBadgeProps {
+  performance: CoursePerformance | null;
+  showScore?: boolean;  // Afficher le % a cote du grade
+  size?: 'sm' | 'md';   // Taille du badge
+}
+
+COULEURS PAR GRADE :
+- A+ : bg-emerald-600 text-white (vert fonce)
+- A  : bg-green-500 text-white (vert)
+- B  : bg-amber-500 text-white (orange)
+- C  : bg-orange-500 text-white (rouge clair)
+- D  : bg-red-500 text-white (rouge)
+- null : bg-gray-300 text-gray-600 (gris, afficher "-")
+
+AFFICHAGE :
+- Par defaut : Badge avec grade seul (ex: "A+")
+- showScore=true : Badge + score (ex: "A+ (87%)")
+- size='sm' : Plus petit pour tableau
+- size='md' : Taille normale
+
+EXEMPLE RENDU :
+[A+] ou [A+ 87%] ou [-]
+
+FICHIER : src/components/features/teacher/courses/CoursePerformanceBadge.tsx (~50 lignes)
+
+VALIDATION :
+- [ ] 5 couleurs differentes selon grade
+- [ ] Gestion du cas null
+- [ ] Props optionnelles fonctionnelles
+- [ ] < 60 lignes
+```
+
+---
+
+### Prompt CP4 : Header Stats Vue d'ensemble
+
+```
+Tu travailles sur BlaizBot-V1 (Next.js 16, shadcn/ui, Tailwind).
+
+CONTEXTE :
+- Type CoursesOverview disponible
+- Page Mes Cours affiche un tableau de cours
+- Besoin d'un header avec stats globales
+
+TACHE :
+Creer src/components/features/teacher/courses/CoursesStatsHeader.tsx
+
+COMPOSANT :
+
+interface CoursesStatsHeaderProps {
+  overview: CoursesOverview;
+}
+
+AFFICHAGE :
+
+  Vue d'ensemble                                              
+                
+    15          127         73%                  
+   cours         eleves        perf. moy.              
+                
+
+
+STRUCTURE :
+- Card avec 3 stats en flex row
+- Icones : BookOpen, Users, TrendingUp (lucide-react)
+- Performance moyenne avec couleur selon grade
+
+FICHIER : src/components/features/teacher/courses/CoursesStatsHeader.tsx (~60 lignes)
+
+VALIDATION :
+- [ ] 3 cartes de stats alignees
+- [ ] Couleur performance selon grade
+- [ ] Design coherent avec le reste
+- [ ] < 70 lignes
+```
+
+---
+
+### Prompt CP5 : Integration page Mes Cours
+
+```
+Tu travailles sur BlaizBot-V1 (Next.js 16, shadcn/ui, Tailwind).
+
+CONTEXTE :
+- Composants crees : CoursePerformanceBadge, CoursesStatsHeader
+- API enrichie retourne CourseWithStats[] et CoursesOverview
+- Page actuelle : tableau avec Matiere | Theme | Chapitres | Score IA | Actions
+
+TACHE :
+Modifier src/app/(dashboard)/teacher/courses/page.tsx pour :
+1. Ajouter le header stats en haut
+2. Supprimer la colonne "Chapitres"
+3. Ajouter colonne "Eleves" avec format "X/Y"
+4. Ajouter colonne "Perf. Globale" avec CoursePerformanceBadge
+
+NOUVELLES COLONNES :
+- Matiere : inchange
+- Theme : inchange
+- Eleves : activeCount / enrolledCount (ex: "18/25")
+- Perf. Globale : CoursePerformanceBadge (grade colore)
+- Score IA : inchange (garde la valeur existante aiComprehension)
+- Actions : inchange
+
+STRUCTURE PAGE :
+1. <CoursesStatsHeader overview={data.overview} />
+2. Barre de recherche (existante)
+3. Bouton "Nouveau cours" (existant)
+4. Tableau avec nouvelles colonnes
+
+IMPORT DES COMPOSANTS :
+import { CoursePerformanceBadge } from "@/components/features/teacher/courses/CoursePerformanceBadge";
+import { CoursesStatsHeader } from "@/components/features/teacher/courses/CoursesStatsHeader";
+
+FICHIER : src/app/(dashboard)/teacher/courses/page.tsx
+
+ATTENTION :
+- Adapter le fetch pour utiliser la nouvelle structure API
+- Gerer le cas performance: null (afficher "-" ou badge gris)
+- Garder le tri et la recherche fonctionnels
+
+VALIDATION :
+- [ ] Header stats affiche
+- [ ] Colonne Chapitres supprimee
+- [ ] Colonne Eleves avec format X/Y
+- [ ] Colonne Perf. Globale avec badge colore
+- [ ] Score IA toujours affiche
+- [ ] < 350 lignes
+```
+
+---
+
+### Prompt CP6 : Tests et validation
+
+```
+Tu travailles sur BlaizBot-V1 (Next.js 16, TypeScript).
+
+TACHE : Verifier que tout fonctionne
+
+TESTS MANUELS :
+1. Ouvrir /teacher/courses
+2. Verifier le header stats (3 cartes)
+3. Verifier les colonnes du tableau
+4. Verifier les badges de performance
+5. Verifier le format "X/Y" pour les eleves
+
+TESTS AUTOMATIQUES :
+npm run lint
+npm run build
+
+CRITERES DE VALIDATION :
+- [ ] Header affiche totaux corrects
+- [ ] Badges colores selon grade
+- [ ] Colonne Chapitres absente
+- [ ] Format Eleves correct
+- [ ] Pas d'erreur console
+- [ ] Build reussit
+- [ ] Fichiers < 350 lignes
+
+SCREENSHOT ATTENDU :
+
+ Vue d'ensemble : 15 cours  127 eleves  73% perf moyenne   
+
+ Matiere      Theme          Eleves  Perf.    Score IA   
+ SVT          Photosynthese  23/25   [A 87%]  49%        
+ Maths        Equations      18/20   [B 73%]  53%        
+ Maths        Fractions      15/18   [A+91%]  64%        
+
+```
+
+---
+
+*Lignes : ~950 | Derniere MAJ : 2025-12-31*

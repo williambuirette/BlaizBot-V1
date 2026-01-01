@@ -39,6 +39,9 @@ export function StudentCard({ student, onViewContact, selected, onToggleSelect }
   const continuousDisplay = stats?.totalCourses 
     ? `${Math.round((stats.averageGrade ?? 0) / 6 * 100)}%` 
     : '—';
+  const aiDisplay = stats?.aiComprehension !== null && stats?.aiComprehension !== undefined
+    ? `${Math.round(stats.aiComprehension)}%`
+    : '—';
   const examDisplay = stats?.coursesWithGrades 
     ? (stats.averageGrade?.toFixed(1) ?? '—')
     : '—';
@@ -74,11 +77,15 @@ export function StudentCard({ student, onViewContact, selected, onToggleSelect }
           </div>
         </div>
 
-        {/* Stats: 3 mini-badges */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        {/* Stats: 4 mini-badges */}
+        <div className="grid grid-cols-4 gap-2 mb-3">
           <div className="text-center p-2 bg-muted/50 rounded">
             <div className="font-semibold text-sm">{continuousDisplay}</div>
             <div className="text-xs text-muted-foreground">Continu</div>
+          </div>
+          <div className="text-center p-2 bg-purple-50 rounded border border-purple-200">
+            <div className="font-semibold text-sm text-purple-700">{aiDisplay}</div>
+            <div className="text-xs text-purple-600">🤖 IA</div>
           </div>
           <div className="text-center p-2 bg-muted/50 rounded">
             <div className="font-semibold text-sm">{examDisplay}</div>

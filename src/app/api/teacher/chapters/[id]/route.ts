@@ -20,18 +20,18 @@ async function verifyChapterOwnership(chapterId: string, userId: string) {
   const chapter = await prisma.chapter.findFirst({
     where: {
       id: chapterId,
-      course: {
+      Course: {
         teacherId: teacherProfile.id,
       },
     },
     include: {
-      course: {
+      Course: {
         select: { id: true, title: true },
       },
       _count: {
-        select: { sections: true },
+        select: { Section: true },
       },
-      sections: {
+      Section: {
         orderBy: { order: 'asc' },
         select: {
           id: true,
@@ -124,9 +124,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       data: updateData,
       include: {
         _count: {
-          select: { sections: true },
+          select: { Section: true },
         },
-        sections: {
+        Section: {
           orderBy: { order: 'asc' },
           select: {
             id: true,

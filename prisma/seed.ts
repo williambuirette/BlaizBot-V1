@@ -11,22 +11,23 @@ const prisma = new PrismaClient()
 // -----------------------------------------------------
 
 const SUBJECTS = [
-  { name: 'Mathématiques' },
-  { name: 'Français' },
-  { name: 'Histoire-Géographie' },
-  { name: 'SVT' },
-  { name: 'Physique-Chimie' },
-  { name: 'Anglais' },
+  { id: 'subject-mathematiques', name: 'Mathématiques' },
+  { id: 'subject-francais', name: 'Français' },
+  { id: 'subject-histoire-geographie', name: 'Histoire-Géographie' },
+  { id: 'subject-svt', name: 'SVT' },
+  { id: 'subject-physique-chimie', name: 'Physique-Chimie' },
+  { id: 'subject-anglais', name: 'Anglais' },
 ]
 
 const CLASSES = [
-  { name: '3ème A', level: '3ème' },
-  { name: '3ème B', level: '3ème' },
-  { name: '4ème A', level: '4ème' },
+  { id: 'class-3eme-a', name: '3ème A', level: '3ème', updatedAt: new Date() },
+  { id: 'class-3eme-b', name: '3ème B', level: '3ème', updatedAt: new Date() },
+  { id: 'class-4eme-a', name: '4ème A', level: '4ème', updatedAt: new Date() },
 ]
 
 const USERS = {
   admin: {
+    id: 'user-admin-system',
     email: 'admin@blaizbot.edu',
     password: 'admin123',
     firstName: 'Admin',
@@ -35,6 +36,7 @@ const USERS = {
   },
   teachers: [
     {
+      id: 'user-teacher-dupont',
       email: 'm.dupont@blaizbot.edu',
       password: 'prof123',
       firstName: 'Marc',
@@ -42,6 +44,7 @@ const USERS = {
       role: Role.TEACHER,
     },
     {
+      id: 'user-teacher-bernard',
       email: 's.bernard@blaizbot.edu',
       password: 'prof123',
       firstName: 'Sophie',
@@ -51,6 +54,7 @@ const USERS = {
   ],
   students: [
     {
+      id: 'user-student-martin',
       email: 'lucas.martin@blaizbot.edu',
       password: 'eleve123',
       firstName: 'Lucas',
@@ -63,6 +67,7 @@ const USERS = {
       parentEmail: 'parents.martin@email.com',
     },
     {
+      id: 'user-student-durand',
       email: 'emma.durand@blaizbot.edu',
       password: 'eleve123',
       firstName: 'Emma',
@@ -75,6 +80,7 @@ const USERS = {
       parentEmail: 'famille.durand@email.com',
     },
     {
+      id: 'user-student-petit',
       email: 'noah.petit@blaizbot.edu',
       password: 'eleve123',
       firstName: 'Noah',
@@ -87,6 +93,7 @@ const USERS = {
       parentEmail: 'petit.famille@email.com',
     },
     {
+      id: 'user-student-moreau',
       email: 'lea.moreau@blaizbot.edu',
       password: 'eleve123',
       firstName: 'Léa',
@@ -99,6 +106,7 @@ const USERS = {
       parentEmail: 'moreau.parents@email.com',
     },
     {
+      id: 'user-student-robert',
       email: 'hugo.robert@blaizbot.edu',
       password: 'eleve123',
       firstName: 'Hugo',
@@ -124,7 +132,7 @@ async function seedSubjects() {
     await prisma.subject.upsert({
       where: { name: subject.name },
       update: {},
-      create: subject,
+      create: { ...subject, updatedAt: new Date() },
     })
   }
 
@@ -154,11 +162,13 @@ async function seedUsers() {
     where: { email: USERS.admin.email },
     update: {},
     create: {
+      id: USERS.admin.id,
       email: USERS.admin.email,
       passwordHash: adminPassword,
       firstName: USERS.admin.firstName,
       lastName: USERS.admin.lastName,
       role: USERS.admin.role,
+      updatedAt: new Date(),
     },
   })
 
@@ -169,13 +179,17 @@ async function seedUsers() {
       where: { email: teacher.email },
       update: {},
       create: {
+        id: teacher.id,
         email: teacher.email,
         passwordHash: hashedPassword,
         firstName: teacher.firstName,
         lastName: teacher.lastName,
         role: teacher.role,
-        teacherProfile: {
-          create: {},
+        updatedAt: new Date(),
+        TeacherProfile: {
+          create: {
+            id: `teacher-profile-${teacher.id}`,
+          },
         },
       },
     })
@@ -202,6 +216,7 @@ async function seedUsers() {
         postalCode: student.postalCode,
       },
       create: {
+        id: student.id,
         email: student.email,
         passwordHash: hashedPassword,
         firstName: student.firstName,
@@ -211,8 +226,10 @@ async function seedUsers() {
         address: student.address,
         city: student.city,
         postalCode: student.postalCode,
-        studentProfile: {
+        updatedAt: new Date(),
+        StudentProfile: {
           create: {
+            id: `student-profile-${student.id}`,
             classId: cls.id,
             parentEmail: student.parentEmail,
           },
@@ -231,13 +248,13 @@ async function seedTeacherAssignments() {
   // M. Dupont (Maths/SVT) → 3ème A, 3ème B
   const marcTeacher = await prisma.user.findUnique({
     where: { email: 'm.dupont@blaizbot.edu' },
-    include: { teacherProfile: true },
+    include: { TeacherProfile: true },
   })
 
   // Mme Bernard (Histoire/Français) → 3ème A, 4ème A
   const sophieTeacher = await prisma.user.findUnique({
     where: { email: 's.bernard@blaizbot.edu' },
-    include: { teacherProfile: true },
+    include: { TeacherProfile: true },
   })
 
   const class3A = await prisma.class.findUnique({ where: { name: '3ème A' } })
@@ -247,7 +264,7 @@ async function seedTeacherAssignments() {
   const mathSubject = await prisma.subject.findUnique({ where: { name: 'Mathématiques' } })
   const histSubject = await prisma.subject.findUnique({ where: { name: 'Histoire-Géographie' } })
 
-  if (!marcTeacher?.teacherProfile || !sophieTeacher?.teacherProfile || 
+  if (!marcTeacher?.TeacherProfile || !sophieTeacher?.TeacherProfile || 
       !class3A || !class3B || !class4A || !mathSubject || !histSubject) {
     console.warn('⚠️ Données manquantes pour les affectations')
     return
@@ -255,12 +272,12 @@ async function seedTeacherAssignments() {
 
   // Affecter M. Dupont aux classes 3ème A et 3ème B + matières
   await prisma.teacherProfile.update({
-    where: { id: marcTeacher.teacherProfile.id },
+    where: { id: marcTeacher.TeacherProfile.id },
     data: {
-      classes: {
+      Class: {
         connect: [{ id: class3A.id }, { id: class3B.id }],
       },
-      subjects: {
+      Subject: {
         connect: [
           { name: 'Mathématiques' },
           { name: 'SVT' },
@@ -271,12 +288,12 @@ async function seedTeacherAssignments() {
 
   // Affecter Mme Bernard aux classes 3ème A et 4ème A + matières
   await prisma.teacherProfile.update({
-    where: { id: sophieTeacher.teacherProfile.id },
+    where: { id: sophieTeacher.TeacherProfile.id },
     data: {
-      classes: {
+      Class: {
         connect: [{ id: class3A.id }, { id: class4A.id }],
       },
-      subjects: {
+      Subject: {
         connect: [
           { name: 'Histoire-Géographie' },
           { name: 'Français' },
@@ -298,15 +315,15 @@ async function seedCourses() {
 
   const marcTeacher = await prisma.user.findUnique({
     where: { email: 'm.dupont@blaizbot.edu' },
-    include: { teacherProfile: true },
+    include: { TeacherProfile: true },
   })
   const sophieTeacher = await prisma.user.findUnique({
     where: { email: 's.bernard@blaizbot.edu' },
-    include: { teacherProfile: true },
+    include: { TeacherProfile: true },
   })
 
   if (!mathSubject || !histSubject || !frSubject || !svtSubject || 
-      !marcTeacher?.teacherProfile || !sophieTeacher?.teacherProfile) {
+      !marcTeacher?.TeacherProfile || !sophieTeacher?.TeacherProfile) {
     console.warn('⚠️ Données manquantes pour créer les cours')
     return
   }
@@ -320,7 +337,8 @@ async function seedCourses() {
       title: 'Les Fractions',
       description: 'Maîtriser les opérations sur les fractions',
       subjectId: mathSubject.id,
-      teacherId: marcTeacher.teacherProfile.id,
+      teacherId: marcTeacher.TeacherProfile.id,
+      updatedAt: new Date(),
     },
   })
 
@@ -332,7 +350,8 @@ async function seedCourses() {
       title: 'Équations du premier degré',
       description: 'Résoudre des équations simples',
       subjectId: mathSubject.id,
-      teacherId: marcTeacher.teacherProfile.id,
+      teacherId: marcTeacher.TeacherProfile.id,
+      updatedAt: new Date(),
     },
   })
 
@@ -344,7 +363,8 @@ async function seedCourses() {
       title: 'La Photosynthèse',
       description: 'Comment les plantes produisent leur énergie',
       subjectId: svtSubject.id,
-      teacherId: marcTeacher.teacherProfile.id,
+      teacherId: marcTeacher.TeacherProfile.id,
+      updatedAt: new Date(),
     },
   })
 
@@ -357,7 +377,8 @@ async function seedCourses() {
       title: 'La Révolution Française',
       description: 'De 1789 à 1799 : causes, événements et conséquences',
       subjectId: histSubject.id,
-      teacherId: sophieTeacher.teacherProfile.id,
+      teacherId: sophieTeacher.TeacherProfile.id,
+      updatedAt: new Date(),
     },
   })
 
@@ -369,7 +390,8 @@ async function seedCourses() {
       title: 'L\'Empire Napoléonien',
       description: 'De 1804 à 1815',
       subjectId: histSubject.id,
-      teacherId: sophieTeacher.teacherProfile.id,
+      teacherId: sophieTeacher.TeacherProfile.id,
+      updatedAt: new Date(),
     },
   })
 
@@ -381,7 +403,8 @@ async function seedCourses() {
       title: 'L\'argumentation',
       description: 'Convaincre et persuader',
       subjectId: frSubject.id,
-      teacherId: sophieTeacher.teacherProfile.id,
+      teacherId: sophieTeacher.TeacherProfile.id,
+      updatedAt: new Date(),
     },
   })
 
@@ -566,6 +589,7 @@ async function seedStudentScores() {
     const finalScore = calcFinal(continuousScore, scoreData.examGrade)
     const finalGrade = calcGrade(finalScore)
 
+    const scoreId = `score-${student.id}-${course.id}`
     await prisma.studentScore.upsert({
       where: {
         studentId_courseId: {
@@ -585,8 +609,10 @@ async function seedStudentScores() {
         examDate: scoreData.examDate,
         finalScore,
         finalGrade,
+        updatedAt: new Date(),
       },
       create: {
+        id: scoreId,
         studentId: student.id,
         courseId: course.id,
         quizAvg: scoreData.quizAvg,
@@ -600,6 +626,7 @@ async function seedStudentScores() {
         examDate: scoreData.examDate,
         finalScore,
         finalGrade,
+        updatedAt: new Date(),
       },
     })
 

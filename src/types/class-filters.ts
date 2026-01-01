@@ -36,6 +36,8 @@ export interface ClassGroupStats {
   noDataCount: number;
   /** Moyenne générale (/6) */
   averageGrade: number | null;
+  /** Moyenne IA (0-100) */
+  averageAI: number | null;
 }
 
 export type ClassAlertLevel = 'success' | 'warning' | 'danger' | 'no-data';
@@ -52,6 +54,7 @@ export interface ClassWithStats {
     warningCount: number;
     dangerCount: number;
     averageGrade: number | null;
+    aiAverageScore: number | null;
     alertLevel: ClassAlertLevel;
   };
 }

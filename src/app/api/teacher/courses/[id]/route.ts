@@ -35,9 +35,9 @@ async function verifyCourseOwnership(courseId: string, userId: string) {
       teacherId: teacherProfile.id,
     },
     include: {
-      subject: true,
-      children: { select: { id: true } },
-      files: true,
+      Subject: true,
+      Chapter: { select: { id: true } },
+      CourseFile: true,
     },
     
   });
@@ -59,13 +59,13 @@ async function getCourseWithCounts(courseId: string, userId: string) {
       teacherId: teacherProfile.id,
     },
     include: {
-      subject: true,
-      files: true,
+      Subject: true,
+      CourseFile: true,
       _count: {
         select: {
-          chapters: true,
-          resources: true,
-          assignments: true,
+          Chapter: true,
+          Resource: true,
+          CourseAssignment: true,
         },
       },
     },
@@ -103,15 +103,19 @@ export async function GET(
         description: course.description,
         content: course.content,
         subjectId: course.subjectId,
-        subject: course.subject ? { id: course.subject.id, name: course.subject.name } : null,
-        subjectName: course.subject?.name,
+        subject: course.Subject ? { id: course.Subject.id, name: course.Subject.name } : null,
+        subjectName: course.Subject?.name,
         difficulty: course.difficulty,
         duration: course.duration,
         objectives: course.objectives,
         tags: course.tags,
         isDraft: course.isDraft,
-        _count: course._count,
-        files: course.files.map((f) => ({
+        _count: {
+          chapters: course._count.Chapter,
+          resources: course._count.Resource,
+          assignments: course._count.CourseAssignment,
+        },
+        files: course.CourseFile.map((f) => ({
           id: f.id,
           filename: f.filename,
           url: f.url,
@@ -199,6 +203,7 @@ export async function PUT(
       if (newFiles.length > 0) {
         await prisma.courseFile.createMany({
           data: newFiles.map(f => ({
+            id: crypto.randomUUID(),
             courseId: id,
             filename: f.filename,
             fileType: f.filename.split('.').pop() || 'unknown',
@@ -222,9 +227,9 @@ export async function PUT(
         ...(isDraft !== undefined && { isDraft }),
       },
       include: {
-        subject: true,
-        children: { select: { id: true } },
-        files: true,
+        Subject: true,
+        Chapter: { select: { id: true } },
+        CourseFile: true,
       },
     });
 
@@ -235,14 +240,14 @@ export async function PUT(
         description: updatedCourse.description,
         content: updatedCourse.content,
         subjectId: updatedCourse.subjectId,
-        subjectName: updatedCourse.subject.name,
+        subjectName: updatedCourse.Subject.name,
         difficulty: updatedCourse.difficulty,
         duration: updatedCourse.duration,
         objectives: updatedCourse.objectives,
         tags: updatedCourse.tags,
         isDraft: updatedCourse.isDraft,
-        chaptersCount: updatedCourse.children.length,
-        files: updatedCourse.files.map((f) => ({
+        chaptersCount: updatedCourse.Chapter.length,
+        files: updatedCourse.CourseFile.map((f) => ({
           id: f.id,
           filename: f.filename,
           url: f.url,

@@ -17,15 +17,15 @@ async function verifyAssignmentOwnership(assignmentId: string, userId: string) {
       teacherId: userId,
     },
     include: {
-      course: { select: { id: true, title: true } },
-      chapter: { select: { id: true, title: true } },
-      section: { select: { id: true, title: true, type: true } },
-      class: { select: { id: true, name: true } },
-      team: { select: { id: true, name: true } },
-      student: { select: { id: true, firstName: true, lastName: true } },
-      progress: {
+      Course: { select: { id: true, title: true } },
+      Chapter: { select: { id: true, title: true } },
+      Section: { select: { id: true, title: true, type: true } },
+      Class: { select: { id: true, name: true } },
+      Team: { select: { id: true, name: true } },
+      User: { select: { id: true, firstName: true, lastName: true } },
+      StudentProgress: {
         include: {
-          student: {
+          User: {
             select: {
               id: true,
               firstName: true,
@@ -62,9 +62,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     // Calculer les stats
-    const total = assignment.progress.length;
-    const completed = assignment.progress.filter((p) => p.status === 'COMPLETED' || p.status === 'GRADED').length;
-    const inProgress = assignment.progress.filter((p) => p.status === 'IN_PROGRESS').length;
+    const progress = assignment.StudentProgress || [];
+    const total = progress.length;
+    const completed = progress.filter((p) => p.status === 'COMPLETED' || p.status === 'GRADED').length;
+    const inProgress = progress.filter((p) => p.status === 'IN_PROGRESS').length;
 
     return NextResponse.json({
       ...assignment,
@@ -130,13 +131,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       where: { id: assignmentId },
       data: updateData,
       include: {
-        course: { select: { id: true, title: true } },
-        chapter: { select: { id: true, title: true } },
-        section: { select: { id: true, title: true, type: true } },
-        class: { select: { id: true, name: true } },
-        team: { select: { id: true, name: true } },
-        student: { select: { id: true, firstName: true, lastName: true } },
-        _count: { select: { progress: true } },
+        Course: { select: { id: true, title: true } },
+        Chapter: { select: { id: true, title: true } },
+        Section: { select: { id: true, title: true, type: true } },
+        Class: { select: { id: true, name: true } },
+        Team: { select: { id: true, name: true } },
+        User: { select: { id: true, firstName: true, lastName: true } },
+        _count: { select: { StudentProgress: true } },
       },
     });
 

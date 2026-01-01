@@ -45,9 +45,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       orderBy: { order: 'asc' },
       include: {
         _count: {
-          select: { sections: true },
+          select: { Section: true },
         },
-        sections: {
+        Section: {
           orderBy: { order: 'asc' },
           select: {
             id: true,
@@ -61,7 +61,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
       },
     });
 
-    return NextResponse.json(chapters);
+    // Transformer Section -> sections pour le frontend
+    const chaptersWithSections = chapters.map((chapter) => ({
+      ...chapter,
+      sections: chapter.Section,
+      Section: undefined,
+    }));
+
+    return NextResponse.json(chaptersWithSections);
   } catch (error) {
     console.error('Erreur GET chapters:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
@@ -112,19 +119,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const newOrder = (maxOrder._max.order ?? -1) + 1;
 
+    // Générer un ID unique
+    const chapterId = `chapter-${courseId}-${Date.now()}`;
+
     // Créer le chapitre
     const chapter = await prisma.chapter.create({
       data: {
+        id: chapterId,
         courseId,
         title: title.trim(),
         description: description?.trim() || null,
         order: newOrder,
+        updatedAt: new Date(),
       },
       include: {
         _count: {
-          select: { sections: true },
+          select: { Section: true },
         },
-        sections: {
+        Section: {
           orderBy: { order: 'asc' },
           select: {
             id: true,

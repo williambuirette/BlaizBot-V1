@@ -10,13 +10,14 @@ import { statsService } from '@/lib/stats-service';
 /**
  * Calcule les statistiques d'un élève à partir de ses scores
  */
-function calculateStudentStats(scores: { continuousScore: number; finalGrade: number | null }[]): StudentStats {
+function calculateStudentStats(scores: { continuousScore: number; finalGrade: number | null; aiComprehension: number }[]): StudentStats {
   if (scores.length === 0) {
     return {
       averageGrade: null,
       coursesWithGrades: 0,
       totalCourses: 0,
       alertLevel: 'no-data',
+      aiComprehension: null,
     };
   }
 
@@ -36,11 +37,18 @@ function calculateStudentStats(scores: { continuousScore: number; finalGrade: nu
     averageGrade = (avgContinuous / 100) * 6;
   }
 
+  // Calcul de la moyenne IA
+  const scoresWithAI = scores.filter(s => s.aiComprehension > 0);
+  const aiComprehension = scoresWithAI.length > 0
+    ? scoresWithAI.reduce((acc, s) => acc + s.aiComprehension, 0) / scoresWithAI.length
+    : null;
+
   return {
     averageGrade,
     coursesWithGrades,
     totalCourses: scores.length,
     alertLevel: statsService.getAlertLevel(averageGrade),
+    aiComprehension,
   };
 }
 
@@ -55,11 +63,11 @@ export default async function TeacherStudentsPage() {
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId: session.user.id },
     include: {
-      classes: {
+      Class: {
         include: {
-          students: {
+          StudentProfile: {
             include: {
-              user: {
+              User: {
                 select: {
                   id: true,
                   firstName: true,
@@ -71,10 +79,11 @@ export default async function TeacherStudentsPage() {
                   postalCode: true,
                   isActive: true,
                   // Récupérer les scores pour calculer les stats
-                  studentScores: {
+                  StudentScore: {
                     select: {
                       continuousScore: true,
                       finalGrade: true,
+                      aiComprehension: true,
                     },
                   },
                 },
@@ -100,33 +109,34 @@ export default async function TeacherStudentsPage() {
     postalCode?: string | null;
     parentEmail?: string | null;
     isActive?: boolean;
-    scores: { continuousScore: number; finalGrade: number | null }[];
+    scores: { continuousScore: number; finalGrade: number | null; aiComprehension: number }[];
   }>();
 
-  teacherProfile.classes.forEach((cls) => {
-    cls.students.forEach((student) => {
-      const existing = studentsMap.get(student.user.id);
+  teacherProfile.Class.forEach((cls) => {
+    cls.StudentProfile.forEach((student) => {
+      const existing = studentsMap.get(student.User.id);
       if (existing) {
         existing.classes.push(cls.name);
         existing.classIds.push(cls.id);
       } else {
-        const scores = student.user.studentScores.map(s => ({
+        const scores = student.User.StudentScore.map(s => ({
           continuousScore: s.continuousScore,
           finalGrade: s.finalGrade,
+          aiComprehension: s.aiComprehension,
         }));
-        studentsMap.set(student.user.id, {
-          id: student.user.id,
-          firstName: student.user.firstName,
-          lastName: student.user.lastName,
-          email: student.user.email,
-          phone: student.user.phone,
-          address: student.user.address,
-          city: student.user.city,
-          postalCode: student.user.postalCode,
+        studentsMap.set(student.User.id, {
+          id: student.User.id,
+          firstName: student.User.firstName,
+          lastName: student.User.lastName,
+          email: student.User.email,
+          phone: student.User.phone,
+          address: student.User.address,
+          city: student.User.city,
+          postalCode: student.User.postalCode,
           parentEmail: student.parentEmail,
           classes: [cls.name],
           classIds: [cls.id],
-          isActive: student.user.isActive,
+          isActive: student.User.isActive,
           studentProfile: student,
           class: cls,
           scores,
@@ -142,7 +152,7 @@ export default async function TeacherStudentsPage() {
     .sort((a, b) => a.lastName.localeCompare(b.lastName));
 
   // Liste des classes pour le filtre
-  const classes = teacherProfile.classes.map(cls => ({
+  const classes = teacherProfile.Class.map(cls => ({
     id: cls.id,
     name: cls.name,
     level: cls.level,

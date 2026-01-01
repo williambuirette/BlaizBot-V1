@@ -83,8 +83,11 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
 
   useEffect(() => {
     if (open) {
-      fetchClasses();
-      fetchCourses();
+      // Délai pour s'assurer que la session est chargée
+      setTimeout(() => {
+        fetchClasses();
+        fetchCourses();
+      }, 100);
     }
   }, [open]);
 
@@ -104,12 +107,21 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
   async function fetchClasses() {
     setLoadingClasses(true);
     try {
+      console.log('🔄 Chargement classes...');
       const res = await fetch('/api/teacher/classes');
-      if (!res.ok) throw new Error('Erreur chargement classes');
+      console.log('📡 Response status:', res.status, res.statusText);
+      
+      if (!res.ok) {
+        const errorData = await res.text();
+        console.error('❌ Erreur response:', errorData);
+        throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
+      console.log('✅ Classes reçues:', data.classes?.length || 0);
       setClasses(data.classes || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('💥 Erreur fetchClasses:', error);
       toast.error('Erreur lors du chargement des classes');
     } finally {
       setLoadingClasses(false);
@@ -146,12 +158,21 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
   }
 
   function handleStudentToggle(userId: string) {
+    console.log('🎦 AVANT Toggle student:', userId, 'Current selection:', selectedStudents, 'Type:', type);
+    
     if (type === 'individual') {
-      setSelectedStudents([userId]);
+      const newSelection = [userId];
+      console.log('🔄 Mode individual - Nouvelle sélection:', newSelection);
+      setSelectedStudents(newSelection);
     } else {
-      setSelectedStudents((prev) =>
-        prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-      );
+      setSelectedStudents((prev) => {
+        const isCurrentlySelected = prev.includes(userId);
+        const newSelection = isCurrentlySelected 
+          ? prev.filter((id) => id !== userId) 
+          : [...prev, userId];
+        console.log('🔄 Mode group - Avant:', prev, 'Après:', newSelection);
+        return newSelection;
+      });
     }
   }
 
@@ -408,16 +429,18 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
                       return (
                         <div
                           key={student.id}
-                          className={`flex items-center space-x-3 p-2 rounded-md cursor-pointer transition-colors ${
+                          className={`flex items-center space-x-3 p-2 rounded-md transition-colors ${
                             isSelected ? 'bg-primary/10' : 'hover:bg-muted'
                           }`}
-                          onClick={() => handleStudentToggle(student.userId)}
                         >
                           <Checkbox
                             checked={isSelected}
-                            onCheckedChange={() => handleStudentToggle(student.userId)}
+                            onCheckedChange={(checked) => {
+                              console.log('📋 Checkbox change:', checked, 'for student:', student.userId);
+                              handleStudentToggle(student.userId);
+                            }}
                           />
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleStudentToggle(student.userId)}>
                             <p className="text-sm font-medium">
                               {student.lastName} {student.firstName}
                             </p>

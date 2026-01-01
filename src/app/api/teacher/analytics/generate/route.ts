@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const course = await prisma.course.findUnique({
       where: { id: courseId, teacherId: teacherProfile.id },
       include: {
-        resources: true, // On récupère les ressources du cours
+        Resource: true, // On récupère les ressources du cours
       },
     });
 
@@ -46,16 +46,16 @@ export async function POST(req: Request) {
       where: {
         OR: [
           { courseId: courseId },
-          { chapter: { courseId: courseId } },
-          { section: { chapter: { courseId: courseId } } },
+          { Chapter: { courseId: courseId } },
+          { Section: { Chapter: { courseId: courseId } } },
         ],
         classId: classId, // Assigné à toute la classe
         // TODO: Gérer aussi les assignations aux Teams ou Students de cette classe si besoin
       },
       include: {
-        progress: {
+        StudentProgress: {
           include: {
-            student: true, // Pour avoir le nom de l'élève
+            User: true, // Pour avoir le nom de l'élève
           },
         },
       },
@@ -63,10 +63,10 @@ export async function POST(req: Request) {
 
     // Aplatir les progressions
     const allProgress = assignments.flatMap((a) =>
-      a.progress.map((p) => ({
+      a.StudentProgress.map((p) => ({
         ...p,
         assignment: a,
-        student: p.student as User,
+        student: p.User as User,
       }))
     );
 
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
     const statsContext = analyticsService.formatStatsForAI(stats);
 
     const analysisResult = await geminiService.analyzeClassProgress(
-      course.resources,
+      course.Resource,
       allProgress,
       statsContext
     );
@@ -92,8 +92,9 @@ export async function POST(req: Request) {
     // 4. Sauvegarder l'analyse
     const savedAnalysis = await prisma.classAnalysis.create({
       data: {
+        id: `analysis-${Date.now()}`,
         classId,
-        resourceIds: course.resources.map((r) => r.id),
+        resourceIds: course.Resource.map((r) => r.id),
         summary: analysisResult.summary,
         strengths: analysisResult.strengths,
         weaknesses: analysisResult.weaknesses,

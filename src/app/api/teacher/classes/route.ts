@@ -20,14 +20,14 @@ export async function GET() {
     const teacherProfile = await prisma.teacherProfile.findUnique({
       where: { userId },
       include: {
-        classes: {
+        Class: {
           include: {
-            students: {
+            StudentProfile: {
               select: { id: true },
             },
           },
         },
-        subjects: true,
+        Subject: true,
       },
     });
 
@@ -36,15 +36,15 @@ export async function GET() {
     }
 
     // Transformer les données pour inclure le count d'élèves
-    const classes = teacherProfile.classes.map((cls) => ({
+    const classes = teacherProfile.Class.map((cls) => ({
       id: cls.id,
       name: cls.name,
       level: cls.level,
-      studentsCount: cls.students.length,
+      studentsCount: cls.StudentProfile.length,
     }));
 
     // Ajouter les matières enseignées par ce prof
-    const subjects = teacherProfile.subjects.map((s) => s.name);
+    const subjects = teacherProfile.Subject.map((s) => s.name);
 
     return NextResponse.json({ classes, subjects });
   } catch (error) {

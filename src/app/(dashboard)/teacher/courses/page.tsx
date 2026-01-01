@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 import { CoursesTable, CourseData } from '@/components/features/teacher/CoursesTable';
 import { CourseFormModal } from '@/components/features/teacher/CourseFormModal';
+import { CoursesStatsHeader } from '@/components/features/teacher/CoursesStatsHeader';
+import { CoursesOverview } from '@/types/course-stats';
 
 interface Subject {
   id: string;
@@ -14,6 +16,7 @@ interface Subject {
 
 export default function TeacherCoursesPage() {
   const [courses, setCourses] = useState<CourseData[]>([]);
+  const [overview, setOverview] = useState<CoursesOverview | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,7 +27,14 @@ export default function TeacherCoursesPage() {
       const res = await fetch('/api/teacher/courses');
       if (res.ok) {
         const data = await res.json();
-        setCourses(data.courses || []);
+        // Nouvelle structure API: { success, data: { courses, overview } }
+        if (data.success && data.data) {
+          setCourses(data.data.courses || []);
+          setOverview(data.data.overview || null);
+        } else {
+          // Fallback ancienne structure
+          setCourses(data.courses || []);
+        }
       }
     } catch (error) {
       console.error('Erreur fetch courses:', error);
@@ -115,6 +125,9 @@ export default function TeacherCoursesPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Header avec statistiques de performance */}
+      {overview && <CoursesStatsHeader overview={overview} />}
 
       <CoursesTable
         courses={courses}

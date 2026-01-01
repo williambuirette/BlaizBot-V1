@@ -68,10 +68,15 @@ export async function POST(request: Request) {
 
     // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    
+    // Générer l'id utilisateur
+    const id = `user-${data.email.split('@')[0]}-${Date.now()}`;
+    const now = new Date();
 
     // Créer l'utilisateur
     const user = await prisma.user.create({
       data: {
+        id,
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -81,6 +86,7 @@ export async function POST(request: Request) {
         address: data.address,
         city: data.city,
         postalCode: data.postalCode,
+        updatedAt: now,
       },
       select: {
         id: true,

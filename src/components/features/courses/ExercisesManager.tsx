@@ -103,7 +103,7 @@ export function ExercisesManager({
 
   // Filter only EXERCISE and QUIZ sections
   const getExercisesFromChapter = (chapter: Chapter): Section[] => {
-    return chapter.sections.filter(
+    return (chapter.Section || []).filter(
       (s) => s.type === 'EXERCISE' || s.type === 'QUIZ'
     );
   };

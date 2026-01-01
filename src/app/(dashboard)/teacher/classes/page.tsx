@@ -25,6 +25,7 @@ async function calculateClassStats(classId: string) {
             select: {
               continuousScore: true,
               finalGrade: true,
+              aiComprehension: true,
             },
           },
         },
@@ -38,28 +39,37 @@ async function calculateClassStats(classId: string) {
       warningCount: 0,
       dangerCount: 0,
       averageGrade: null,
+      aiAverageScore: null,
       alertLevel: 'no-data' as const,
     };
   }
 
   // Calculer la moyenne de chaque élève
   const studentGrades: number[] = [];
+  const studentAIScores: number[] = [];
 
   students.forEach((student) => {
     const scores = student.User.StudentScore;
     if (scores.length === 0) return;
 
-    const gradesWithFinal = scores.filter((s: { continuousScore: number; finalGrade: number | null }) => s.finalGrade !== null);
+    const gradesWithFinal = scores.filter((s: { continuousScore: number; finalGrade: number | null; aiComprehension: number }) => s.finalGrade !== null);
     let avgGrade: number;
 
     if (gradesWithFinal.length > 0) {
-      avgGrade = gradesWithFinal.reduce((acc: number, s: { continuousScore: number; finalGrade: number | null }) => acc + (s.finalGrade ?? 0), 0) / gradesWithFinal.length;
+      avgGrade = gradesWithFinal.reduce((acc: number, s: { continuousScore: number; finalGrade: number | null; aiComprehension: number }) => acc + (s.finalGrade ?? 0), 0) / gradesWithFinal.length;
     } else {
-      const avgContinuous = scores.reduce((acc: number, s: { continuousScore: number; finalGrade: number | null }) => acc + s.continuousScore, 0) / scores.length;
+      const avgContinuous = scores.reduce((acc: number, s: { continuousScore: number; finalGrade: number | null; aiComprehension: number }) => acc + s.continuousScore, 0) / scores.length;
       avgGrade = (avgContinuous / 100) * 6;
     }
 
     studentGrades.push(avgGrade);
+
+    // Calculer moyenne IA de l'élève
+    const aiScores = scores.filter((s: { aiComprehension: number }) => s.aiComprehension > 0);
+    if (aiScores.length > 0) {
+      const avgAI = aiScores.reduce((acc: number, s: { aiComprehension: number }) => acc + s.aiComprehension, 0) / aiScores.length;
+      studentAIScores.push(avgAI);
+    }
   });
 
   // Compter par niveau d'alerte
@@ -87,11 +97,16 @@ async function calculateClassStats(classId: string) {
     ? studentGrades.reduce((acc, g) => acc + g, 0) / studentGrades.length
     : null;
 
+  const aiAverageScore = studentAIScores.length > 0
+    ? studentAIScores.reduce((acc, s) => acc + s, 0) / studentAIScores.length
+    : null;
+
   return {
     successCount,
     warningCount,
     dangerCount,
     averageGrade,
+    aiAverageScore,
     alertLevel: getClassAlertLevel(averageGrade),
   };
 }

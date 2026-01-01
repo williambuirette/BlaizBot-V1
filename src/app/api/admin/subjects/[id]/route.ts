@@ -25,7 +25,7 @@ export async function GET(request: Request, { params }: Params) {
       name: true,
       createdAt: true,
       _count: {
-        select: { courses: true, teachers: true },
+        select: { Course: true, TeacherProfile: true },
       },
     },
   });
@@ -38,8 +38,8 @@ export async function GET(request: Request, { params }: Params) {
     id: subject.id,
     name: subject.name,
     createdAt: subject.createdAt,
-    courseCount: subject._count.courses,
-    teacherCount: subject._count.teachers,
+    courseCount: subject._count.Course,
+    teacherCount: subject._count.TeacherProfile,
   });
 }
 
@@ -83,7 +83,7 @@ export async function PUT(request: Request, { params }: Params) {
         name: true,
         createdAt: true,
         _count: {
-          select: { courses: true, teachers: true },
+          select: { Course: true, TeacherProfile: true },
         },
       },
     });
@@ -92,8 +92,8 @@ export async function PUT(request: Request, { params }: Params) {
       id: updatedSubject.id,
       name: updatedSubject.name,
       createdAt: updatedSubject.createdAt,
-      courseCount: updatedSubject._count.courses,
-      teacherCount: updatedSubject._count.teachers,
+      courseCount: updatedSubject._count.Course,
+      teacherCount: updatedSubject._count.TeacherProfile,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -123,7 +123,7 @@ export async function DELETE(request: Request, { params }: Params) {
     // Vérifier si la matière existe avec ses dépendances
     const subject = await prisma.subject.findUnique({
       where: { id },
-      include: { _count: { select: { courses: true } } },
+      include: { _count: { select: { Course: true } } },
     });
 
     if (!subject) {
@@ -131,9 +131,9 @@ export async function DELETE(request: Request, { params }: Params) {
     }
 
     // Empêcher la suppression si des cours sont liés
-    if (subject._count.courses > 0) {
+    if (subject._count.Course > 0) {
       return Response.json(
-        { error: `Impossible de supprimer : ${subject._count.courses} cours lié(s)` },
+        { error: `Impossible de supprimer : ${subject._count.Course} cours lié(s)` },
         { status: 400 }
       );
     }

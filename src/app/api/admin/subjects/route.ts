@@ -20,7 +20,7 @@ export async function GET() {
       name: true,
       createdAt: true,
       _count: {
-        select: { courses: true, teachers: true },
+        select: { Course: true, TeacherProfile: true },
       },
     },
     orderBy: { name: 'asc' },
@@ -31,8 +31,8 @@ export async function GET() {
     id: s.id,
     name: s.name,
     createdAt: s.createdAt,
-    courseCount: s._count.courses,
-    teacherCount: s._count.teachers,
+    courseCount: s._count.Course,
+    teacherCount: s._count.TeacherProfile,
   }));
 
   return Response.json(mappedSubjects);
@@ -62,8 +62,15 @@ export async function POST(request: Request) {
     }
 
     // Créer la matière
+    const id = `subject-${data.name.toLowerCase().replace(/\s+/g, '-')}`;
+    const now = new Date();
+    
     const newSubject = await prisma.subject.create({
-      data: { name: data.name },
+      data: { 
+        id,
+        name: data.name,
+        updatedAt: now,
+      },
       select: {
         id: true,
         name: true,

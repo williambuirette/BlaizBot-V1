@@ -7,13 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, BookOpen, FolderTree, FileBox, PenTool, ClipboardList, Send, File, Download, ExternalLink } from 'lucide-react';
+import { Loader2, ArrowLeft, BookOpen, FolderTree, Send, File, Download, ExternalLink } from 'lucide-react';
 import { ChaptersManager } from '@/components/features/courses/ChaptersManager';
-import { ResourcesManager } from '@/components/features/courses/ResourcesManager';
-import { ExercisesManager } from '@/components/features/courses/ExercisesManager';
-import { AssignmentsManager } from '@/components/features/courses/AssignmentsManager';
-import { QuizEditor } from '@/components/features/courses/QuizEditor';
-import { ExerciseEditor } from '@/components/features/courses/ExerciseEditor';
+import { ThemeAIMetrics } from '@/components/features/teacher/ThemeAIMetrics';
 
 interface CourseFile {
   id: string;
@@ -36,13 +32,6 @@ interface CourseData {
   };
 }
 
-interface SectionForEdit {
-  id: string;
-  title: string;
-  type: 'QUIZ' | 'EXERCISE';
-  content: string | null;
-}
-
 interface CourseDetailPageProps {
   params: Promise<{ id: string }>;
 }
@@ -55,13 +44,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
 
-  // État pour les éditeurs Quiz/Exercise
-  const [quizEditorOpen, setQuizEditorOpen] = useState(false);
-  const [exerciseEditorOpen, setExerciseEditorOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<SectionForEdit | null>(null);
-
-  // Onglet actif depuis URL ou défaut
-  const activeTab = searchParams.get('tab') || 'informations';
+  // Onglet actif depuis URL ou défaut (cours = vue cartes par défaut)
+  const activeTab = searchParams.get('tab') || 'cours';
 
   // Résoudre les params async
   useEffect(() => {
@@ -120,40 +104,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     }
   };
 
-  // Ouvrir l'éditeur de section (Quiz ou Exercice)
-  const handleEditSection = async (sectionId: string) => {
-    try {
-      const res = await fetch(`/api/teacher/sections/${sectionId}`);
-      if (res.ok) {
-        const section = await res.json();
-        setEditingSection({
-          id: section.id,
-          title: section.title,
-          type: section.type,
-          content: section.content,
-        });
-        if (section.type === 'QUIZ') {
-          setQuizEditorOpen(true);
-        } else if (section.type === 'EXERCISE') {
-          setExerciseEditorOpen(true);
-        }
-      }
-    } catch (error) {
-      console.error('Erreur fetch section:', error);
-    }
-  };
-
-  // Sauvegarder le contenu d'une section
-  const handleSaveContent = async (content: unknown) => {
-    if (!editingSection) return;
-    const res = await fetch(`/api/teacher/sections/${editingSection.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: JSON.stringify(content) }),
-    });
-    if (!res.ok) throw new Error('Erreur sauvegarde');
-  };
-
   if (loading || !courseId) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -193,9 +143,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/teacher/courses/${courseId}/edit`}>Modifier infos</Link>
-          </Button>
           <Button
             onClick={handleTogglePublish}
             disabled={publishing}
@@ -213,91 +160,27 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="informations" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Informations</span>
           </TabsTrigger>
-          <TabsTrigger value="structure" className="flex items-center gap-2">
+          <TabsTrigger value="cours" className="flex items-center gap-2">
             <FolderTree className="h-4 w-4" />
-            <span className="hidden sm:inline">Structure</span>
-          </TabsTrigger>
-          <TabsTrigger value="ressources" className="flex items-center gap-2">
-            <FileBox className="h-4 w-4" />
-            <span className="hidden sm:inline">Ressources</span>
-          </TabsTrigger>
-          <TabsTrigger value="exercices" className="flex items-center gap-2">
-            <PenTool className="h-4 w-4" />
-            <span className="hidden sm:inline">Exercices</span>
-          </TabsTrigger>
-          <TabsTrigger value="assignations" className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4" />
-            <span className="hidden sm:inline">Assignations</span>
+            <span className="hidden sm:inline">Cours</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Onglet Informations */}
         <TabsContent value="informations">
-          <CourseInfoTab course={course} onUpdate={fetchCourse} />
+          <CourseInfoTab course={course} courseId={courseId} onUpdate={fetchCourse} />
         </TabsContent>
 
-        {/* Onglet Structure (Chapitres) */}
-        <TabsContent value="structure">
+        {/* Onglet Cours (anciennement Structure) */}
+        <TabsContent value="cours">
           <ChaptersManager courseId={courseId} />
         </TabsContent>
-
-        {/* Onglet Ressources */}
-        <TabsContent value="ressources">
-          <ResourcesManager courseId={courseId} />
-        </TabsContent>
-
-        {/* Onglet Exercices */}
-        <TabsContent value="exercices">
-          <ExercisesManager 
-            courseId={courseId} 
-            onViewSection={(sectionId) => handleEditSection(sectionId)}
-            onEditSection={(sectionId) => handleEditSection(sectionId)}
-            onAssignSection={() => {
-              handleTabChange('assignations');
-            }}
-          />
-        </TabsContent>
-
-        {/* Onglet Assignations */}
-        <TabsContent value="assignations">
-          <AssignmentsManager courseId={courseId} />
-        </TabsContent>
       </Tabs>
-
-      {/* Quiz Editor Modal */}
-      {editingSection && editingSection.type === 'QUIZ' && (
-        <QuizEditor
-          open={quizEditorOpen}
-          onOpenChange={(open) => {
-            setQuizEditorOpen(open);
-            if (!open) setEditingSection(null);
-          }}
-          sectionId={editingSection.id}
-          sectionTitle={editingSection.title}
-          initialContent={editingSection.content ? JSON.parse(editingSection.content) : null}
-          onSave={handleSaveContent}
-        />
-      )}
-
-      {/* Exercise Editor Modal */}
-      {editingSection && editingSection.type === 'EXERCISE' && (
-        <ExerciseEditor
-          open={exerciseEditorOpen}
-          onOpenChange={(open) => {
-            setExerciseEditorOpen(open);
-            if (!open) setEditingSection(null);
-          }}
-          sectionId={editingSection.id}
-          sectionTitle={editingSection.title}
-          initialContent={editingSection.content ? JSON.parse(editingSection.content) : null}
-          onSave={handleSaveContent}
-        />
-      )}
     </div>
   );
 }
@@ -308,12 +191,17 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
 interface CourseInfoTabProps {
   course: CourseData;
+  courseId: string;
   onUpdate: () => void;
 }
 
-function CourseInfoTab({ course }: CourseInfoTabProps) {
+function CourseInfoTab({ course, courseId }: CourseInfoTabProps) {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="space-y-6">
+      {/* Métriques IA */}
+      <ThemeAIMetrics courseId={courseId} />
+
+      <div className="grid gap-6 md:grid-cols-2">
       {/* Info générales */}
       <Card>
         <CardHeader>
@@ -366,35 +254,6 @@ function CourseInfoTab({ course }: CourseInfoTabProps) {
         </CardContent>
       </Card>
 
-      {/* Actions rapides */}
-      <Card className="md:col-span-2">
-        <CardHeader>
-          <CardTitle>Actions rapides</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link href={`/teacher/courses/${course.id}/edit`}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Modifier le contenu
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href={`/teacher/courses/${course.id}?tab=structure`}>
-                <FolderTree className="h-4 w-4 mr-2" />
-                Gérer les chapitres
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href={`/teacher/courses/${course.id}?tab=assignations`}>
-                <ClipboardList className="h-4 w-4 mr-2" />
-                Créer une assignation
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Fichiers uploadés */}
       {course.files && course.files.length > 0 && (
         <Card className="md:col-span-2">
@@ -441,6 +300,7 @@ function CourseInfoTab({ course }: CourseInfoTabProps) {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

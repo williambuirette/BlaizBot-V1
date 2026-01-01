@@ -20,23 +20,23 @@ export async function GET() {
     const teacherProfile = await prisma.teacherProfile.findUnique({
       where: { userId },
       include: {
-        classes: {
+        Class: {
           select: { id: true },
         },
       },
     });
 
-    if (!teacherProfile || teacherProfile.classes.length === 0) {
+    if (!teacherProfile || teacherProfile.Class.length === 0) {
       return NextResponse.json({ students: [] });
     }
 
-    const classIds = teacherProfile.classes.map((c) => c.id);
+    const classIds = teacherProfile.Class.map((c) => c.id);
 
     // Récupérer les élèves inscrits dans ces classes via StudentProfile
     const studentProfiles = await prisma.studentProfile.findMany({
       where: { classId: { in: classIds } },
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             firstName: true,
@@ -49,10 +49,10 @@ export async function GET() {
 
     // Transformer les données
     const students = studentProfiles.map((sp) => ({
-      id: sp.user.id,
-      firstName: sp.user.firstName,
-      lastName: sp.user.lastName,
-      email: sp.user.email,
+      id: sp.User.id,
+      firstName: sp.User.firstName,
+      lastName: sp.User.lastName,
+      email: sp.User.email,
     })).sort((a, b) =>
       `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`)
     );

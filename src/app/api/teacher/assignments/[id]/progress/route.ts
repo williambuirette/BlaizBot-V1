@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         { updatedAt: 'desc' },
       ],
       include: {
-        student: {
+        User: {
           select: {
             id: true,
             firstName: true,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
             email: true,
           },
         },
-        section: {
+        Section: {
           select: {
             id: true,
             title: true,
@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       },
       data: updateData,
       include: {
-        student: {
+        User: {
           select: {
             id: true,
             firstName: true,
@@ -160,7 +160,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             email: true,
           },
         },
-        section: {
+        Section: {
           select: {
             id: true,
             title: true,

@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: Params) {
       level: true,
       createdAt: true,
       _count: {
-        select: { students: true },
+        select: { StudentProfile: true },
       },
     },
   });
@@ -41,7 +41,7 @@ export async function GET(request: Request, { params }: Params) {
     name: classData.name,
     level: classData.level,
     createdAt: classData.createdAt,
-    studentCount: classData._count.students,
+    studentCount: classData._count.StudentProfile,
   });
 }
 
@@ -91,7 +91,7 @@ export async function PUT(request: Request, { params }: Params) {
         level: true,
         createdAt: true,
         _count: {
-          select: { students: true },
+          select: { StudentProfile: true },
         },
       },
     });
@@ -101,7 +101,7 @@ export async function PUT(request: Request, { params }: Params) {
       name: updatedClass.name,
       level: updatedClass.level,
       createdAt: updatedClass.createdAt,
-      studentCount: updatedClass._count.students,
+      studentCount: updatedClass._count.StudentProfile,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -131,7 +131,7 @@ export async function DELETE(request: Request, { params }: Params) {
     // Vérifier si la classe existe
     const classData = await prisma.class.findUnique({
       where: { id },
-      include: { _count: { select: { students: true } } },
+      include: { _count: { select: { StudentProfile: true } } },
     });
 
     if (!classData) {
@@ -139,9 +139,9 @@ export async function DELETE(request: Request, { params }: Params) {
     }
 
     // Empêcher la suppression si des étudiants sont inscrits
-    if (classData._count.students > 0) {
+    if (classData._count.StudentProfile > 0) {
       return Response.json(
-        { error: `Impossible de supprimer : ${classData._count.students} élève(s) inscrit(s)` },
+        { error: `Impossible de supprimer : ${classData._count.StudentProfile} élève(s) inscrit(s)` },
         { status: 400 }
       );
     }

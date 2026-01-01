@@ -350,8 +350,8 @@ export interface FilterableCourseScore {
   course: {
     id: string;
     title: string;
-    subject: { id: string; name: string };
-  };
+    subject: { id: string; name: string } | null;
+  } | null;
 }
 
 // ============================================
@@ -367,7 +367,7 @@ export function filterCourseScores<T extends FilterableCourseScore>(
 ): T[] {
   return scores.filter((score) => {
     // Filtre par matière
-    if (filters.subject && score.course.subject.id !== filters.subject) {
+    if (filters.subject && score.course?.subject?.id !== filters.subject) {
       return false;
     }
 
@@ -412,11 +412,11 @@ export function sortCourseScores<T extends FilterableCourseScore>(
         break;
 
       case "courseName":
-        comparison = a.course.title.localeCompare(b.course.title);
+        comparison = (a.course?.title || '').localeCompare(b.course?.title || '');
         break;
 
       case "subjectName":
-        comparison = a.course.subject.name.localeCompare(b.course.subject.name);
+        comparison = (a.course?.subject?.name || '').localeCompare(b.course?.subject?.name || '');
         break;
     }
 
@@ -431,7 +431,11 @@ export function extractSubjects<T extends FilterableCourseScore>(
   scores: T[]
 ): { id: string; name: string }[] {
   const map = new Map<string, string>();
-  scores.forEach((s) => map.set(s.course.subject.id, s.course.subject.name));
+  scores.forEach((s) => {
+    if (s.course?.subject) {
+      map.set(s.course.subject.id, s.course.subject.name);
+    }
+  });
   return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) =>
     a.name.localeCompare(b.name)
   );

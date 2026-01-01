@@ -22,7 +22,7 @@ export async function GET() {
       level: true,
       createdAt: true,
       _count: {
-        select: { students: true },
+        select: { StudentProfile: true },
       },
     },
     orderBy: { name: 'asc' },
@@ -34,7 +34,7 @@ export async function GET() {
     name: c.name,
     level: c.level,
     createdAt: c.createdAt,
-    studentCount: c._count.students,
+    studentCount: c._count.StudentProfile,
   }));
 
   return Response.json(mappedClasses);
@@ -64,10 +64,15 @@ export async function POST(request: Request) {
     }
 
     // Créer la classe
+    const id = `class-${data.name.toLowerCase().replace(/\s+/g, '-')}`;
+    const now = new Date();
+    
     const newClass = await prisma.class.create({
       data: {
+        id,
         name: data.name,
         level: data.level,
+        updatedAt: now,
       },
       select: {
         id: true,

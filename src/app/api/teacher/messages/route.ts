@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 // Schéma de validation pour envoi de message
 const sendMessageSchema = z.object({
@@ -37,12 +38,12 @@ export async function GET() {
         participantIds: { has: userId },
       },
       include: {
-        subject: true,
-        messages: {
+        Subject: true,
+        Message: {
           orderBy: { createdAt: 'desc' },
           take: 1,
           include: {
-            sender: {
+            User: {
               select: { id: true, firstName: true, lastName: true },
             },
           },
@@ -70,20 +71,20 @@ export async function GET() {
         .map((id) => participantsMap.get(id))
         .filter(Boolean);
 
-      const lastMessage = conv.messages[0] || null;
+      const lastMessage = conv.Message[0] || null;
 
       return {
         id: conv.id,
         type: conv.type,
         topicName: conv.topicName,
-        subject: conv.subject ? { id: conv.subject.id, name: conv.subject.name } : null,
+        subject: conv.Subject ? { id: conv.Subject.id, name: conv.Subject.name } : null,
         participants: otherParticipants,
         lastMessage: lastMessage
           ? {
               id: lastMessage.id,
               content: lastMessage.content,
               senderId: lastMessage.senderId,
-              senderName: `${lastMessage.sender.firstName} ${lastMessage.sender.lastName}`,
+              senderName: `${lastMessage.User.firstName} ${lastMessage.User.lastName}`,
               createdAt: lastMessage.createdAt,
             }
           : null,
@@ -141,10 +142,12 @@ export async function POST(request: Request) {
       // Créer une nouvelle conversation
       conversation = await prisma.conversation.create({
         data: {
+          id: randomUUID(),
           type: 'PRIVATE',
           participantIds: [userId, receiverId],
           subjectId: subjectId || null,
           topicName: topicName || null,
+          updatedAt: new Date(),
         },
       });
     }
@@ -152,12 +155,13 @@ export async function POST(request: Request) {
     // Créer le message
     const message = await prisma.message.create({
       data: {
+        id: randomUUID(),
         conversationId: conversation.id,
         senderId: userId,
         content,
       },
       include: {
-        sender: {
+        User: {
           select: { id: true, firstName: true, lastName: true, role: true },
         },
       },
@@ -179,12 +183,13 @@ export async function POST(request: Request) {
         select: { id: true, role: true },
       });
 
-      const senderName = `${message.sender.firstName} ${message.sender.lastName}`;
+      const senderName = `${message.User.firstName} ${message.User.lastName}`;
       const conversationName = conversation.topicName || 'Conversation';
 
       // Créer les notifications en batch
       await prisma.notification.createMany({
         data: participants.map((participant) => ({
+          id: randomUUID(),
           userId: participant.id,
           type: 'MESSAGE',
           title: `Nouveau message de ${senderName}`,
@@ -203,7 +208,7 @@ export async function POST(request: Request) {
         conversationId: conversation.id,
         content: message.content,
         senderId: message.senderId,
-        senderName: `${message.sender.firstName} ${message.sender.lastName}`,
+        senderName: `${message.User.firstName} ${message.User.lastName}`,
         createdAt: message.createdAt,
       },
     });

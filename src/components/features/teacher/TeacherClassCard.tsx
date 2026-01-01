@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, GraduationCap, BookOpen } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, Bot } from 'lucide-react';
 import type { ClassWithStats } from '@/types/class-filters';
 
 interface TeacherClassCardProps {
@@ -52,6 +52,19 @@ export function TeacherClassCard({ classData, selected = false, onToggleSelect }
           <Badge className={alertColors[classData.stats.alertLevel]}>
             {classData.stats.averageGrade !== null
               ? `${classData.stats.averageGrade.toFixed(1)}/6`
+              : '—'}
+          </Badge>
+        </div>
+
+        {/* Moyenne IA */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <Bot className="h-3.5 w-3.5" />
+            Score IA
+          </span>
+          <Badge className="bg-purple-100 text-purple-700">
+            {classData.stats.aiAverageScore !== null
+              ? `${classData.stats.aiAverageScore.toFixed(0)}%`
               : '—'}
           </Badge>
         </div>
