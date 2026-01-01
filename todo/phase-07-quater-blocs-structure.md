@@ -1,8 +1,8 @@
-# Phase 8 — Blocs Dépliables Structure Cours ✅ TERMINÉ
+# Phase 7 Quater — Blocs Dépliables Structure Cours ✅ TERMINÉ
 
 > **Objectif** : Remplacer les modales d'édition de sections par des cartes accordéon dépliables  
 > **Durée estimée** : ~4h | **Durée réelle** : ~6h (nombreux bugs PascalCase Prisma)  
-> **Prompts** : [prompts/phase-08-blocs-structure.md](../prompts/phase-08-blocs-structure.md)  
+> **Prompts** : [prompts/phase-07-quater-blocs-structure.md](../prompts/phase-07-quater-blocs-structure.md)  
 > **Statut** : ✅ Terminé le 2025-12-31
 
 ---

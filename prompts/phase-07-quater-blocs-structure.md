@@ -1,6 +1,6 @@
-# Prompts Phase 8 — Blocs Dépliables Structure Cours
+# Prompts Phase 7 Quater — Blocs Dépliables Structure Cours
 
-> **Index** : [todo/phase-08-blocs-structure.md](../todo/phase-08-blocs-structure.md)  
+> **Index** : [todo/phase-07-quater-blocs-structure.md](../todo/phase-07-quater-blocs-structure.md)  
 > **Objectif** : Transformer les modales d'édition en cartes accordéon dépliables
 
 ---
