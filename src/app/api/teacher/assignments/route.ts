@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get('courseId');
+    const chapterId = searchParams.get('chapterId');
+    const sectionId = searchParams.get('sectionId');
     const classId = searchParams.get('classId');
     const studentId = searchParams.get('studentId');
     const status = searchParams.get('status');
@@ -42,6 +44,8 @@ export async function GET(request: NextRequest) {
     const whereClause: {
       teacherId: string;
       courseId?: string;
+      chapterId?: string;
+      sectionId?: string;
       classId?: string;
       priority?: AssignmentPriority;
       isRecurring?: boolean;
@@ -53,6 +57,14 @@ export async function GET(request: NextRequest) {
 
     if (courseId) {
       whereClause.courseId = courseId;
+    }
+
+    if (chapterId) {
+      whereClause.chapterId = chapterId;
+    }
+
+    if (sectionId) {
+      whereClause.sectionId = sectionId;
     }
 
     if (classId) {

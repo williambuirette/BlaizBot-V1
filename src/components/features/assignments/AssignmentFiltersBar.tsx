@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 export interface AssignmentFiltersState {
   subjectIds: string[];
   courseIds: string[];
+  chapterIds: string[];
+  sectionIds: string[];
   classIds: string[];
   studentIds: string[];
   priorities: string[];
@@ -29,6 +31,8 @@ interface AssignmentFiltersBarProps {
 
 interface Subject { id: string; name: string }
 interface Course { id: string; title: string; subjectId?: string; subject?: { id: string } }
+interface Chapter { id: string; title: string; courseId: string }
+interface Section { id: string; title: string; chapterId: string }
 interface ClassOption { id: string; name: string; color?: string | null }
 interface Student { id: string; firstName: string; lastName: string; classId: string }
 
@@ -41,6 +45,8 @@ const PRIORITY_OPTIONS = [
 export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFiltersBarProps) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +54,8 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
   // Refs pour éviter les boucles infinies
   const prevSubjectsRef = useRef<string>('');
   const prevClassesRef = useRef<string>('');
+  const prevCoursesRef = useRef<string>('');
+  const prevChaptersRef = useRef<string>('');
 
   // Chargement initial
   useEffect(() => {
@@ -78,6 +86,84 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
     }
     fetchOptions();
   }, []);
+
+  // Charger les chapitres quand les cours changent
+  useEffect(() => {
+    const coursesKey = filters.courseIds.sort().join(',');
+    if (coursesKey === prevCoursesRef.current) return;
+    prevCoursesRef.current = coursesKey;
+
+    if (filters.courseIds.length === 0) {
+      setChapters([]);
+      // Aussi nettoyer les sections si pas de chapitres
+      if (filters.chapterIds.length > 0) {
+        onFiltersChange({ ...filters, chapterIds: [], sectionIds: [] });
+      }
+      return;
+    }
+
+    async function loadChapters() {
+      try {
+        const allChapters: Chapter[] = [];
+        for (const courseId of filters.courseIds) {
+          const response = await fetch(`/api/teacher/courses/${courseId}`);
+          const json = await response.json();
+          if (json.success && json.data?.Chapter) {
+            for (const chapter of json.data.Chapter) {
+              allChapters.push({
+                id: chapter.id,
+                title: chapter.title,
+                courseId: chapter.courseId,
+              });
+            }
+          }
+        }
+        setChapters(allChapters);
+      } catch (error) {
+        console.error('Erreur chargement chapitres:', error);
+      }
+    }
+    loadChapters();
+  }, [filters.courseIds, onFiltersChange]);
+
+  // Charger les sections quand les chapitres changent
+  useEffect(() => {
+    const chaptersKey = filters.chapterIds.sort().join(',');
+    if (chaptersKey === prevChaptersRef.current) return;
+    prevChaptersRef.current = chaptersKey;
+
+    if (filters.chapterIds.length === 0) {
+      setSections([]);
+      // Aussi nettoyer les sections si pas de chapitres
+      if (filters.sectionIds.length > 0) {
+        onFiltersChange({ ...filters, sectionIds: [] });
+      }
+      return;
+    }
+
+    async function loadSections() {
+      try {
+        const allSections: Section[] = [];
+        for (const chapterId of filters.chapterIds) {
+          const response = await fetch(`/api/teacher/chapters/${chapterId}`);
+          const json = await response.json();
+          if (json.success && json.data?.Section) {
+            for (const section of json.data.Section) {
+              allSections.push({
+                id: section.id,
+                title: section.title,
+                chapterId: section.chapterId,
+              });
+            }
+          }
+        }
+        setSections(allSections);
+      } catch (error) {
+        console.error('Erreur chargement sections:', error);
+      }
+    }
+    loadSections();
+  }, [filters.chapterIds, onFiltersChange]);
 
   // Charger les élèves quand les classes changent
   useEffect(() => {
@@ -153,6 +239,8 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
     onFiltersChange({
       subjectIds: [],
       courseIds: [],
+      chapterIds: [],
+      sectionIds: [],
       classIds: [],
       studentIds: [],
       priorities: [],
@@ -163,6 +251,8 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
   const activeFiltersCount = 
     filters.subjectIds.length +
     filters.courseIds.length +
+    filters.chapterIds.length +
+    filters.sectionIds.length +
     filters.classIds.length +
     filters.studentIds.length +
     filters.priorities.length +
@@ -194,6 +284,34 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
         emptyMessage={filters.subjectIds.length > 0 ? "Aucun cours pour ces matières" : "Aucun cours"}
       />
 
+      {/* Chapitres (visible si cours sélectionnés) */}
+      {filters.courseIds.length > 0 && (
+        <FilterDropdown
+          label="Chapitres"
+          items={chapters}
+          selected={filters.chapterIds}
+          onToggle={(id) => toggleItem('chapterIds', id)}
+          getId={(c) => c.id}
+          renderItem={(c) => c.title}
+          isLoading={isLoading}
+          emptyMessage="Aucun chapitre"
+        />
+      )}
+
+      {/* Sections (visible si chapitres sélectionnés) */}
+      {filters.chapterIds.length > 0 && (
+        <FilterDropdown
+          label="Sections"
+          items={sections}
+          selected={filters.sectionIds}
+          onToggle={(id) => toggleItem('sectionIds', id)}
+          getId={(s) => s.id}
+          renderItem={(s) => s.title}
+          isLoading={isLoading}
+          emptyMessage="Aucune section"
+        />
+      )}
+
       {/* Classes */}
       <FilterDropdown
         label="Classes"
@@ -205,7 +323,7 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
           <span className="flex items-center gap-2">
             {c.color && (
               <span
-                className="h-3 w-3 rounded-full flex-shrink-0"
+                className="h-3 w-3 rounded-full shrink-0"
                 style={{ backgroundColor: c.color }}
               />
             )}

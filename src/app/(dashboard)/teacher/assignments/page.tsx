@@ -56,6 +56,8 @@ type ViewMode = 'calendar' | 'list';
 const initialFilters: AssignmentFiltersState = {
   subjectIds: [],
   courseIds: [],
+  chapterIds: [],
+  sectionIds: [],
   classIds: [],
   studentIds: [],
   priorities: [],
@@ -66,6 +68,8 @@ function hasActiveFilters(filters: AssignmentFiltersState): boolean {
   return (
     filters.subjectIds.length > 0 ||
     filters.courseIds.length > 0 ||
+    filters.chapterIds.length > 0 ||
+    filters.sectionIds.length > 0 ||
     filters.classIds.length > 0 ||
     filters.studentIds.length > 0 ||
     filters.priorities.length > 0 ||
@@ -94,6 +98,8 @@ export default function AssignmentsPage() {
       // Envoyer tous les IDs sélectionnés, pas seulement le premier
       filters.subjectIds.forEach(id => params.append('subjectId', id));
       filters.courseIds.forEach(id => params.append('courseId', id));
+      filters.chapterIds.forEach(id => params.append('chapterId', id));
+      filters.sectionIds.forEach(id => params.append('sectionId', id));
       filters.classIds.forEach(id => params.append('classId', id));
       filters.studentIds.forEach(id => params.append('studentId', id));
       filters.priorities.forEach(priority => params.append('priority', priority));
