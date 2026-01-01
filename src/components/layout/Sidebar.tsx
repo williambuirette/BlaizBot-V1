@@ -12,6 +12,7 @@ import {
   BookOpen,
   MessageSquare,
   Brain,
+  CalendarDays,
 } from 'lucide-react';
 
 // -----------------------------------------------------
@@ -44,6 +45,7 @@ const teacherNavItems: NavItem[] = [
   { label: 'Mes classes', href: '/teacher/classes', icon: <School size={20} /> },
   { label: 'Mes élèves', href: '/teacher/students', icon: <Users size={20} /> },
   { label: 'Mes cours', href: '/teacher/courses', icon: <BookOpen size={20} /> },
+  { label: 'Assignations', href: '/teacher/assignments', icon: <CalendarDays size={20} /> },
   { label: 'Messages', href: '/teacher/messages', icon: <MessageSquare size={20} /> },
 ];
 

@@ -21,12 +21,12 @@ async function verifyResourceOwnership(resourceId: string, userId: string) {
   const resource = await prisma.resource.findFirst({
     where: {
       id: resourceId,
-      course: {
+      Course: {
         teacherId: teacherProfile.id,
       },
     },
     include: {
-      course: {
+      Course: {
         select: { id: true, title: true },
       },
     },
@@ -129,7 +129,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       where: { id: resourceId },
       data: updateData,
       include: {
-        course: {
+        Course: {
           select: { id: true, title: true },
         },
       },

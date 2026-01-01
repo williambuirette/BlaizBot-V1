@@ -6,14 +6,85 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : [phase-08-blocs-structure.md](phase-08-blocs-structure.md) — Blocs Dépliables Structure Cours  
-**Prompts** : [prompts/phase-08-blocs-structure.md](../prompts/phase-08-blocs-structure.md)  
-**Étape en cours** : BL11 — Simplification terminée  
-**Dernière MAJ** : 2025-12-31
+**Phase actuelle** : Phase 7 Quinquies — Assignations & Calendrier  
+**Prompts** : [prompts/phase-07-quinquies-assignments.md](../prompts/phase-07-quinquies-assignments.md)  
+**Étape en cours** : AS-REF2 — Refactoring AssignDialog  
+**Dernière MAJ** : 2025-06-01
 
 ---
 
-## 🆕 Blocs Dépliables Structure (BL1-BL11) — ✅ TERMINÉ
+## 🔴 EN COURS — Phase 7 Quinquies Corrections
+
+### Problèmes identifiés
+
+| Problème | Fichier | Priorité |
+|:---------|:--------|:---------|
+| API parsing incorrect | AssignmentFilters.tsx | ✅ CORRIGÉ |
+| Filtres incohérents avec Modal | AssignmentFilters.tsx | 🔴 |
+| Vue liste par défaut manquante | page.tsx | ✅ CORRIGÉ |
+| Boutons mois/semaine/agenda | AssignmentsCalendar.tsx | ✅ CORRIGÉ |
+| Sidebar collapsible | page.tsx | ✅ CORRIGÉ |
+
+### Fichiers > 350 lignes (CRITIQUE)
+
+| Fichier | Lignes | Action |
+|:--------|-------:|:-------|
+| `NewAssignmentModal.tsx` | ~~1039~~ **281** | ✅ Refactoré en 8 fichiers |
+| `AssignDialog.tsx` | 825 | 🔴 À extraire |
+| `NewConversationDialog.tsx` | 517 | 🟠 À revoir |
+| `ResourcesManager.tsx` | 462 | 🟠 À revoir |
+| `ChaptersManager.tsx` | 444 | 🟠 À revoir |
+
+### Tâches de correction
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| AS-FIX1 | Corriger parsing API filtres | ✅ |
+| AS-FIX2 | Ajouter filtres Matières + Sections | ⬜ |
+| AS-FIX3 | Vue liste par défaut (calendrier si filtres) | ✅ |
+| AS-FIX4 | Sidebar collapsible avec badge | ✅ |
+| AS-FIX5 | CSS react-big-calendar toolbar | ✅ |
+| AS-REF1 | Refactorer NewAssignmentModal (1039→281L) | ✅ |
+| AS-REF2 | Refactorer AssignDialog (881→10 fichiers) | ✅ |
+
+### Architecture NewAssignmentModal (après refactoring)
+
+```
+src/components/features/assignments/
+├── NewAssignmentModal.tsx (281 lines) ← Orchestrateur
+├── types.ts ← Interfaces partagées
+├── useAssignmentForm.ts (260 lines) ← Hook état + fetch
+├── MultiSelectDropdown.tsx (132 lines) ← Composant réutilisable
+└── steps/
+    ├── index.ts
+    ├── StepSubjects.tsx (50 lines)
+    ├── StepCourses.tsx (63 lines)
+    ├── StepSections.tsx (103 lines)
+    ├── StepClasses.tsx (50 lines)
+    ├── StepStudents.tsx (119 lines)
+    ├── StepDeadline.tsx (108 lines)
+    └── StepValidation.tsx (214 lines)
+```
+
+### Architecture AssignDialog (après refactoring)
+
+```
+src/components/features/courses/assign-dialog/
+├── index.tsx (152 lines) ← Orchestrateur
+├── types.ts (79 lines) ← Interfaces partagées
+├── useAssignDialogState.ts (247 lines) ← Hook état + fetch
+├── AssignDialogStep1.tsx (123 lines) ← Quoi assigner
+├── AssignDialogStep2.tsx (120 lines) ← À qui assigner
+├── AssignDialogStep3.tsx (61 lines) ← Détails
+├── AssignDialogStep4.tsx (106 lines) ← Récapitulatif
+├── ClassSelection.tsx (55 lines) ← Multi-select classes
+├── TeamSelection.tsx (173 lines) ← Sélection équipe
+└── SingleStudentSelection.tsx (81 lines) ← Un seul élève
+```
+
+---
+
+## ✅ Blocs Dépliables Structure (BL1-BL11) — TERMINÉ
 
 | Tâche | Description | Statut |
 |:------|:------------|:-------|

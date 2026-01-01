@@ -14,13 +14,13 @@ async function verifyTeamOwnership(teamId: string, userId: string) {
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId },
     include: {
-      classes: true,
+      Class: true,
     },
   });
 
   if (!teacherProfile) return null;
 
-  const classIds = teacherProfile.classes.map((c) => c.id);
+  const classIds = teacherProfile.Class.map((c) => c.id);
 
   const team = await prisma.team.findFirst({
     where: {
@@ -28,15 +28,15 @@ async function verifyTeamOwnership(teamId: string, userId: string) {
       classId: { in: classIds },
     },
     include: {
-      class: {
+      Class: {
         select: { id: true, name: true },
       },
       _count: {
-        select: { members: true },
+        select: { TeamMember: true },
       },
-      members: {
+      TeamMember: {
         include: {
-          student: {
+          User: {
             select: {
               id: true,
               firstName: true,
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       if (memberIds.length > 0) {
         const validStudents = await prisma.studentProfile.findMany({
           where: {
-            classId: team.class.id,
+            classId: team.Class.id,
             userId: { in: memberIds },
           },
           select: { userId: true },
@@ -142,7 +142,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         prisma.teamMember.deleteMany({ where: { teamId } }),
         ...memberIds.map((studentId: string) =>
           prisma.teamMember.create({
-            data: { teamId, studentId },
+            data: { id: crypto.randomUUID(), teamId, studentId },
           })
         ),
       ]);
@@ -153,15 +153,15 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       where: { id: teamId },
       data: updateData,
       include: {
-        class: {
+        Class: {
           select: { id: true, name: true },
         },
         _count: {
-          select: { members: true },
+          select: { TeamMember: true },
         },
-        members: {
+        TeamMember: {
           include: {
-            student: {
+            User: {
               select: {
                 id: true,
                 firstName: true,

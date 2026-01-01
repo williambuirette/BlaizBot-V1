@@ -187,7 +187,7 @@ model Course {
 }
 
 model CourseAssignment {
-  id                                    String                 @id
+  id                                    String                 @id @default(cuid())
   teacherId                             String
   courseId                              String?
   chapterId                             String?
@@ -197,8 +197,14 @@ model CourseAssignment {
   teamId                                String?
   studentId                             String?
   title                                 String
-  instructions                          String?
+  instructions                          String?                @db.Text
+  startDate                             DateTime?
   dueDate                               DateTime?
+  priority                              AssignmentPriority     @default(MEDIUM)
+  // Récurrence
+  isRecurring                           Boolean                @default(false)
+  recurrenceRule                        String?                // Format RRULE (iCalendar)
+  parentId                              String?                // Si c'est une occurrence
   createdAt                             DateTime               @default(now())
   updatedAt                             DateTime
   Chapter                               Chapter?               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
@@ -206,13 +212,17 @@ model CourseAssignment {
   Course                                Course?                @relation(fields: [courseId], references: [id], onDelete: Cascade)
   Section                               Section?               @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   User_CourseAssignment_studentIdToUser User?                  @relation("CourseAssignment_studentIdToUser", fields: [studentId], references: [id])
-  User_CourseAssignment_teacherIdToUser User                   @relation("CourseAssignment_teacherIdToUser", fields: [teacherId], references: [id])
+  TeacherProfile                        TeacherProfile         @relation(fields: [teacherId], references: [id])
   Team                                  Team?                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  Parent                                CourseAssignment?      @relation("Recurrence", fields: [parentId], references: [id], onDelete: Cascade)
+  Children                              CourseAssignment[]     @relation("Recurrence")
   StudentProgress                       StudentProgress[]
 
   @@index([chapterId])
   @@index([classId])
   @@index([courseId])
+  @@index([dueDate])
+  @@index([parentId])
   @@index([sectionId])
   @@index([studentId])
   @@index([teacherId])
@@ -459,12 +469,13 @@ model Subject {
 }
 
 model TeacherProfile {
-  id      String    @id
-  userId  String    @unique
-  Course  Course[]
-  User    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Class   Class[]   @relation("TeacherClasses")
-  Subject Subject[] @relation("TeacherSubjects")
+  id               String             @id
+  userId           String             @unique
+  Course           Course[]
+  CourseAssignment CourseAssignment[]
+  User             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Class            Class[]            @relation("TeacherClasses")
+  Subject          Subject[]          @relation("TeacherSubjects")
 }
 
 model Team {
@@ -510,7 +521,6 @@ model User {
   AIChat                                            AIChat[]
   CalendarEvent                                     CalendarEvent[]
   CourseAssignment_CourseAssignment_studentIdToUser CourseAssignment[]  @relation("CourseAssignment_studentIdToUser")
-  CourseAssignment_CourseAssignment_teacherIdToUser CourseAssignment[]  @relation("CourseAssignment_teacherIdToUser")
   Message                                           Message[]
   MessageReadStatus                                 MessageReadStatus[]
   Notification                                      Notification[]
@@ -550,6 +560,12 @@ enum AssignmentStatus {
 enum AssignmentTargetType {
   CLASS
   STUDENT
+}
+
+enum AssignmentPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 enum ConversationType {

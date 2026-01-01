@@ -32,7 +32,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
-import { AssignDialog } from './AssignDialog';
+import { AssignDialog } from './assign-dialog';
 import { ProgressSheet } from './ProgressSheet';
 import {
   AlertDialog,

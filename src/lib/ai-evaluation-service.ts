@@ -22,6 +22,12 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Helper pour extraire le texte de la réponse Anthropic
+function extractTextFromMessage(message: Anthropic.Message): string {
+  const firstContent = message.content?.[0];
+  return firstContent && firstContent.type === 'text' ? firstContent.text : '';
+}
+
 /**
  * Évalue une session de quiz IA
  */
@@ -45,7 +51,8 @@ export async function evaluateQuizSession(
   });
 
   // Parser la réponse JSON
-  const content = message.content[0].type === 'text' ? message.content[0].text : '';
+  const firstContent = message.content?.[0];
+  const content = firstContent && firstContent.type === 'text' ? firstContent.text : '';
   const result = parseEvaluationResponse(content);
 
   return result;
@@ -72,7 +79,7 @@ export async function evaluateExerciseSession(
     ],
   });
 
-  const content = message.content[0].type === 'text' ? message.content[0].text : '';
+  const content = extractTextFromMessage(message);
   return parseEvaluationResponse(content);
 }
 
@@ -97,7 +104,7 @@ export async function evaluateRevisionSession(
     ],
   });
 
-  const content = message.content[0].type === 'text' ? message.content[0].text : '';
+  const content = extractTextFromMessage(message);
   return parseEvaluationResponse(content);
 }
 
@@ -117,6 +124,7 @@ export async function saveActivityScore(
 
   await prisma.aIActivityScore.create({
     data: {
+      id: crypto.randomUUID(),
       studentId,
       courseId,
       aiChatId,
@@ -159,8 +167,10 @@ export async function updateStudentScoreFromAI(
     update: {
       aiComprehension: avgComprehension,
       aiSessionCount: activities.length,
+      updatedAt: new Date(),
     },
     create: {
+      id: crypto.randomUUID(),
       studentId,
       courseId,
       quizAvg: 0,
@@ -170,6 +180,7 @@ export async function updateStudentScoreFromAI(
       quizCount: 0,
       exerciseCount: 0,
       aiSessionCount: activities.length,
+      updatedAt: new Date(),
     },
   });
 }

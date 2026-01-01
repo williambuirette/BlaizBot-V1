@@ -27,15 +27,31 @@ PHASE 6   PHASE 7   PHASE 8   PHASE 9   PHASE 10
    ✅        🔴        ⬜        ⬜        ⬜
 ```
 
-**Phase active** : Phase 7 Quinquies — Assignations & Calendrier  
-**Progression** : 70% (7.5/11 phases)
+**Phase active** : Phase 7 Quinquies — Assignations & Calendrier (CORRECTIONS)  
+**Progression** : 72% (7.5/11 phases)
 
 ### Phase 7 — Sous-étapes
 - ✅ 7 : Dashboard, Classes, Cours, Messagerie, TipTap, IA, Fiche Élève
 - ✅ 7bis : TipTap + IA Chat
 - ✅ 7ter : Évaluation Automatique IA
 - ✅ 7quater : Blocs Dépliables (Chapitres/Sections accordéon)
-- ⬜ 7quinquies : Assignations & Calendrier
+- 🔴 7quinquies : Assignations & Calendrier (CORRECTIONS EN COURS)
+
+### ✅ Tâches Terminées (7 Quinquies)
+
+| Tâche | Description | Statut |
+|:------|:------------|:-------|
+| AS-FIX1 | Corriger parsing API filtres | ✅ |
+| AS-FIX2 | Ajouter filtres Matières + Sections (cohérence Modal) | ⬜ |
+| AS-FIX3 | Vue liste par défaut → calendrier si filtres | ✅ |
+| AS-FIX4 | Sidebar filtres collapsible (mobile) | ✅ |
+| AS-FIX5 | Fixer boutons mois/semaine/agenda (CSS) | ✅ |
+| AS-REF1 | Refactorer NewAssignmentModal (1039L → 281L) | ✅ |
+| AS-REF2 | Refactorer AssignDialog (881L → 10 fichiers <250L) | ✅ |
+| AS-FIX6 | Uniformiser cartes assignations (prof/élève) | ✅ |
+| AS-FIX7 | Fix dueDate null + afficher nom élève | ✅ |
+| AS-FIX8 | Fix seed assignations (dates manquantes) | ✅ |
+| AS-FIX9 | Click titre carte → navigation vers cours | ✅ |
 
 ---
 
@@ -97,7 +113,7 @@ todo/
 
 ---
 
-*Dernière mise à jour : 2025-12-30*
+*Dernière mise à jour : 2025-01-01*
 | 1.5.5 | `npx shadcn@latest add dropdown-menu` | DropdownMenu.tsx créé |
 | 1.5.6 | `npx shadcn@latest add toast` | Toast + Toaster créés |
 | 1.5.7 | Tester import dans `page.tsx` | Pas d'erreur import |

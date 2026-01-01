@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, RefreshCw, Mail, BookOpen, Bot } from "lucide-react";
+import { ArrowLeft, RefreshCw, Mail, BookOpen, Bot, CalendarDays } from "lucide-react";
 import { StudentScoreHeader } from "./StudentScoreHeader";
 import { CourseScoreList, CourseScoreData } from "./CourseScoreRow";
 import { ExamGradeDialog } from "./ExamGradeDialog";
 import { ScoreFilterBar } from "./ScoreFilterBar";
 import { AIActivitiesTab, AIActivity } from "./AIActivitiesTab";
+import { StudentAssignmentsList } from "./StudentAssignmentsList";
 import {
   ScoreFilters,
   ScoreSort,
@@ -192,12 +193,16 @@ export function StudentScorePage({
       {/* KPIs globaux */}
       <StudentScoreHeader globalStats={data?.globalStats ?? null} />
 
-      {/* Tabs : Scores / Activités IA */}
+      {/* Tabs : Scores / Assignations / Activités IA */}
       <Tabs defaultValue="scores" className="space-y-4">
         <TabsList>
           <TabsTrigger value="scores" className="gap-2">
             <BookOpen className="h-4 w-4" />
             Scores par cours
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Assignations
           </TabsTrigger>
           <TabsTrigger value="ai" className="gap-2">
             <Bot className="h-4 w-4" />
@@ -224,6 +229,14 @@ export function StudentScorePage({
             courseScores={sortedScores}
             studentId={studentId}
             onEditExam={handleEditExam}
+          />
+        </TabsContent>
+
+        {/* Onglet Assignations */}
+        <TabsContent value="assignments">
+          <StudentAssignmentsList 
+            studentId={studentId}
+            onAssignmentUpdated={fetchScores}
           />
         </TabsContent>
 

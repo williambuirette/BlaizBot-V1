@@ -4,7 +4,7 @@ type ToasterToast = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
-  action?: React.ReactNode
+  action?: React.ReactElement
   variant?: "default" | "destructive"
 }
 
@@ -13,12 +13,7 @@ const TOAST_REMOVE_DELAY = 5000
 
 type ToastActionElement = React.ReactElement
 
-type Toast = ToasterToast & {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  action?: ToastActionElement
-}
+type Toast = ToasterToast
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",

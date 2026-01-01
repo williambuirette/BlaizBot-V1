@@ -170,7 +170,7 @@ export async function POST(
         conversationId,
         senderId: session.user.id,
         content: content.trim(),
-        attachments: attachmentsData,
+        attachments: attachmentsData ?? undefined,
       },
       include: {
         User: {

@@ -164,7 +164,7 @@ export function ClassStudentsList({ students, className }: ClassStudentsListProp
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead padding="checkbox">
+                <TableHead className="w-10">
                   <Checkbox
                     checked={isAllSelected}
                     onCheckedChange={handleSelectAll}
@@ -183,7 +183,7 @@ export function ClassStudentsList({ students, className }: ClassStudentsListProp
                   key={student.id}
                   data-state={selectedRowIds.includes(student.id) && "selected"}
                 >
-                  <TableCell padding="checkbox">
+                  <TableCell className="w-10">
                     <Checkbox
                       checked={selectedRowIds.includes(student.id)}
                       onCheckedChange={(checked) => handleSelectRow(student.id, !!checked)}

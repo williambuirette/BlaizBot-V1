@@ -3,6 +3,7 @@
 
 import { PrismaClient, Role } from '@prisma/client'
 import { hash } from 'bcryptjs'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
 
@@ -414,7 +415,9 @@ async function seedCourses() {
 async function seedAssignments() {
   console.log('📝 Création des assignations...')
 
-  const marcTeacher = await prisma.user.findUnique({ where: { email: 'm.dupont@blaizbot.edu' } })
+  const marcTeacher = await prisma.teacherProfile.findFirst({
+    where: { User: { email: 'm.dupont@blaizbot.edu' } },
+  })
   const class3A = await prisma.class.findUnique({ where: { name: '3ème A' } })
   const mathCourse = await prisma.course.findUnique({ where: { id: 'course-maths-fractions' } })
 
@@ -428,7 +431,8 @@ async function seedAssignments() {
     })
 
     if (!existing) {
-      await prisma.courseAssignment.create({
+      const now = new Date()
+      const assignment = await prisma.courseAssignment.create({
         data: {
           teacherId: marcTeacher.id,
           courseId: mathCourse.id,
@@ -436,9 +440,30 @@ async function seedAssignments() {
           targetType: 'CLASS',
           title: 'Cours sur les Fractions',
           instructions: 'Veuillez étudier ce cours pour la semaine prochaine.',
+          startDate: now,
+          dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 jours
+          updatedAt: now,
         }
       })
-      console.log('✅ Assignation créée : Fractions -> 3ème A')
+      
+      // Créer StudentProgress pour tous les élèves de la classe
+      const classStudents = await prisma.studentProfile.findMany({
+        where: { classId: class3A.id },
+        select: { userId: true },
+      })
+
+      await prisma.studentProgress.createMany({
+        data: classStudents.map((s) => ({
+          id: crypto.randomUUID(),
+          assignmentId: assignment.id,
+          studentId: s.userId,
+          status: 'IN_PROGRESS',
+          updatedAt: new Date(),
+        })),
+        skipDuplicates: true,
+      })
+      
+      console.log(`✅ Assignation créée : Fractions -> 3ème A (${classStudents.length} élèves)`)
     } else {
       console.log('ℹ️ Assignation déjà existante')
     }
@@ -650,6 +675,111 @@ async function main() {
   await seedCourses()
   await seedAssignments()
   await seedStudentScores()
+
+  // ✅ Fix StudentProgress manquants
+  console.log('\n🔧 Création des StudentProgress manquants...')
+  const assignmentsToFix = await prisma.courseAssignment.findMany({
+    where: { classId: { not: null } },
+    include: {
+      StudentProgress: true,
+      Class: { include: { StudentProfile: { select: { userId: true } } } },
+    },
+  })
+
+  let fixedCount = 0
+  for (const assignment of assignmentsToFix) {
+    if (!assignment.Class) continue
+    const studentIds = assignment.Class.StudentProfile.map((s) => s.userId)
+    const existingIds = assignment.StudentProgress.map((p) => p.studentId)
+    const missing = studentIds.filter((id) => !existingIds.includes(id))
+    if (missing.length > 0) {
+      await prisma.studentProgress.createMany({
+        data: missing.map((studentId) => ({
+          id: crypto.randomUUID(),
+          assignmentId: assignment.id,
+          studentId,
+          sectionId: assignment.sectionId,
+          status: 'NOT_STARTED',
+          updatedAt: new Date(),
+        })),
+        skipDuplicates: true,
+      })
+      fixedCount += missing.length
+    }
+  }
+  console.log(`   ${fixedCount} StudentProgress créés`)
+
+  // ✅ Créer assignations pour cours avec scores mais sans assignation
+  console.log('\n🔧 Création assignations pour cours avec scores...')
+  const scoresWithoutAssignments = await prisma.studentScore.findMany({
+    include: {
+      User: { include: { StudentProfile: { select: { classId: true } } } },
+      Course: { include: { Subject: true } },
+    },
+  })
+
+  let assignCreated = 0
+  for (const score of scoresWithoutAssignments) {
+    if (!score.User?.StudentProfile?.classId || !score.courseId) continue
+
+    // Vérifier si une assignation existe déjà pour ce cours + classe
+    const existingAssignment = await prisma.courseAssignment.findFirst({
+      where: {
+        courseId: score.courseId,
+        classId: score.User.StudentProfile.classId,
+      },
+    })
+
+    if (!existingAssignment) {
+      // Récupérer le prof de la matière
+      const teacher = await prisma.teacherProfile.findFirst({
+        where: {
+          User: { role: 'TEACHER' },
+          Subject: { some: { id: score.Course.subjectId } },
+        },
+      })
+
+      if (teacher) {
+        const assignmentId = `assignment-${score.courseId}-${score.User.StudentProfile.classId}`
+        const now = new Date()
+        const newAssignment = await prisma.courseAssignment.create({
+          data: {
+            id: assignmentId,
+            teacherId: teacher.id,
+            courseId: score.courseId,
+            title: `${score.Course.title} - Travail de classe`,
+            targetType: 'CLASS',
+            classId: score.User.StudentProfile.classId,
+            startDate: now,
+            dueDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // +30 jours
+            priority: 'MEDIUM',
+            isRecurring: false,
+            updatedAt: now,
+          },
+        })
+
+        // Créer StudentProgress pour tous les élèves de la classe
+        const classStudents = await prisma.studentProfile.findMany({
+          where: { classId: score.User.StudentProfile.classId },
+          select: { userId: true },
+        })
+
+        await prisma.studentProgress.createMany({
+          data: classStudents.map((s) => ({
+            id: crypto.randomUUID(),
+            assignmentId: newAssignment.id,
+            studentId: s.userId,
+            status: 'IN_PROGRESS', // Puisqu'ils ont déjà commencé
+            updatedAt: new Date(),
+          })),
+          skipDuplicates: true,
+        })
+
+        assignCreated++
+      }
+    }
+  }
+  console.log(`   ${assignCreated} assignations créées pour cours avec scores`)
 
   console.log('\n✅ Seed terminé avec succès !')
   console.log('\n📋 Comptes de test :')

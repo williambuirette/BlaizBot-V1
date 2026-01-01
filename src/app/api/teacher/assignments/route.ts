@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { CourseAssignmentTarget, ProgressStatus } from '@prisma/client';
+import { CourseAssignmentTarget, ProgressStatus, AssignmentPriority } from '@prisma/client';
 
 // GET : Liste mes assignations
 export async function GET(request: NextRequest) {
@@ -14,24 +14,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const courseId = searchParams.get('courseId');
-    const classId = searchParams.get('classId');
-    const status = searchParams.get('status');
-
-    // Construire le filtre
     const userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: 'Utilisateur non identifié' }, { status: 401 });
     }
 
+    // Récupérer le TeacherProfile
+    const teacherProfile = await prisma.teacherProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!teacherProfile) {
+      return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const courseId = searchParams.get('courseId');
+    const classId = searchParams.get('classId');
+    const studentId = searchParams.get('studentId');
+    const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const recurring = searchParams.get('recurring');
+
+    // Construire le filtre
     const whereClause: {
       teacherId: string;
       courseId?: string;
       classId?: string;
-      progress?: { some: { status: ProgressStatus } };
+      priority?: AssignmentPriority;
+      isRecurring?: boolean;
+      dueDate?: { gte?: Date; lte?: Date };
+      StudentProgress?: { some: { status?: ProgressStatus; studentId?: string } };
     } = {
-      teacherId: userId,
+      teacherId: teacherProfile.id,
     };
 
     if (courseId) {
@@ -42,16 +59,53 @@ export async function GET(request: NextRequest) {
       whereClause.classId = classId;
     }
 
-    // Filtrer par statut de progression (au moins un élève avec ce statut)
-    if (status && ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'GRADED'].includes(status)) {
-      whereClause.progress = {
-        some: { status: status as ProgressStatus },
+    // Filtrer par élève : chercher les assignations où il a un StudentProgress
+    if (studentId) {
+      whereClause.StudentProgress = {
+        some: { studentId },
       };
     }
 
+    // Filtrer par priorité
+    if (priority && ['LOW', 'MEDIUM', 'HIGH'].includes(priority)) {
+      whereClause.priority = priority as AssignmentPriority;
+    }
+
+    // Filtrer par récurrence
+    if (recurring === 'true') {
+      whereClause.isRecurring = true;
+    } else if (recurring === 'false') {
+      whereClause.isRecurring = false;
+    }
+
+    // Filtrer par plage de dates (dueDate)
+    if (startDate || endDate) {
+      whereClause.dueDate = {};
+      if (startDate) {
+        whereClause.dueDate.gte = new Date(startDate);
+      }
+      if (endDate) {
+        whereClause.dueDate.lte = new Date(endDate);
+      }
+    }
+
+    // Filtrer par statut de progression (au moins un élève avec ce statut)
+    if (status && ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'GRADED'].includes(status)) {
+      if (whereClause.StudentProgress?.some) {
+        // Combiner avec le filtre studentId existant
+        whereClause.StudentProgress.some.status = status as ProgressStatus;
+      } else {
+        whereClause.StudentProgress = {
+          some: { status: status as ProgressStatus },
+        };
+      }
+    }
+
+    console.log('GET assignments whereClause:', JSON.stringify(whereClause, null, 2));
+
     const assignments = await prisma.courseAssignment.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
       include: {
         Course: {
           select: { id: true, title: true },
@@ -71,22 +125,65 @@ export async function GET(request: NextRequest) {
         User_CourseAssignment_studentIdToUser: {
           select: { id: true, firstName: true, lastName: true },
         },
+        Parent: {
+          select: { id: true, title: true },
+        },
         _count: {
-          select: { StudentProgress: true },
+          select: { StudentProgress: true, Children: true },
         },
         StudentProgress: {
           select: {
+            id: true,
             status: true,
+            studentId: true,
+            User: {
+              select: { id: true, firstName: true, lastName: true },
+            },
           },
         },
       },
     });
+
+    // Récupérer les scores des étudiants pour chaque assignation
+    const studentCourseKeys = assignments
+      .filter(a => a.studentId && a.courseId)
+      .map(a => ({ studentId: a.studentId!, courseId: a.courseId! }));
+
+    const studentScores = studentCourseKeys.length > 0 
+      ? await prisma.studentScore.findMany({
+          where: {
+            OR: studentCourseKeys.map(k => ({
+              studentId: k.studentId,
+              courseId: k.courseId,
+            })),
+          },
+          select: {
+            studentId: true,
+            courseId: true,
+            continuousScore: true,
+            aiComprehension: true,
+            examGrade: true,
+            finalScore: true,
+            quizAvg: true,
+            exerciseAvg: true,
+          },
+        })
+      : [];
+
+    // Créer une map pour accès rapide
+    const scoreMap = new Map(
+      studentScores.map(s => [`${s.studentId}-${s.courseId}`, s])
+    );
 
     // Calculer les stats de progression pour chaque assignation
     const assignmentsWithStats = assignments.map((a) => {
       const total = a.StudentProgress.length;
       const completed = a.StudentProgress.filter((p) => p.status === 'COMPLETED' || p.status === 'GRADED').length;
       const inProgress = a.StudentProgress.filter((p) => p.status === 'IN_PROGRESS').length;
+
+      // Récupérer les KPI de l'élève pour ce cours
+      const scoreKey = a.studentId ? `${a.studentId}-${a.courseId}` : null;
+      const studentScore = scoreKey ? scoreMap.get(scoreKey) : null;
 
       return {
         ...a,
@@ -98,13 +195,22 @@ export async function GET(request: NextRequest) {
           notStarted: total - completed - inProgress,
           completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
         },
+        // KPI de l'élève
+        kpi: studentScore ? {
+          continuous: Math.round(studentScore.continuousScore || 0),
+          ai: Math.round(studentScore.aiComprehension || 0),
+          exam: studentScore.examGrade ? Number(studentScore.examGrade.toFixed(1)) : null,
+          final: studentScore.finalScore ? Number(studentScore.finalScore.toFixed(1)) : null,
+        } : null,
       };
     });
 
-    return NextResponse.json(assignmentsWithStats);
+    console.log('GET assignments found:', assignmentsWithStats.length, 'assignments');
+
+    return NextResponse.json({ success: true, data: assignmentsWithStats });
   } catch (error) {
     console.error('Erreur GET assignments:', error);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
@@ -114,6 +220,20 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     if (!session?.user || session.user.role !== 'TEACHER') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Utilisateur non identifié' }, { status: 401 });
+    }
+
+    // Récupérer le TeacherProfile
+    const teacherProfile = await prisma.teacherProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!teacherProfile) {
+      return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -127,7 +247,11 @@ export async function POST(request: NextRequest) {
       classId,
       teamId,
       studentId,
+      startDate,
       dueDate,
+      priority,
+      isRecurring,
+      recurrenceRule,
     } = body;
 
     // Validations
@@ -155,17 +279,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Élève requis pour ce type d\'assignation' }, { status: 400 });
     }
 
-    // Vérifier l'ID utilisateur
-    const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json({ error: 'Utilisateur non identifié' }, { status: 401 });
-    }
+    // Valider la priorité
+    const validPriority = priority && ['LOW', 'MEDIUM', 'HIGH'].includes(priority)
+      ? (priority as AssignmentPriority)
+      : 'MEDIUM';
 
     // Créer l'assignation
     const assignment = await prisma.courseAssignment.create({
       data: {
         id: crypto.randomUUID(),
-        teacherId: userId,
+        teacherId: teacherProfile.id,
         title: title.trim(),
         instructions: instructions?.trim() || null,
         courseId: courseId || null,
@@ -175,7 +298,11 @@ export async function POST(request: NextRequest) {
         classId: targetType === 'CLASS' ? classId : null,
         teamId: targetType === 'TEAM' ? teamId : null,
         studentId: targetType === 'STUDENT' ? studentId : null,
+        startDate: startDate ? new Date(startDate) : null,
         dueDate: dueDate ? new Date(dueDate) : null,
+        priority: validPriority,
+        isRecurring: isRecurring || false,
+        recurrenceRule: isRecurring ? recurrenceRule : null,
         updatedAt: new Date(),
       },
     });
@@ -224,7 +351,7 @@ export async function POST(request: NextRequest) {
         Class: { select: { id: true, name: true } },
         Team: { select: { id: true, name: true } },
         User_CourseAssignment_studentIdToUser: { select: { id: true, firstName: true, lastName: true } },
-        _count: { select: { StudentProgress: true } },
+        _count: { select: { StudentProgress: true, Children: true } },
       },
     });
 

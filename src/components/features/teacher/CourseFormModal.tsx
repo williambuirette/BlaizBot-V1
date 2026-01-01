@@ -55,7 +55,7 @@ export function CourseFormModal({
     if (course) {
       setTitle(course.title);
       setDescription(course.description || '');
-      setSubjectId(course.subjectId);
+      setSubjectId(course.subjectId || '');
     } else {
       setTitle('');
       setDescription('');

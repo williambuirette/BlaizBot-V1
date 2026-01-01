@@ -121,6 +121,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const resource = await prisma.resource.create({
       data: {
+        id: crypto.randomUUID(),
         courseId,
         title: title.trim(),
         description: description?.trim() || null,
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         url: url?.trim() || null,
         fileUrl: fileUrl?.trim() || null,
         order: newOrder,
+        updatedAt: new Date(),
       },
     });
 

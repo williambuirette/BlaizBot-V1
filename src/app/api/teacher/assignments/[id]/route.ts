@@ -4,17 +4,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { AssignmentPriority } from '@prisma/client';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
 // Vérifier que l'assignation appartient au prof
-async function verifyAssignmentOwnership(assignmentId: string, userId: string) {
+async function verifyAssignmentOwnership(assignmentId: string, teacherProfileId: string) {
   const assignment = await prisma.courseAssignment.findFirst({
     where: {
       id: assignmentId,
-      teacherId: userId,
+      teacherId: teacherProfileId,
     },
     include: {
       Course: { select: { id: true, title: true } },
@@ -22,7 +23,9 @@ async function verifyAssignmentOwnership(assignmentId: string, userId: string) {
       Section: { select: { id: true, title: true, type: true } },
       Class: { select: { id: true, name: true } },
       Team: { select: { id: true, name: true } },
-      User: { select: { id: true, firstName: true, lastName: true } },
+      User_CourseAssignment_studentIdToUser: { select: { id: true, firstName: true, lastName: true } },
+      Parent: { select: { id: true, title: true } },
+      Children: { select: { id: true, title: true, dueDate: true } },
       StudentProgress: {
         include: {
           User: {
@@ -35,6 +38,7 @@ async function verifyAssignmentOwnership(assignmentId: string, userId: string) {
           },
         },
       },
+      _count: { select: { Children: true, StudentProgress: true } },
     },
   });
 
@@ -54,18 +58,27 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Utilisateur non identifié' }, { status: 401 });
     }
 
+    // Récupérer le TeacherProfile
+    const teacherProfile = await prisma.teacherProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!teacherProfile) {
+      return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
+    }
+
     const { id: assignmentId } = await context.params;
-    const assignment = await verifyAssignmentOwnership(assignmentId, userId);
+    const assignment = await verifyAssignmentOwnership(assignmentId, teacherProfile.id);
 
     if (!assignment) {
       return NextResponse.json({ error: 'Assignation non trouvée ou accès non autorisé' }, { status: 404 });
     }
 
     // Calculer les stats
-    const progress = assignment.StudentProgress || [];
+    const progress = assignment.StudentProgress;
     const total = progress.length;
-    const completed = progress.filter((p) => p.status === 'COMPLETED' || p.status === 'GRADED').length;
-    const inProgress = progress.filter((p) => p.status === 'IN_PROGRESS').length;
+    const completed = progress.filter((p: { status: string }) => p.status === 'COMPLETED' || p.status === 'GRADED').length;
+    const inProgress = progress.filter((p: { status: string }) => p.status === 'IN_PROGRESS').length;
 
     return NextResponse.json({
       ...assignment,
@@ -83,7 +96,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-// PUT : Modifier une assignation (titre, instructions, dueDate)
+// PUT : Modifier une assignation (titre, instructions, dueDate, priority, etc.)
 export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const session = await auth();
@@ -91,25 +104,39 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { id: assignmentId } = await context.params;
     const userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: 'Utilisateur non identifié' }, { status: 401 });
     }
-    const assignment = await verifyAssignmentOwnership(assignmentId, userId);
+
+    // Récupérer le TeacherProfile
+    const teacherProfile = await prisma.teacherProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!teacherProfile) {
+      return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
+    }
+
+    const { id: assignmentId } = await context.params;
+    const assignment = await verifyAssignmentOwnership(assignmentId, teacherProfile.id);
 
     if (!assignment) {
       return NextResponse.json({ error: 'Assignation non trouvée ou accès non autorisé' }, { status: 404 });
     }
 
     const body = await request.json();
-    const { title, instructions, dueDate } = body;
+    const { title, instructions, startDate, dueDate, priority, isRecurring, recurrenceRule } = body;
 
     // Construire les données à mettre à jour
     const updateData: {
       title?: string;
       instructions?: string | null;
+      startDate?: Date | null;
       dueDate?: Date | null;
+      priority?: AssignmentPriority;
+      isRecurring?: boolean;
+      recurrenceRule?: string | null;
     } = {};
 
     if (title !== undefined) {
@@ -123,8 +150,27 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       updateData.instructions = instructions?.trim() || null;
     }
 
+    if (startDate !== undefined) {
+      updateData.startDate = startDate ? new Date(startDate) : null;
+    }
+
     if (dueDate !== undefined) {
       updateData.dueDate = dueDate ? new Date(dueDate) : null;
+    }
+
+    if (priority !== undefined && ['LOW', 'MEDIUM', 'HIGH'].includes(priority)) {
+      updateData.priority = priority as AssignmentPriority;
+    }
+
+    if (isRecurring !== undefined) {
+      updateData.isRecurring = isRecurring;
+      if (!isRecurring) {
+        updateData.recurrenceRule = null;
+      }
+    }
+
+    if (recurrenceRule !== undefined && isRecurring) {
+      updateData.recurrenceRule = recurrenceRule;
     }
 
     const updatedAssignment = await prisma.courseAssignment.update({
@@ -136,8 +182,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         Section: { select: { id: true, title: true, type: true } },
         Class: { select: { id: true, name: true } },
         Team: { select: { id: true, name: true } },
-        User: { select: { id: true, firstName: true, lastName: true } },
-        _count: { select: { StudentProgress: true } },
+        User_CourseAssignment_studentIdToUser: { select: { id: true, firstName: true, lastName: true } },
+        Parent: { select: { id: true, title: true } },
+        _count: { select: { StudentProgress: true, Children: true } },
       },
     });
 
@@ -148,7 +195,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 }
 
-// DELETE : Supprimer une assignation (cascade progress)
+// DELETE : Supprimer une assignation (cascade progress + children)
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const session = await auth();
@@ -156,15 +203,33 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { id: assignmentId } = await context.params;
     const userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: 'Utilisateur non identifié' }, { status: 401 });
     }
-    const assignment = await verifyAssignmentOwnership(assignmentId, userId);
+
+    // Récupérer le TeacherProfile
+    const teacherProfile = await prisma.teacherProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!teacherProfile) {
+      return NextResponse.json({ error: 'Profil professeur non trouvé' }, { status: 404 });
+    }
+
+    const { id: assignmentId } = await context.params;
+    const assignment = await verifyAssignmentOwnership(assignmentId, teacherProfile.id);
 
     if (!assignment) {
       return NextResponse.json({ error: 'Assignation non trouvée ou accès non autorisé' }, { status: 404 });
+    }
+
+    // Si c'est une assignation parent avec des enfants, supprimer aussi les enfants
+    const childCount = assignment._count?.Children ?? 0;
+    if (childCount > 0) {
+      await prisma.courseAssignment.deleteMany({
+        where: { parentId: assignmentId },
+      });
     }
 
     await prisma.courseAssignment.delete({

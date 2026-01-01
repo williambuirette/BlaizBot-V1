@@ -14,13 +14,13 @@ async function verifyTeamOwnership(teamId: string, userId: string) {
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId },
     include: {
-      classes: true,
+      Class: true,
     },
   });
 
   if (!teacherProfile) return null;
 
-  const classIds = teacherProfile.classes.map((c) => c.id);
+  const classIds = teacherProfile.Class.map((c) => c.id);
 
   const team = await prisma.team.findFirst({
     where: {
@@ -28,7 +28,7 @@ async function verifyTeamOwnership(teamId: string, userId: string) {
       classId: { in: classIds },
     },
     include: {
-      class: {
+      Class: {
         select: { id: true, name: true },
       },
     },
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const studentProfile = await prisma.studentProfile.findFirst({
       where: {
         userId: studentId,
-        classId: team.class.id,
+        classId: team.Class.id,
       },
     });
 
@@ -93,11 +93,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Ajouter le membre
     const member = await prisma.teamMember.create({
       data: {
+        id: crypto.randomUUID(),
         teamId,
         studentId,
       },
       include: {
-        student: {
+        User: {
           select: {
             id: true,
             firstName: true,

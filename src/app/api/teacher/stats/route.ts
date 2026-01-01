@@ -20,8 +20,8 @@ export async function GET() {
     const teacherProfile = await prisma.teacherProfile.findUnique({
       where: { userId },
       include: {
-        classes: { select: { id: true } },
-        courses: { select: { id: true } },
+        Class: { select: { id: true } },
+        Course: { select: { id: true } },
       },
     });
 
@@ -35,8 +35,8 @@ export async function GET() {
     const unreadMessages = 0;
 
     return NextResponse.json({
-      classesCount: teacherProfile.classes.length,
-      coursesCount: teacherProfile.courses.length,
+      classesCount: teacherProfile.Class.length,
+      coursesCount: teacherProfile.Course.length,
       unreadMessages,
     });
   } catch (error) {

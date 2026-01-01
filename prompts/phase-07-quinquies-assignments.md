@@ -5,6 +5,267 @@
 
 ---
 
+## 🔧 Corrections & Optimisations (01/01/2026)
+
+### Prompt Optimal AS-FIX6 — Uniformisation Cartes Assignations
+
+> **Itérations réelles** : 3 (idéal = 1)  
+> **Problèmes rencontrés** : 
+> - Duplication de code entre page prof et page élève
+> - Nom d'élève manquant sur cartes de classe
+> - Incohérence données : scores sans assignations correspondantes
+
+```
+Crée un composant AssignmentCard unifié pour afficher les assignations partout.
+
+**Contexte** :
+- Actuellement, il y a 2 implémentations différentes (prof vs élève)
+- Le professeur voit les assignations sur /teacher/assignments (calendrier + liste)
+- L'élève les voit sur /teacher/students/[id] onglet "Assignations"
+- Les cartes doivent afficher les mêmes infos avec le même design
+
+**Spécifications AssignmentCard** :
+
+Fichier : `src/components/features/assignments/AssignmentCard.tsx`
+
+Props :
+```typescript
+export interface AssignmentCardData {
+  id: string;
+  title: string;
+  targetType: 'CLASS' | 'TEAM' | 'STUDENT';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  dueDate: string;  // ISO string
+  Course: { id: string; title: string };
+  Class?: { id: string; name: string } | null;
+  User_CourseAssignment_studentIdToUser?: { id: string; firstName: string; lastName: string } | null;
+  StudentProgress?: Array<{
+    id: string;
+    studentId: string;
+    status: string;
+    User?: { id: string; firstName: string; lastName: string };
+  }>;
+  kpi?: {
+    continuous: number;
+    ai: number;
+    exam: number | null;
+    final: number | null;
+  } | null;
+}
+
+interface AssignmentCardProps {
+  assignment: AssignmentCardData;
+  studentId?: string;  // Pour afficher nom élève sur carte classe
+  onEdit?: (assignment: AssignmentCardData) => void;
+  onDelete?: (id: string) => Promise<void>;
+  onExamGradeUpdated?: () => void;
+  showActions?: boolean;  // Afficher menu ⋮
+  compact?: boolean;
+}
+```
+
+**Affichage** :
+
+1. **Header** :
+   - Icône targetType (👥 classe, 👤 équipe, 🎓 élève)
+   - Titre assignation (cliquable → navigation vers cours)
+   - Badges : Date limite + Priorité
+   - Menu actions (⋮) : Modifier, Saisir note examen, Supprimer
+
+2. **Sous-header** :
+   - 📖 Nom du cours
+   - 👥 Nom de la classe (si targetType = CLASS)
+   - 👤 Nom de l'élève :
+     * Si targetType = STUDENT → afficher User_CourseAssignment_studentIdToUser
+     * Si targetType = CLASS + studentId fourni → chercher dans StudentProgress l'élève correspondant
+
+3. **KPIs** (si kpi fourni) :
+   Grid 4 colonnes :
+   - Continu : XX%
+   - IA : XX%
+   - Exam : X.X/6
+   - Final : X.X/6
+
+4. **Interactions** :
+   - Click sur titre → `router.push(`/teacher/courses/${assignment.Course.id}`)`
+   - Click carte (si onEdit) → onEdit(assignment)
+   - Menu ⋮ :
+     * Modifier → onEdit(assignment)
+     * Saisir note examen → ouvrir ExamGradeDialog
+     * Supprimer → ouvrir AlertDialog confirmation
+
+**Gestion dueDate null** :
+```typescript
+if (!assignment.dueDate) {
+  // Ignorer dans les groupements par date
+  return;
+}
+const dueDate = parseISO(assignment.dueDate);
+```
+
+**Gestion nom élève sur carte classe** :
+```typescript
+// Pour assignations CLASS, afficher nom élève si studentId fourni
+{!student && studentId && assignment.StudentProgress && (
+  <span className="flex items-center gap-1 text-purple-600">
+    <User className="h-3 w-3" />
+    {assignment.StudentProgress.find(p => p.studentId === studentId)?.User?.firstName}{' '}
+    {assignment.StudentProgress.find(p => p.studentId === studentId)?.User?.lastName}
+  </span>
+)}
+```
+
+**API modifications nécessaires** :
+
+Dans `src/app/api/teacher/assignments/route.ts`, ajouter :
+```typescript
+StudentProgress: {
+  select: {
+    id: true,
+    status: true,
+    studentId: true,
+    User: {
+      select: { id: true, firstName: true, lastName: true },
+    },
+  },
+},
+```
+
+**Seed corrections** :
+
+Dans `prisma/seed.ts` :
+1. Toujours créer `startDate` et `dueDate` pour les assignations
+2. Créer automatiquement StudentProgress pour élèves de la classe
+3. Pour les cours avec scores sans assignation → créer assignation automatique
+
+```typescript
+async function seedAssignments() {
+  const now = new Date();
+  const assignment = await prisma.courseAssignment.create({
+    data: {
+      // ...
+      startDate: now,
+      dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      updatedAt: now,
+    },
+  });
+  
+  // Créer StudentProgress pour tous élèves de la classe
+  const classStudents = await prisma.studentProfile.findMany({
+    where: { classId: class3A.id },
+    select: { userId: true },
+  });
+  
+  await prisma.studentProgress.createMany({
+    data: classStudents.map((s) => ({
+      id: crypto.randomUUID(),
+      assignmentId: assignment.id,
+      studentId: s.userId,
+      status: 'IN_PROGRESS',
+      updatedAt: new Date(),
+    })),
+    skipDuplicates: true,
+  });
+}
+```
+
+**Fix auto-création assignations pour scores orphelins** :
+```typescript
+// Après création des scores, créer assignations manquantes
+const scoresWithoutAssignments = await prisma.studentScore.findMany({
+  include: {
+    User: { include: { StudentProfile: { select: { classId: true } } } },
+    Course: { include: { Subject: true } },
+  },
+});
+
+for (const score of scoresWithoutAssignments) {
+  if (!score.User?.StudentProfile?.classId || !score.courseId) continue;
+  
+  const existingAssignment = await prisma.courseAssignment.findFirst({
+    where: {
+      courseId: score.courseId,
+      classId: score.User.StudentProfile.classId,
+    },
+  });
+  
+  if (!existingAssignment) {
+    const teacher = await prisma.teacherProfile.findFirst({
+      where: {
+        User: { role: 'TEACHER' },
+        Subject: { some: { id: score.Course.subjectId } },
+      },
+    });
+    
+    if (teacher) {
+      const now = new Date();
+      const newAssignment = await prisma.courseAssignment.create({
+        data: {
+          teacherId: teacher.id,
+          courseId: score.courseId,
+          title: `${score.Course.title} - Travail de classe`,
+          targetType: 'CLASS',
+          classId: score.User.StudentProfile.classId,
+          startDate: now,
+          dueDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+          priority: 'MEDIUM',
+          updatedAt: now,
+        },
+      });
+      
+      // Créer StudentProgress pour tous élèves
+      const classStudents = await prisma.studentProfile.findMany({
+        where: { classId: score.User.StudentProfile.classId },
+      });
+      
+      await prisma.studentProgress.createMany({
+        data: classStudents.map((s) => ({
+          id: crypto.randomUUID(),
+          assignmentId: newAssignment.id,
+          studentId: s.userId,
+          status: 'IN_PROGRESS',
+          updatedAt: now,
+        })),
+      });
+    }
+  }
+}
+```
+
+**Utilisation dans StudentAssignmentsList** :
+```typescript
+const groupedByDate = assignments.reduce<GroupedAssignments>((acc, assignment) => {
+  if (!assignment.dueDate) return acc;  // Ignorer si pas de date
+  
+  const dateKey = format(parseISO(assignment.dueDate), 'yyyy-MM-dd');
+  if (!acc[dateKey]) acc[dateKey] = [];
+  acc[dateKey].push(assignment);
+  return acc;
+}, {});
+```
+
+**Utilisation dans AssignmentsList (page prof)** :
+```typescript
+const stats = useMemo(() => {
+  const overdue = assignments.filter(a => a.dueDate && isPast(parseISO(a.dueDate))).length;
+  const today = assignments.filter(a => a.dueDate && isToday(parseISO(a.dueDate))).length;
+  const upcoming = assignments.length - overdue - today;
+  return { overdue, today, upcoming, total: assignments.length };
+}, [assignments]);
+```
+```
+
+**Différences clés vs prompt original** :
+- ✅ Spécifier gestion `dueDate` null explicitement
+- ✅ Détailler affichage nom élève sur cartes classe (2 cas)
+- ✅ Inclure fix seed avec auto-création assignations
+- ✅ Préciser modification API StudentProgress include User
+- ✅ Ajouter navigation onClick titre vers cours
+
+**Bénéfice** : 1 composant unifié au lieu de 2, données cohérentes scores ↔ assignations, UX complète avec navigation.
+
+---
+
 ## 🎯 Contexte Global
 
 **Besoin** : Le professeur doit pouvoir assigner des cours/sections à des élèves ou classes avec deadlines.
@@ -976,18 +1237,165 @@ Crée `src/app/(dashboard)/student/assignments/page.tsx` et l'API associée.
 
 ---
 
-## 📝 Prompts Optimaux (à compléter après implémentation)
+## 📝 Prompts Optimaux (retours d'expérience réels)
 
-> Cette section sera mise à jour avec les retours d'expérience réels.
+> Mis à jour après implémentation (Session 2025-06)
 
-### Leçons Attendues
+### ✅ Corrections Effectuées
 
-| Problème potentiel | Solution anticipée |
-|:-------------------|:-------------------|
-| PascalCase Prisma | Toujours utiliser `TeacherProfile`, `Course`, `Class`, etc. |
-| Récurrence complexe | Tester avec rrule playground avant implémentation |
-| Performance liste | Paginer si > 100 assignations |
-| Timezone | Stocker en UTC, afficher en local |
+#### AS-FIX1 : Parsing API filtres
+
+**Problème** : Les composants ne parsent pas correctement les réponses API.
+
+**Formats API à respecter** :
+```typescript
+// /api/teacher/subjects → { subjects: [...] }
+const { subjects } = await res.json();
+
+// /api/teacher/courses → { success, data: { courses: [...] } }
+const { data } = await res.json();
+const courses = data.courses;
+
+// /api/teacher/classes → { classes: [...] }
+const { classes } = await res.json();
+
+// /api/teacher/classes/[id] → { success, data: { StudentProfile: [...] } }
+const { data } = await res.json();
+const students = data.StudentProfile.map(sp => sp.User);
+```
+
+**Prompt Optimal** :
+```
+Corrige le parsing API dans AssignmentFilters.tsx.
+
+⚠️ FORMATS API (vérifiés) :
+- subjects: `{ subjects: [...] }`
+- courses: `{ success, data: { courses: [...] } }`
+- classes: `{ classes: [...] }`
+- students d'une classe: `{ success, data: { StudentProfile: [{ User: {...} }] } }`
+
+Le studentId dans CourseAssignment référence User.id, PAS StudentProfile.id.
+```
+
+---
+
+#### AS-FIX3/4 : Vue liste par défaut + Sidebar collapsible
+
+**Problème** : Le calendrier s'affiche même sans filtres, sidebar non repliable.
+
+**Prompt Optimal** :
+```
+Modifie src/app/(dashboard)/teacher/assignments/page.tsx.
+
+1. Vue 'list' par défaut (pas 'calendar')
+2. Le calendrier ne s'affiche que si hasActiveFilters = true
+3. Sidebar collapsible avec Radix Collapsible :
+   - État: isFiltersOpen (default true)
+   - Bouton toggle avec ChevronLeft/Right
+   - Badge avec activeFiltersCount
+
+useMemo pour :
+- hasActiveFilters: classIds.length || studentIds.length || etc.
+- activeFiltersCount: somme des filtres actifs
+
+Si calendrier sans filtres → afficher message "Sélectionnez des filtres"
+```
+
+---
+
+#### AS-FIX5 : CSS boutons calendrier
+
+**Problème** : Les boutons Mois/Semaine/Jour de react-big-calendar ne sont pas visibles.
+
+**Prompt Optimal** :
+```
+Crée src/styles/calendar.css pour override react-big-calendar.
+
+Styles nécessaires :
+- .rbc-toolbar button : border, padding, background
+- .rbc-btn-group : gap entre boutons
+- .rbc-active : background primary, couleur blanche
+- Responsive : toolbar en flex-wrap sur mobile
+
+Importer dans AssignmentsCalendar.tsx APRÈS le CSS de react-big-calendar.
+```
+
+---
+
+### ✅ Refactoring Effectué
+
+#### AS-REF1 : NewAssignmentModal (1039 → 281 lignes)
+
+**Problème** : Fichier de 1039 lignes, impossible à maintenir.
+
+**Architecture finale** :
+```
+src/components/features/assignments/
+├── NewAssignmentModal.tsx (281 lines) ← Orchestrateur
+├── types.ts ← Interfaces partagées
+├── useAssignmentForm.ts (260 lines) ← Hook état + fetch
+├── MultiSelectDropdown.tsx (132 lines) ← Composant réutilisable
+└── steps/
+    ├── index.ts
+    ├── StepSubjects.tsx (50 lines)
+    ├── StepCourses.tsx (63 lines)
+    ├── StepSections.tsx (103 lines)
+    ├── StepClasses.tsx (50 lines)
+    ├── StepStudents.tsx (119 lines)
+    ├── StepDeadline.tsx (108 lines)
+    └── StepValidation.tsx (214 lines)
+```
+
+**Prompt Optimal pour extraction** :
+```
+Refactore NewAssignmentModal.tsx (1039 lignes) en plusieurs fichiers < 350 lignes.
+
+**Étape 1** : Créer types.ts avec interfaces :
+- Subject, Course, Chapter, Section, ClassOption, Student
+- SECTION_TYPE_ICONS, PRIORITY_OPTIONS
+
+**Étape 2** : Créer useAssignmentForm.ts hook avec :
+- États : subjects, courses, chapters, sections, classes, students
+- selectedSubjects, selectedCourses, selectedSections, etc.
+- Fonctions : toggleSelection, selectAll, clearAll, toggleClassStudents, isClassFullySelected
+- useMemo : filteredCourses, sectionsByChapter, studentsByClass
+
+**Étape 3** : Créer MultiSelectDropdown.tsx générique :
+- Props<T> : items, selectedIds, onSelectionChange, renderItem, getId
+- SearchInput, liste items, boutons selectAll/clearAll
+
+**Étape 4** : Créer steps/ avec un composant par étape :
+- StepSubjects, StepCourses, StepSections, StepClasses, StepStudents, StepDeadline, StepValidation
+
+⚠️ TYPESCRIPT : Pour MultiSelectDropdown générique, utiliser :
+<MultiSelectDropdown<Subject>
+  renderItem={(subject: Subject) => subject.name}
+  getId={(item: Subject) => item.id}
+/>
+```
+
+---
+
+### 📊 Leçons Apprises
+
+| Problème | Solution |
+|:---------|:---------|
+| Formats API incohérents | Documenter chaque endpoint avec son format exact |
+| Fichiers > 350 lignes | Extraire : hook état, types, sous-composants |
+| TypeScript génériques | Annotation explicite `<Component<Type>` |
+| CSS bibliothèques externes | Fichier CSS dédié importé APRÈS le CSS de la lib |
+| react-big-calendar toolbar | Override CSS avec border/background explicites |
+| Radix Collapsible | Wrapper simple avec état boolean + chevron |
+
+---
+
+### 🔧 Fichiers À Refactorer (Restants)
+
+| Fichier | Lignes | Priorité |
+|:--------|:-------|:---------|
+| AssignDialog.tsx | 825 | 🔴 HAUTE |
+| admin.refactored.js (wireframe) | 517 | 🟡 Moyenne |
+| mockData.js (wireframe) | 473 | 🟡 Moyenne |
 
 ---
 

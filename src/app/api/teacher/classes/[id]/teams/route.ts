@@ -14,17 +14,17 @@ async function verifyClassOwnership(classId: string, userId: string) {
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId },
     include: {
-      classes: {
+      Class: {
         where: { id: classId },
       },
     },
   });
 
-  if (!teacherProfile || teacherProfile.classes.length === 0) {
+  if (!teacherProfile || teacherProfile.Class.length === 0) {
     return null;
   }
 
-  return teacherProfile.classes[0];
+  return teacherProfile.Class[0];
 }
 
 // GET : Liste les équipes d'une classe
@@ -52,11 +52,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
       orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: { members: true },
+          select: { TeamMember: true },
         },
-        members: {
+        TeamMember: {
           include: {
-            student: {
+            User: {
               select: {
                 id: true,
                 firstName: true,
@@ -127,11 +127,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Créer l'équipe avec ses membres
     const team = await prisma.team.create({
       data: {
+        id: crypto.randomUUID(),
         name: name.trim(),
         classId,
-        members: memberIds && memberIds.length > 0
+        updatedAt: new Date(),
+        TeamMember: memberIds && memberIds.length > 0
           ? {
               create: memberIds.map((studentId: string) => ({
+                id: crypto.randomUUID(),
                 studentId,
               })),
             }
@@ -139,11 +142,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
       include: {
         _count: {
-          select: { members: true },
+          select: { TeamMember: true },
         },
-        members: {
+        TeamMember: {
           include: {
-            student: {
+            User: {
               select: {
                 id: true,
                 firstName: true,
