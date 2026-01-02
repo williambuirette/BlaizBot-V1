@@ -3,10 +3,12 @@ import { auth } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { extractTextFromBuffer, isTextExtractable } from '@/lib/text-extractor';
 
 // Configuration
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads');
-const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB pour documents
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB pour vidéos
 const ALLOWED_TYPES = [
   // PDF
   'application/pdf',
@@ -28,11 +30,26 @@ const ALLOWED_TYPES = [
   // Texte
   'text/plain', // .txt
   'text/csv', // .csv
+  // Vidéos
+  'video/mp4',
+  'video/webm',
+  'video/ogg',
+  'video/quicktime', // .mov
+  'video/x-msvideo', // .avi
+  // Audio (pour podcasts NotebookLM)
+  'audio/mpeg', // .mp3
+  'audio/wav',
+  'audio/ogg',
+  'audio/webm',
   // Fallback pour certains navigateurs
   'application/octet-stream',
   'application/x-msexcel',
   'application/x-excel',
 ];
+
+// Types vidéo/audio
+const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'];
+const AUDIO_TYPES = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm'];
 
 // Helper pour sanitize le nom de fichier
 function sanitizeFilename(filename: string): string {
@@ -67,10 +84,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Aucun fichier fourni' }, { status: 400 });
     }
 
+    // Déterminer la limite de taille selon le type
+    const isVideo = VIDEO_TYPES.includes(file.type);
+    const isAudio = AUDIO_TYPES.includes(file.type);
+    const maxSize = (isVideo || isAudio) ? MAX_VIDEO_SIZE : MAX_SIZE;
+
     // Vérifier la taille
-    if (file.size > MAX_SIZE) {
+    if (file.size > maxSize) {
       return NextResponse.json(
-        { error: `Fichier trop volumineux. Maximum: ${MAX_SIZE / 1024 / 1024} MB` },
+        { error: `Fichier trop volumineux. Maximum: ${maxSize / 1024 / 1024} MB` },
         { status: 400 }
       );
     }
@@ -101,6 +123,18 @@ export async function POST(request: Request) {
     const filePath = join(userUploadDir, finalFilename);
     await writeFile(filePath, buffer);
 
+    // Extraire le texte pour l'IA (RAG)
+    let textContent: string | null = null;
+    if (isTextExtractable(file.type)) {
+      textContent = await extractTextFromBuffer(buffer, file.type, file.name);
+      if (textContent) {
+        console.log(`Texte extrait de ${file.name}: ${textContent.length} caractères`);
+      }
+    }
+
+    // Déterminer le type de média
+    const mediaType = isVideo ? 'video' : isAudio ? 'audio' : 'document';
+
     // URL publique
     const publicUrl = `/uploads/${session.user.id}/${finalFilename}`;
 
@@ -110,6 +144,8 @@ export async function POST(request: Request) {
       url: publicUrl,
       size: file.size,
       type: file.type,
+      mediaType, // 'video', 'audio' ou 'document'
+      textContent: textContent, // Texte extrait pour l'IA
     });
   } catch (error) {
     console.error('Erreur upload:', error);

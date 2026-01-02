@@ -80,7 +80,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { filename, fileType, url, size } = body;
+    const { filename, fileType, url, size, textContent } = body;
 
     if (!filename || !url) {
       return NextResponse.json(
@@ -96,6 +96,7 @@ export async function POST(
         fileType: fileType || 'application/octet-stream',
         url,
         size: size || null,
+        textContent: textContent || null, // Texte extrait pour l'IA (RAG)
       },
     });
 

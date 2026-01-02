@@ -19,6 +19,8 @@
 | O1-O2 | Refactoring CourseForm | ✅ |
 | 7.8 | Chapitres (optionnel) | ⬜ |
 | 7.9 | Messagerie UI (optionnel) | ⬜ |
+| 7.11 | Tableau de Bord IA (Gemini) | ✅ |
+| 7.12 | Améliorations UX Éditeur Vidéo | ✅ |
 
 ---
 
@@ -688,10 +690,58 @@ Get-ChildItem -Path src -Recurse -Include *.tsx,*.ts | `
 
 ---
 
+## 🆕 Phase 7.12 — Améliorations UX Éditeur Vidéo ✅ TERMINÉ
+
+> **Date** : 02/01/2026
+> **Objectif** : Améliorer l'expérience d'upload vidéo et la sauvegarde des sections.
+
+### Problèmes identifiés
+
+| Problème | Impact |
+|:---------|:-------|
+| Upload vidéo uniquement par URL | Ne permet pas d'importer des vidéos NotebookLM |
+| Bouton "Enregistrer" peu visible | Vidéos uploadées mais non sauvegardées |
+| Pas de feedback après modification | Utilisateurs quittent sans sauvegarder |
+
+### Tâche 7.12.1 — Upload Vidéo Local ✅
+
+| Critère | Résultat |
+|:--------|:---------|
+| Fichier API | `src/app/api/upload/route.ts` étendu |
+| Types vidéo | MP4, WebM, OGG, MOV, AVI |
+| Taille max | 100 Mo |
+| Fichier UI | `VideoEditorInline.tsx` avec onglets URL/Upload |
+
+### Tâche 7.12.2 — Barre Sticky Sauvegarde ✅
+
+| Critère | Résultat |
+|:--------|:---------|
+| Fichier | `src/components/features/courses/SectionCard.tsx` |
+| Comportement | Barre orange sticky en haut quand `hasChanges=true` |
+| Éléments | Indicateur pulsant + "Enregistrer maintenant" |
+| UX | Visible même en scrollant dans la section |
+
+### 📦 Fichiers modifiés
+
+```
+src/app/api/upload/route.ts              ✅ EXTENDED (VIDEO_TYPES, 100MB)
+src/components/features/courses/inline-editors/VideoEditorInline.tsx  ✅ TABS (URL/Upload)
+src/components/features/courses/SectionCard.tsx  ✅ STICKY BAR
+src/components/features/student/SectionViewerModal.tsx  ✅ VideoViewer platform='uploaded'
+```
+
+### 🎉 Résultat
+- ✅ Professeurs peuvent uploader vidéos locales (NotebookLM)
+- ✅ Barre sticky rappelle de sauvegarder
+- ✅ Élèves voient les vidéos uploadées
+- ✅ Build + Lint passent
+
+---
+
 ## 🔄 Navigation
 
 ← [phase-07-teacher.md](phase-07-teacher.md) | [phase-08-student.md](phase-08-student.md) →
 
 ---
 
-*Lignes : ~330 | Dernière MAJ : 2025-12-29*
+*Lignes : ~380 | Dernière MAJ : 2026-01-02*

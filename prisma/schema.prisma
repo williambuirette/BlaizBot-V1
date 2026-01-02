@@ -385,14 +385,15 @@ model Section {
 
 // Fichiers de base de connaissance liés à une section
 model SectionFile {
-  id        String   @id @default(cuid())
-  sectionId String
-  filename  String
-  fileType  String
-  url       String
-  size      Int?
-  createdAt DateTime @default(now())
-  Section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  sectionId   String
+  filename    String
+  fileType    String
+  url         String
+  size        Int?
+  textContent String?  @db.Text // Texte extrait pour l'IA (RAG)
+  createdAt   DateTime @default(now())
+  Section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@index([sectionId])
 }

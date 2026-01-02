@@ -87,19 +87,33 @@ export function SectionFilesUploader({
     setUploading(true);
     try {
       for (const file of Array.from(uploadFiles)) {
-        // Pour l'instant, on crée une URL locale (à remplacer par Vercel Blob ou autre)
-        // En production, il faudrait uploader vers un service de stockage
-        const url = URL.createObjectURL(file);
+        // 1. Upload le fichier vers le serveur
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const error = await uploadRes.json();
+          console.error('Erreur upload:', error);
+          continue;
+        }
+
+        const uploadData = await uploadRes.json();
         
-        // Créer l'entrée en BDD
+        // 2. Créer l'entrée en BDD avec l'URL persistante et le texte extrait
         const res = await fetch(`/api/teacher/sections/${sectionId}/files`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            filename: file.name,
-            fileType: file.type,
-            url: url, // En prod: URL du fichier uploadé
-            size: file.size,
+            filename: uploadData.filename,
+            fileType: uploadData.type || file.type,
+            url: uploadData.url,
+            size: uploadData.size || file.size,
+            textContent: uploadData.textContent || null, // Texte extrait pour l'IA
           }),
         });
 

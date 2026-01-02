@@ -57,11 +57,12 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     try {
       const res = await fetch(`/api/teacher/courses/${courseId}`);
       if (!res.ok) {
-        if (res.status === 404) {
+        if (res.status === 404 || res.status === 403) {
           router.push('/teacher/courses');
           return;
         }
-        throw new Error('Erreur fetch');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erreur ${res.status}`);
       }
       const data = await res.json();
       setCourse(data.course);

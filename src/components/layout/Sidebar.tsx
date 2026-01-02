@@ -7,6 +7,7 @@ import { Role } from '@/types';
 import {
   Home,
   Users,
+  User,
   School,
   BookMarked,
   BookOpen,
@@ -52,6 +53,8 @@ const teacherNavItems: NavItem[] = [
 const studentNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/student', icon: <Home size={20} /> },
   { label: 'Mes cours', href: '/student/courses', icon: <BookOpen size={20} /> },
+  { label: 'Mes révisions', href: '/student/revisions', icon: <BookMarked size={20} /> },
+  { label: 'Agenda', href: '/student/agenda', icon: <CalendarDays size={20} /> },
   { label: 'Assistant IA', href: '/student/ai', icon: <Brain size={20} /> },
   { label: 'Messages', href: '/student/messages', icon: <MessageSquare size={20} /> },
 ];

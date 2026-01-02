@@ -236,6 +236,39 @@ export function SectionCard({
         {/* Contenu dépliable */}
         <CollapsibleContent>
           <CardContent className="pt-4">
+            {/* Barre d'action sticky quand il y a des changements */}
+            {hasChanges && !loading && (
+              <div className="sticky top-0 z-10 -mx-4 mb-4 px-4 py-3 bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between rounded-t-lg">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                  <span className="text-sm font-medium">Modifications non enregistrées</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={saving}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Enregistrer maintenant
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -268,7 +301,7 @@ export function SectionCard({
                   <VideoEditorInline
                     sectionId={section.id}
                     sectionTitle={section.title}
-                    initialContent={content as { url: string; platform: 'youtube' | 'vimeo' | 'other' } | null}
+                    initialContent={content as Record<string, unknown> | null}
                     aiInstructions={section.aiInstructions || ''}
                     onContentChange={handleContentChange}
                   />

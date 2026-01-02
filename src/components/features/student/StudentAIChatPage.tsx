@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Send, Bot, User, Loader2, FileText } from "lucide-react";
 import { AIScoreModal } from "./AIScoreModal";
 import { LiveScoreBadge } from "./LiveScoreBadge";
 
@@ -30,20 +31,34 @@ interface EvaluationResult {
   recommendation: string;
 }
 
+interface StudentAIChatPageProps {
+  courseId?: string;      // ID du cours pour charger les documents RAG
+  sectionId?: string;     // ID de la section pour contexte précis
+  contextType?: 'QUIZ' | 'EXERCISE' | 'REVISION' | 'GENERAL';
+}
+
 /**
  * StudentAIChatPage - Interface de chat IA pour élève
  * - Chat interactif avec l'IA
  * - Badge de score en temps réel
  * - Modal de résultats après session terminée
+ * - Support RAG : utilise les documents du cours pour enrichir les réponses
  */
-export function StudentAIChatPage() {
+export function StudentAIChatPage({ 
+  courseId, 
+  sectionId, 
+  contextType: initialContextType = 'GENERAL' 
+}: StudentAIChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentScore, setCurrentScore] = useState<EvaluationResult | null>(null);
   const [showScoreModal, setShowScoreModal] = useState(false);
-  const [activityType, setActivityType] = useState<"QUIZ" | "EXERCISE" | "REVISION">("QUIZ");
+  const [activityType, setActivityType] = useState<"QUIZ" | "EXERCISE" | "REVISION">(
+    initialContextType === 'GENERAL' ? "REVISION" : initialContextType as "QUIZ" | "EXERCISE" | "REVISION"
+  );
+  const [hasDocuments, setHasDocuments] = useState(false);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -59,13 +74,16 @@ export function StudentAIChatPage() {
     setLoading(true);
 
     try {
-      // Simuler une réponse IA (remplacer par appel API réel)
+      // Appel API réel avec support RAG (documents du cours)
       const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [...messages, userMessage],
           sessionId,
+          courseId,        // Pour charger les documents du cours
+          sectionId,       // Pour contexte section spécifique
+          contextType: activityType,
         }),
       });
 
@@ -83,6 +101,11 @@ export function StudentAIChatPage() {
         
         if (!sessionId && data.sessionId) {
           setSessionId(data.sessionId);
+        }
+
+        // Indiquer si des documents du cours ont été utilisés
+        if (data.hasDocuments) {
+          setHasDocuments(true);
         }
 
         if (data.score) {
@@ -147,6 +170,12 @@ export function StudentAIChatPage() {
           <p className="text-muted-foreground">
             Posez vos questions et obtenez de l&apos;aide personnalisée
           </p>
+          {hasDocuments && (
+            <Badge variant="secondary" className="mt-2">
+              <FileText className="mr-1 h-3 w-3" />
+              Documents du cours chargés
+            </Badge>
+          )}
         </div>
         {currentScore && (
           <LiveScoreBadge

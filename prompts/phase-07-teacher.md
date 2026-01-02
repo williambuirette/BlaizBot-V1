@@ -21,7 +21,8 @@
 | 7.8 | Chapitres & Organisation | 🟡 [phase-07-chapitres.md](phase-07-chapitres.md) |
 | 7.9 | Messagerie Avancée | ✅ |
 | 7.10 | Upload Fichiers Ressources | ✅ |
-| 7.11 | Tableau de Bord IA (Gemini) | ⬜ [phase-07-11-ai-dashboard.md](phase-07-11-ai-dashboard.md) |
+| 7.11 | Tableau de Bord IA (Gemini) | ✅ |
+| 7.12 | Upload Vidéo & UX Sauvegarde | ✅ |
 
 ---
 
@@ -710,4 +711,138 @@ Cette approche :
 
 ---
 
-*Dernière mise à jour : 2025-12-29*
+## 🎥 Étape 7.12 — Upload Vidéo & UX Sauvegarde
+
+### Prompt 7.12.1 — Ajouter Upload Vidéo Local
+
+```
+Modifier `src/app/api/upload/route.ts` :
+
+1. Ajouter VIDEO_TYPES et AUDIO_TYPES :
+   const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'];
+   const AUDIO_TYPES = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm'];
+
+2. Ajouter MAX_VIDEO_SIZE = 100 * 1024 * 1024 (100 Mo)
+
+3. Dans POST, détecter le type :
+   let fileType = 'DOCUMENT';
+   let mediaType: 'image' | 'video' | 'audio' | 'document' = 'document';
+   
+   if (IMAGE_TYPES.includes(mimeType)) { fileType = 'IMAGE'; mediaType = 'image'; }
+   else if (VIDEO_TYPES.includes(mimeType)) { fileType = 'VIDEO'; mediaType = 'video'; }
+   else if (AUDIO_TYPES.includes(mimeType)) { fileType = 'AUDIO'; mediaType = 'audio'; }
+
+4. Retourner mediaType dans la réponse
+```
+
+### Prompt 7.12.2 — Onglets URL/Upload dans VideoEditorInline
+
+```
+Modifier `src/components/features/courses/inline-editors/VideoEditorInline.tsx` :
+
+1. Importer Tabs de shadcn/ui, Progress, Upload, FileVideo, Loader2
+
+2. Ajouter state upload :
+   const [activeTab, setActiveTab] = useState<'url' | 'upload'>('url');
+   const [isUploading, setIsUploading] = useState(false);
+   const [uploadProgress, setUploadProgress] = useState(0);
+   const [uploadError, setUploadError] = useState<string | null>(null);
+   const fileInputRef = useRef<HTMLInputElement>(null);
+
+3. Fonction handleFileUpload :
+   - Vérifier type (MP4, WebM, OGG, MOV, AVI)
+   - Vérifier taille (100 Mo max)
+   - POST FormData vers /api/upload
+   - Créer VideoItem { id, url, platform: 'uploaded', title, filename, mimeType }
+   - Appeler notifyChange()
+
+4. UI avec Tabs :
+   <Tabs value={activeTab} onValueChange={setActiveTab}>
+     <TabsList>
+       <TabsTrigger value="url"><LinkIcon /> URL</TabsTrigger>
+       <TabsTrigger value="upload"><Upload /> Upload</TabsTrigger>
+     </TabsList>
+     <TabsContent value="url">/* formulaire URL existant */</TabsContent>
+     <TabsContent value="upload">/* zone drag & drop + input file */</TabsContent>
+   </Tabs>
+```
+
+### Prompt 7.12.3 — Barre Sticky Sauvegarde
+
+```
+Modifier `src/components/features/courses/SectionCard.tsx` :
+
+Ajouter une barre sticky dans CollapsibleContent, AVANT le loading spinner :
+
+{hasChanges && !loading && (
+  <div className="sticky top-0 z-10 -mx-4 mb-4 px-4 py-3 bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between rounded-t-lg">
+    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+      <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+      <span className="text-sm font-medium">Modifications non enregistrées</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <Button variant="ghost" size="sm" onClick={handleCancel} disabled={saving}>
+        Annuler
+      </Button>
+      <Button size="sm" onClick={handleSave} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white">
+        {saving ? <Loader2 className="animate-spin" /> : <Save />}
+        Enregistrer maintenant
+      </Button>
+    </div>
+  </div>
+)}
+```
+
+### Prompt 7.12.4 — VideoViewer pour vidéos uploadées
+
+```
+Modifier `src/components/features/student/SectionViewerModal.tsx` :
+
+Dans VideoViewer, ajouter le cas platform='uploaded' :
+
+{activeVideo.platform === 'uploaded' ? (
+  <div className="aspect-video rounded-lg overflow-hidden bg-black">
+    <video
+      key={activeVideo.id}
+      src={activeVideo.url}
+      controls
+      className="w-full h-full"
+      preload="metadata"
+    >
+      Votre navigateur ne supporte pas la lecture vidéo.
+    </video>
+  </div>
+) : (/* autres cas */)
+```
+
+### Prompt Optimal 7.12 — Leçons apprises
+
+> **Itérations réelles** : 4 (idéal = 2)
+> **Problèmes rencontrés** : Vidéo uploadée mais non sauvée, bouton invisible
+
+```
+Pour implémenter un éditeur avec sauvegarde explicite :
+
+1. TOUJOURS afficher un indicateur de modifications non sauvegardées
+   - Barre sticky visible en haut de la zone d'édition
+   - Couleur d'alerte (amber/orange)
+   - Indicateur animé (pulse)
+
+2. Bouton "Enregistrer" TOUJOURS visible
+   - Ne pas le mettre tout en bas derrière du scroll
+   - Ou utiliser position: sticky
+
+3. Workflow upload :
+   - Upload fichier → URL retournée
+   - notifyChange() → parent.setHasChanges(true)
+   - Barre sticky apparaît
+   - Utilisateur clique "Enregistrer"
+   - PUT API → base de données
+
+4. NE PAS faire de sauvegarde automatique pour les gros contenus
+   - Préférer sauvegarde explicite avec feedback clair
+```
+
+---
+
+*Dernière mise à jour : 2026-01-02*

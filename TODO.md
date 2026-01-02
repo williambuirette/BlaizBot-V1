@@ -24,18 +24,20 @@ PHASE 0   PHASE 1   PHASE 2   PHASE 3   PHASE 4   PHASE 5
 
 PHASE 6   PHASE 7   PHASE 8   PHASE 9   PHASE 10
  Admin →   Prof  →  Élève  →    IA   →   Démo
-   ✅        🔴        ⬜        ⬜        ⬜
+   ✅        ✅        🔴        ⬜        ⬜
 ```
 
-**Phase active** : Phase 7 Quinquies — Assignations & Calendrier (CORRECTIONS)  
-**Progression** : 72% (7.5/11 phases)
+**Phase active** : Phase 8 — Interface Élève  
+**Progression** : 78% (8/11 phases)
 
-### Phase 7 — Sous-étapes
-- ✅ 7 : Dashboard, Classes, Cours, Messagerie, TipTap, IA, Fiche Élève
-- ✅ 7bis : TipTap + IA Chat
-- ✅ 7ter : Évaluation Automatique IA
-- ✅ 7quater : Blocs Dépliables (Chapitres/Sections accordéon)
-- 🔴 7quinquies : Assignations & Calendrier (CORRECTIONS EN COURS)
+### Phase 8 — Sous-étapes
+- ✅ 8.1 : Dashboard Élève (KPIs, widgets)
+- ✅ 8.2 : Sidebar navigation élève
+- ✅ 8.3 : Page "Mes Cours" avec filtres dynamiques
+- ⬜ 8.4 : Révisions (placeholder IA)
+- ⬜ 8.5 : Agenda Élève
+- ⬜ 8.6 : Messagerie Élève
+- ⬜ 8.7 : Profil Élève
 
 ### ✅ Tâches Terminées (7 Quinquies)
 
