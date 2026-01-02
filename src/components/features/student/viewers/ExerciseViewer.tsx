@@ -11,10 +11,11 @@ import { Input } from '@/components/ui/input';
 import { PenTool, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-// Types
-interface ExerciseQuestion {
+// Types - Support both editor format (items) and viewer format (questions)
+interface ExerciseItem {
   id: string;
   question: string;
+  answer?: string; // Only used by teacher/grading
   points?: number;
   hint?: string;
   type?: 'short' | 'long' | 'code';
@@ -23,9 +24,22 @@ interface ExerciseQuestion {
 interface ExerciseContent {
   title?: string;
   instructions?: string;
-  questions: ExerciseQuestion[];
+  questions?: ExerciseItem[]; // Legacy format
+  items?: ExerciseItem[]; // Editor format
   totalPoints?: number;
   dueDate?: string;
+  timeLimit?: number;
+}
+
+// Normalize: get questions from either 'questions' or 'items' field
+function getQuestions(data: ExerciseContent): ExerciseItem[] {
+  // Try 'items' first (editor format), then 'questions' (legacy)
+  const list = data.items || data.questions || [];
+  // Ensure each item has an id
+  return list.map((item, index) => ({
+    ...item,
+    id: item.id || `q-${index}`,
+  }));
 }
 
 interface GradingResult {
@@ -60,13 +74,14 @@ export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseVie
 
   const handleSubmit = useCallback(async () => {
     if (!exerciseData) return;
+    const questions = getQuestions(exerciseData);
     setIsSubmitting(true);
     setError(null);
     try {
       const res = await fetch('/api/ai/grade-exercise', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sectionId, sectionTitle, questions: exerciseData.questions, answers }),
+        body: JSON.stringify({ sectionId, sectionTitle, questions, answers }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Erreur lors de la notation');
       setGradingResult(await res.json());
@@ -83,7 +98,10 @@ export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseVie
     setError(null);
   }, []);
 
-  if (!exerciseData?.questions?.length) {
+  // Get normalized questions
+  const questions = exerciseData ? getQuestions(exerciseData) : [];
+  
+  if (questions.length === 0) {
     return (
       <div className="text-center py-12">
         <PenTool className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -92,7 +110,6 @@ export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseVie
     );
   }
 
-  const questions = exerciseData.questions;
   const answeredCount = Object.values(answers).filter((a) => a.trim()).length;
   const allAnswered = answeredCount === questions.length;
 
@@ -163,7 +180,7 @@ export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseVie
 
 // Question Card
 function QuestionCard({ question, index, answer, onChange, result, disabled }: { 
-  question: ExerciseQuestion; index: number; answer: string; 
+  question: ExerciseItem; index: number; answer: string; 
   onChange: (v: string) => void; result?: { score: number; maxScore: number; feedback: string }; disabled: boolean;
 }) {
   const borderClass = result 

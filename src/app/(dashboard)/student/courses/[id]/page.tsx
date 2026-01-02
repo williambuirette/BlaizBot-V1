@@ -24,6 +24,7 @@ interface SectionFile {
   fileType: string;
   url: string;
   size?: number;
+  textContent?: string | null;
 }
 
 interface Section {

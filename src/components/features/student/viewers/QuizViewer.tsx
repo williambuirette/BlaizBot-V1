@@ -25,8 +25,9 @@ interface QuizOption {
 interface QuizQuestion {
   id: string;
   question: string;
-  options: QuizOption[];
-  correctOptionId: string;
+  options: QuizOption[] | string[]; // Support both formats
+  correctOptionId?: string;
+  correctAnswers?: number[]; // Alternative format from editor
   explanation?: string;
 }
 
@@ -34,6 +35,38 @@ interface QuizContent {
   questions: QuizQuestion[];
   passingScore?: number;
   shuffleQuestions?: boolean;
+}
+
+// Normalize options to always have id and text
+function normalizeOptions(options: QuizOption[] | string[]): QuizOption[] {
+  if (!options || options.length === 0) return [];
+  
+  // If first item is a string, convert all to QuizOption format
+  if (typeof options[0] === 'string') {
+    return (options as string[]).map((text, index) => ({
+      id: `opt-${index}`,
+      text: text || '',
+    }));
+  }
+  
+  // Already in QuizOption format
+  return options as QuizOption[];
+}
+
+// Get correct option ID from question
+function getCorrectOptionId(question: QuizQuestion, normalizedOptions: QuizOption[]): string {
+  // If correctOptionId is provided, use it
+  if (question.correctOptionId) return question.correctOptionId;
+  
+  // Otherwise, use correctAnswers array (first correct answer)
+  if (question.correctAnswers && question.correctAnswers.length > 0) {
+    const correctIndex = question.correctAnswers[0];
+    if (correctIndex !== undefined && normalizedOptions[correctIndex]) {
+      return normalizedOptions[correctIndex].id;
+    }
+  }
+  
+  return '';
 }
 
 interface QuizViewerProps {
@@ -73,7 +106,10 @@ export function QuizViewer({ content }: QuizViewerProps) {
     const question = quizData.questions[currentQuestion];
     if (!question) return;
     
-    if (selectedAnswer === question.correctOptionId) {
+    const normalizedOptions = normalizeOptions(question.options);
+    const correctId = getCorrectOptionId(question, normalizedOptions);
+    
+    if (selectedAnswer === correctId) {
       setScore((prev) => prev + 1);
     }
     
@@ -114,8 +150,12 @@ export function QuizViewer({ content }: QuizViewerProps) {
     );
   }
   
+  // Normalize options for display
+  const normalizedOptions = normalizeOptions(question.options);
+  const correctOptionId = getCorrectOptionId(question, normalizedOptions);
+  
   const isLastQuestion = currentQuestion === questions.length - 1;
-  const isCorrect = selectedAnswer === question.correctOptionId;
+  const isCorrect = selectedAnswer === correctOptionId;
   const hasFinished = answeredQuestions.size === questions.length && showResult && isLastQuestion;
 
   return (
@@ -138,15 +178,18 @@ export function QuizViewer({ content }: QuizViewerProps) {
             disabled={showResult}
           >
             <div className="space-y-3">
-              {question.options.map((option) => (
-                <AnswerOption 
-                  key={option.id}
-                  option={option}
-                  showResult={showResult}
-                  isCorrect={option.id === question.correctOptionId}
-                  isSelected={selectedAnswer === option.id}
-                />
-              ))}
+              {normalizedOptions.map((option, index) => {
+                const optionKey = option.id || `option-${index}`;
+                return (
+                  <AnswerOption 
+                    key={optionKey}
+                    option={option}
+                    showResult={showResult}
+                    isCorrect={option.id === correctOptionId}
+                    isSelected={selectedAnswer === option.id}
+                  />
+                );
+              })}
             </div>
           </RadioGroup>
 
