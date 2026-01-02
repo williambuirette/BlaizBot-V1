@@ -21,6 +21,7 @@
 | 7.7 | Fiche Élève | ✅ |
 | 7.9 | Messagerie Avancée | ✅ |
 | 7.10 | Upload Fichiers | ✅ 29/12 |
+| 7.11 | Ressources globales du cours | ✅ 02/01 |
 
 ---
 
@@ -402,4 +403,88 @@ Page détaillée d'une classe avec liste élèves et cours associés.
 
 ---
 
-*Lignes : ~310 | Dernière MAJ : 2025-12-22*
+## 📋 Étape 7.11 — Ressources Globales du Cours
+
+### 🎯 Objectif
+Permettre au professeur d'uploader des fichiers globaux au niveau du cours (syllabus, bibliographie, planning) visibles par les élèves dans l'onglet "Informations".
+
+### 📝 Contexte
+- Le prof peut déjà uploader des fichiers dans les **sections** (leçons)
+- Mais il n'y a pas de moyen d'uploader des fichiers **globaux** au cours
+- Côté élève, la section "Ressources du cours" est toujours vide
+- **Incohérence** entre les 2 interfaces à corriger
+
+### 🔧 À implémenter
+
+| Composant | Fichier | Action |
+|:----------|:--------|:-------|
+| API Upload | `api/teacher/courses/[id]/files/route.ts` | Créer |
+| UI Upload | `CourseResourcesUploader.tsx` | Créer |
+| Onglet Info | `teacher/courses/[id]/page.tsx` | Modifier |
+
+---
+
+### Tâche 7.11.1 — API CRUD CourseFile
+
+| Critère | Attendu |
+|:--------|:--------|
+| Route | `GET/POST/DELETE /api/teacher/courses/[id]/files` |
+| Auth | Vérifier que le prof est propriétaire du cours |
+| Upload | Réutiliser le système d'upload existant (Vercel Blob) |
+| Model | `CourseFile` (déjà existant en BDD) |
+
+💡 **INSTRUCTION pour l'IA** :
+```
+1. CRÉER: src/app/api/teacher/courses/[id]/files/route.ts
+2. GET: Lister les CourseFile du cours
+3. POST: Uploader un fichier, créer CourseFile
+4. DELETE: Supprimer un CourseFile par id
+5. VÉRIFIER: course.teacherId === session.user.id
+```
+
+---
+
+### Tâche 7.11.2 — Composant CourseResourcesUploader
+
+| Critère | Attendu |
+|:--------|:--------|
+| Fichier | `src/components/features/courses/CourseResourcesUploader.tsx` |
+| UI | Zone d'upload + liste des fichiers avec suppression |
+| Pattern | Similaire à ResourcesManager mais simplifié |
+
+💡 **INSTRUCTION pour l'IA** :
+```
+1. CRÉER: src/components/features/courses/CourseResourcesUploader.tsx
+2. PROPS: { courseId, files, onUpdate }
+3. UI:
+   - Bouton "Ajouter des ressources"
+   - Zone drag & drop
+   - Liste des fichiers avec boutons (voir, télécharger, supprimer)
+4. ACTIONS: Upload vers API, suppression avec confirmation
+```
+
+---
+
+### Tâche 7.11.3 — Intégrer dans Onglet Informations Prof
+
+| Critère | Attendu |
+|:--------|:--------|
+| Fichier | `src/app/(dashboard)/teacher/courses/[id]/page.tsx` |
+| Section | Remplacer l'affichage statique par le composant interactif |
+| Refresh | Callback onUpdate pour rafraîchir après upload |
+
+💡 **INSTRUCTION pour l'IA** :
+```
+1. IMPORTER CourseResourcesUploader
+2. REMPLACER la section "Fichiers du cours" par:
+   <CourseResourcesUploader 
+     courseId={courseId} 
+     files={course.files || []} 
+     onUpdate={fetchCourse}
+   />
+3. TOUJOURS afficher la section (même si vide)
+```
+
+---
+
+*Lignes : ~420 | Dernière MAJ : 2026-01-02*

@@ -185,6 +185,8 @@ model Course {
   Progression      Progression[]
   Resource         Resource[]
   StudentScore     StudentScore[]
+  // Suppléments élèves liés (relation many-to-many)
+  StudentSupplementCourses StudentSupplementCourse[]
 }
 
 model CourseAssignment {
@@ -410,6 +412,127 @@ model StudentProfile {
   Class         Class           @relation(fields: [classId], references: [id])
   User          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   Subject       Subject[]       @relation("StudentSubjects")
+  // Révisions élève (privées)
+  Supplement    StudentSupplement[]
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RÉVISIONS ÉLÈVE — Contenus privés (jamais visibles par le prof)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Supplément = conteneur principal (lié à 0, 1 ou plusieurs cours prof)
+model StudentSupplement {
+  id          String   @id // format: supp-{timestamp}-{random}
+  studentId   String
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Student     StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  Chapters    StudentChapter[]
+  // Relation many-to-many avec les cours
+  Courses     StudentSupplementCourse[]
+
+  @@index([studentId])
+}
+
+// Table de liaison pour relation many-to-many Supplement <-> Course
+model StudentSupplementCourse {
+  id           String   @id @default(cuid())
+  supplementId String
+  courseId     String
+  createdAt    DateTime @default(now())
+
+  Supplement   StudentSupplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  Course       Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([supplementId, courseId])
+  @@index([supplementId])
+  @@index([courseId])
+}
+
+// Chapitre d'un supplément élève
+model StudentChapter {
+  id           String   @id // format: sch-{timestamp}-{random}
+  supplementId String
+  title        String
+  description  String?
+  orderIndex   Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  Supplement   StudentSupplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  Cards        StudentCard[]
+
+  @@index([supplementId])
+  @@index([orderIndex])
+}
+
+// Carte de contenu élève (note, résumé, quiz, exercice, flashcard)
+model StudentCard {
+  id         String          @id // format: scard-{timestamp}-{random}
+  chapterId  String
+  title      String
+  content    String          @db.Text // Markdown
+  cardType   StudentCardType @default(NOTE)
+  orderIndex Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  Chapter    StudentChapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  Files      StudentFile[]
+  Quiz       StudentQuiz?
+
+  @@index([chapterId])
+  @@index([orderIndex])
+}
+
+// Fichier attaché à une carte élève
+model StudentFile {
+  id        String   @id // format: sfile-{timestamp}-{random}
+  cardId    String
+  filename  String
+  fileType  String
+  url       String
+  createdAt DateTime @default(now())
+
+  Card      StudentCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+}
+
+// Quiz d'auto-évaluation élève
+model StudentQuiz {
+  id          String   @id // format: squiz-{timestamp}-{random}
+  cardId      String   @unique
+  questions   Json     // Même format que Quiz prof
+  aiGenerated Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  Card        StudentCard          @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  Attempts    StudentQuizAttempt[]
+}
+
+// Tentative de quiz élève
+model StudentQuizAttempt {
+  id          String   @id // format: sqatt-{timestamp}-{random}
+  quizId      String
+  score       Int      // 0-100
+  answers     Json
+  completedAt DateTime @default(now())
+
+  Quiz        StudentQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+// Type de carte élève (aligné sur les types professeur + NOTE spécifique élève)
+enum StudentCardType {
+  NOTE
+  LESSON
+  VIDEO
+  EXERCISE
+  QUIZ
 }
 
 model StudentProgress {

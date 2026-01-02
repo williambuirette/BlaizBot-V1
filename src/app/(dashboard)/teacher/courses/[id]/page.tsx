@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, ArrowLeft, BookOpen, FolderTree, Send, File, Download, ExternalLink } from 'lucide-react';
 import { ChaptersManager } from '@/components/features/courses/ChaptersManager';
 import { ThemeAIMetrics } from '@/components/features/teacher/ThemeAIMetrics';
+import { CourseResourcesUploader } from '@/components/features/courses/CourseResourcesUploader';
 
 interface CourseFile {
   id: string;
@@ -196,7 +197,7 @@ interface CourseInfoTabProps {
   onUpdate: () => void;
 }
 
-function CourseInfoTab({ course, courseId }: CourseInfoTabProps) {
+function CourseInfoTab({ course, courseId, onUpdate }: CourseInfoTabProps) {
   return (
     <div className="space-y-6">
       {/* Métriques IA */}
@@ -254,54 +255,14 @@ function CourseInfoTab({ course, courseId }: CourseInfoTabProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Fichiers uploadés */}
-      {course.files && course.files.length > 0 && (
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <File className="h-5 w-5" />
-              Fichiers du cours ({course.files.length})
-            </CardTitle>
-            <CardDescription>
-              Documents uploadés pour ce cours - disponibles aussi dans l&apos;onglet Ressources
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {course.files.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  <File className="h-8 w-8 text-muted-foreground shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate" title={file.filename}>
-                      {file.filename}
-                    </p>
-                    <p className="text-xs text-muted-foreground uppercase">
-                      {file.fileType}
-                    </p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={file.url} target="_blank" rel="noopener noreferrer" title="Ouvrir">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={file.url} download={file.filename} title="Télécharger">
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
       </div>
+
+      {/* Ressources du cours - Composant interactif */}
+      <CourseResourcesUploader
+        courseId={courseId}
+        files={course.files || []}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 }

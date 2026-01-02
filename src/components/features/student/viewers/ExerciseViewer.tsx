@@ -53,14 +53,18 @@ interface ExerciseViewerProps {
   content: string | null;
   sectionId: string;
   sectionTitle: string;
+  courseId?: string;
+  onScoreUpdate?: () => void;
 }
 
 // Composant principal
-export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseViewerProps) {
+export function ExerciseViewer({ content, sectionId, sectionTitle, courseId, onScoreUpdate }: ExerciseViewerProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gradingResult, setGradingResult] = useState<GradingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSavingScore, setIsSavingScore] = useState(false);
+  const [scoreSaved, setScoreSaved] = useState(false);
 
   // Parse content
   let exerciseData: ExerciseContent | null = null;
@@ -71,6 +75,31 @@ export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseVie
   const handleAnswerChange = useCallback((questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }, []);
+
+  // Save score to progression (called after grading)
+  const saveScore = useCallback(async (result: GradingResult) => {
+    if (!courseId) return;
+    
+    setIsSavingScore(true);
+    try {
+      const score = Math.round((result.score / result.maxScore) * 100);
+      const res = await fetch(`/api/student/courses/${courseId}/sections/${sectionId}/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score, status: 'COMPLETED' }),
+      });
+      
+      if (res.ok) {
+        setScoreSaved(true);
+        onScoreUpdate?.();
+      }
+    } catch {
+      // Silent fail - don't block the user
+      console.error('Failed to save exercise score');
+    } finally {
+      setIsSavingScore(false);
+    }
+  }, [courseId, sectionId, onScoreUpdate]);
 
   const handleSubmit = useCallback(async () => {
     if (!exerciseData) return;
@@ -84,18 +113,22 @@ export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseVie
         body: JSON.stringify({ sectionId, sectionTitle, questions, answers }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Erreur lors de la notation');
-      setGradingResult(await res.json());
+      const result = await res.json();
+      setGradingResult(result);
+      // Auto-save score after grading
+      await saveScore(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
       setIsSubmitting(false);
     }
-  }, [exerciseData, sectionId, sectionTitle, answers]);
+  }, [exerciseData, sectionId, sectionTitle, answers, saveScore]);
 
   const handleReset = useCallback(() => {
     setAnswers({});
     setGradingResult(null);
     setError(null);
+    setScoreSaved(false);
   }, []);
 
   // Get normalized questions
@@ -156,7 +189,13 @@ export function ExerciseViewer({ content, sectionId, sectionTitle }: ExerciseVie
       )}
 
       {/* Final result */}
-      {gradingResult && <FinalResult result={gradingResult} />}
+      {gradingResult && (
+        <FinalResult 
+          result={gradingResult} 
+          isSaving={isSavingScore} 
+          saved={scoreSaved} 
+        />
+      )}
 
       {/* Actions */}
       <div className="flex justify-between items-center">
@@ -221,7 +260,13 @@ function QuestionCard({ question, index, answer, onChange, result, disabled }: {
 }
 
 // Final Result
-function FinalResult({ result }: { result: GradingResult }) {
+interface FinalResultProps {
+  result: GradingResult;
+  isSaving?: boolean;
+  saved?: boolean;
+}
+
+function FinalResult({ result, isSaving, saved }: FinalResultProps) {
   const pct = Math.round((result.score / result.maxScore) * 100);
   const emoji = pct >= 90 ? '🌟 Excellent !' : pct >= 70 ? '👍 Bon travail !' : '💪 Continue !';
   const border = pct >= 90 ? 'border-green-500 bg-green-50/50 dark:bg-green-900/10' 
@@ -237,6 +282,19 @@ function FinalResult({ result }: { result: GradingResult }) {
         <div className="prose prose-sm dark:prose-invert max-w-none text-left">
           <ReactMarkdown>{result.feedback}</ReactMarkdown>
         </div>
+        {/* Save status */}
+        {isSaving && (
+          <div className="mt-4 flex items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Enregistrement...</span>
+          </div>
+        )}
+        {saved && !isSaving && (
+          <div className="mt-4 flex items-center justify-center gap-2 text-green-600">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Score enregistré !</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -12,8 +12,8 @@
 | Étape | Description | Statut |
 |:------|:------------|:-------|
 | 8.1-8.3 | Dashboard, Sidebar, API, Cours | ✅ |
-| **8.R** | **Refactoring fichiers > 350 lignes** | 🔴 PRIORITAIRE |
-| 8.4 | Exercices interactifs | ⬜ |
+| 8.R | Refactoring fichiers > 350 lignes | ✅ |
+| **8.4** | **Révisions Élève (Suppléments & Cours perso)** | ⬜ À FAIRE |
 | 8.5 | Quiz avec scoring | ⬜ |
 
 ---
@@ -30,6 +30,7 @@
 | 8.3.4 | Page Mes Cours avec filtres | ✅ |
 | 8.3.5 | Filtres multi-select dynamiques (cascade) | ✅ |
 | 8.3.6 | Page détail cours avec chapitres | ✅ |
+| 8.3.7 | Affichage ressources globales du cours | ✅ 02/01 |
 
 ---
 
@@ -347,4 +348,246 @@ Voir [phase-08-code.md](phase-08-code.md) section 3
 
 ---
 
-*Lignes : ~220 | Suite dans phase-08-student-suite.md*
+## 📋 Étape 8.3.7 — Affichage Ressources Globales du Cours
+
+### 🎯 Objectif
+Afficher les fichiers globaux du cours (uploadés par le prof via 7.11) dans l'onglet "Informations" de l'élève.
+
+### 📝 Contexte
+- Dépend de **7.11** (côté prof) pour que les fichiers existent
+- La section "Ressources du cours" existe déjà côté élève
+- Il faut s'assurer que l'API retourne bien les `CourseFile`
+
+### 🔧 À vérifier/modifier
+
+| Composant | Fichier | Action |
+|:----------|:--------|:-------|
+| API Student | `api/student/courses/[id]/route.ts` | Vérifier include CourseFile |
+| Page Élève | `student/courses/[id]/page.tsx` | Déjà en place (affiche si files existe) |
+
+---
+
+### Tâche 8.3.7.1 — Vérifier API retourne CourseFile
+
+| Critère | Attendu |
+|:--------|:--------|
+| Route | `GET /api/student/courses/[id]` |
+| Include | `files: true` dans la query Prisma |
+| Réponse | `course.files` = tableau de CourseFile |
+
+💡 **INSTRUCTION pour l'IA** :
+```
+1. VÉRIFIER: src/app/api/student/courses/[id]/route.ts
+2. S'ASSURER que la query inclut:
+   files: {
+     select: {
+       id: true,
+       filename: true,
+       fileType: true,
+       url: true,
+     }
+   }
+3. SI manquant, AJOUTER l'include
+```
+
+---
+
+### Tâche 8.3.7.2 — Vérifier affichage côté élève
+
+| Critère | Attendu |
+|:--------|:--------|
+| Fichier | `src/app/(dashboard)/student/courses/[id]/page.tsx` |
+| Section | "Ressources du cours" dans onglet Informations |
+| Comportement | Affiche les fichiers OU message "Aucune ressource" |
+
+💡 **INSTRUCTION pour l'IA** :
+```
+1. VÉRIFIER que la section "Ressources du cours" :
+   - S'affiche même si vide (avec message explicatif)
+   - Affiche les fichiers avec boutons Ouvrir/Télécharger
+   - Correspond au design de l'interface prof
+2. CODE déjà en place - juste s'assurer que ça fonctionne
+```
+
+---
+
+## 📋 Étape 8.4 — Révisions Élève (Suppléments & Cours Personnels)
+
+> **Date** : 02/01/2026
+> **Objectif** : L'élève peut créer ses propres notes, cours et quiz privés
+> **Confidentialité** : 100% privé — Le professeur ne voit JAMAIS ces contenus
+
+### 🎯 Concept
+
+| Type | Description | Lié à un cours prof ? |
+|------|-------------|----------------------|
+| **Supplément** | Notes/fichiers ajoutés à un cours existant | ✅ Optionnel |
+| **Cours personnel** | Cours créé de toute pièce par l'élève | ❌ Indépendant |
+
+### 📐 Modèle de données
+
+```prisma
+model StudentSupplement {
+  id          String   @id
+  studentId   String   // → StudentProfile
+  courseId    String?  // → Course (optionnel)
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  student     StudentProfile @relation(...)
+  course      Course?        @relation(...)
+  chapters    StudentChapter[]
+}
+
+model StudentChapter {
+  id              String   @id
+  supplementId    String
+  title           String
+  description     String?
+  orderIndex      Int
+  createdAt       DateTime @default(now())
+
+  supplement      StudentSupplement @relation(...)
+  cards           StudentCard[]
+}
+
+model StudentCard {
+  id          String   @id
+  chapterId   String
+  title       String
+  content     String   @db.Text
+  cardType    StudentCardType @default(NOTE)
+  orderIndex  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapter     StudentChapter @relation(...)
+  files       StudentFile[]
+  quiz        StudentQuiz?
+}
+
+enum StudentCardType {
+  NOTE        // Texte libre
+  SUMMARY     // Résumé
+  QUIZ        // Auto-évaluation
+  EXERCISE    // Exercice perso
+  FLASHCARD   // Carte mémoire
+}
+
+model StudentFile {
+  id        String   @id
+  cardId    String
+  filename  String
+  fileType  String
+  url       String
+  createdAt DateTime @default(now())
+
+  card      StudentCard @relation(...)
+}
+
+model StudentQuiz {
+  id          String   @id
+  cardId      String   @unique
+  questions   Json
+  aiGenerated Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  card        StudentCard @relation(...)
+  attempts    StudentQuizAttempt[]
+}
+
+model StudentQuizAttempt {
+  id          String   @id
+  quizId      String
+  score       Int      // 0-100
+  answers     Json
+  completedAt DateTime @default(now())
+
+  quiz        StudentQuiz @relation(...)
+}
+```
+
+### 📋 Tâches 8.4
+
+| # | Tâche | Description | Statut |
+|:--|:------|:------------|:-------|
+| **8.4.1** | Schéma Prisma | Ajouter les 6 modèles Student* | ⬜ |
+| **8.4.2** | Migration | `npx prisma migrate dev` | ⬜ |
+| **8.4.3** | API Suppléments CRUD | `/api/student/supplements/*` | ⬜ |
+| **8.4.4** | API Chapitres | `/api/student/supplements/[id]/chapters/*` | ⬜ |
+| **8.4.5** | API Cartes | `/api/student/cards/*` | ⬜ |
+| **8.4.6** | API Files Upload | `/api/student/cards/[id]/files` | ⬜ |
+| **8.4.7** | Page Révisions | `/student/revisions` (liste) | ⬜ |
+| **8.4.8** | Page Détail Supplément | `/student/revisions/[id]` | ⬜ |
+| **8.4.9** | Page Création | `/student/revisions/create` | ⬜ |
+| **8.4.10** | Composant SupplementCard | Card avec stats | ⬜ |
+| **8.4.11** | Composant StudentChapterManager | Gestion chapitres | ⬜ |
+| **8.4.12** | Composant StudentCardEditor | Éditeur de cartes | ⬜ |
+| **8.4.13** | Onglet "Mes notes" cours | Dans page cours détail | ⬜ |
+| **8.4.14** | API Quiz IA | `/api/student/quiz/generate` | ⬜ |
+| **8.4.15** | Composant StudentQuizViewer | Auto-évaluation | ⬜ |
+| **8.4.16** | KPI Révisions perso | Stats séparées (privées) | ⬜ |
+
+### 🔗 APIs à créer
+
+| Route | Méthode | Description |
+|-------|---------|-------------|
+| `/api/student/supplements` | GET | Liste suppléments de l'élève |
+| `/api/student/supplements` | POST | Créer supplément |
+| `/api/student/supplements/[id]` | GET/PUT/DELETE | CRUD supplément |
+| `/api/student/supplements/[id]/chapters` | GET/POST | Chapitres |
+| `/api/student/supplements/[id]/chapters/[chId]` | PUT/DELETE | CRUD chapitre |
+| `/api/student/cards` | POST | Créer carte |
+| `/api/student/cards/[id]` | GET/PUT/DELETE | CRUD carte |
+| `/api/student/cards/[id]/files` | POST/DELETE | Upload fichiers |
+| `/api/student/quiz/generate` | POST | **IA génère quiz** |
+| `/api/student/quiz/[id]/attempt` | POST | Soumettre tentative |
+
+### 🎨 UX Page Révisions
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📚 Mes Révisions                          [+ Nouveau]      │
+├─────────────────────────────────────────────────────────────┤
+│  🔗 LIÉS À MES COURS                                        │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │ 📖 Mathématiques Avancées (M. Dupont)                 │ │
+│  │    📝 3 notes · 📄 2 fichiers · ❓ 1 quiz perso       │ │
+│  │    Score auto-éval : 78%                              │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                                                             │
+│  📓 MES COURS PERSONNELS                                    │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │ 📝 Prépa Concours 2026                    [Éditer]    │ │
+│  │    5 chapitres · 12 cartes · 3 quiz                   │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                                                             │
+│  📊 MES STATS PERSO (privées)                               │
+│  │  Quiz perso : 15    Score moyen : 82%                 │ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### ⚠️ Règles importantes
+
+```
+CONFIDENTIALITÉ :
+- StudentSupplement.studentId = SEUL propriétaire
+- Aucune API prof ne peut accéder à ces données
+- KPI séparés (n'impactent PAS les stats prof)
+
+GÉNÉRATION IA :
+- L'IA peut lire : cours prof + supplément élève + knowledge base
+- L'IA génère quiz/exercices selon instructions élève
+- Questions stockées dans StudentQuiz.questions (même format que Quiz prof)
+
+STRUCTURE :
+- Même logique Chapitre → Carte que le système prof
+- Réutiliser les composants existants si possible
+- Fichiers < 350 lignes
+```
+
+---
+
+*Lignes : ~415 | Prompts détaillés dans prompts/phase-08-4-*.md*

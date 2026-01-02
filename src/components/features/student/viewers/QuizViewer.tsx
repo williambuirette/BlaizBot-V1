@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +13,8 @@ import {
   HelpCircle, 
   CheckCircle2, 
   XCircle, 
-  RotateCcw 
+  RotateCcw,
+  Loader2 
 } from 'lucide-react';
 
 // Types
@@ -71,15 +72,20 @@ function getCorrectOptionId(question: QuizQuestion, normalizedOptions: QuizOptio
 
 interface QuizViewerProps {
   content: string | null;
+  courseId?: string;
+  sectionId?: string;
+  onScoreUpdate?: () => void;
 }
 
 // Composant principal
-export function QuizViewer({ content }: QuizViewerProps) {
+export function QuizViewer({ content, courseId, sectionId, onScoreUpdate }: QuizViewerProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   // Parse content
   let quizData: QuizContent | null = null;
@@ -98,7 +104,32 @@ export function QuizViewer({ content }: QuizViewerProps) {
     setShowResult(false);
     setScore(0);
     setAnsweredQuestions(new Set());
+    setSaved(false);
   }, []);
+
+  // Sauvegarder le score dans la BDD (automatique quand quiz terminé)
+  const saveScore = useCallback(async (finalScore: number, totalQuestions: number) => {
+    if (!courseId || !sectionId) return;
+    
+    setIsSaving(true);
+    try {
+      const percentage = Math.round((finalScore / totalQuestions) * 100);
+      const res = await fetch(`/api/student/courses/${courseId}/sections/${sectionId}/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score: percentage, status: 'COMPLETED' }),
+      });
+      
+      if (res.ok) {
+        setSaved(true);
+        onScoreUpdate?.(); // Rafraîchir les KPIs
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde score quiz:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [courseId, sectionId, onScoreUpdate]);
 
   // Handle answer submission
   const handleSubmitAnswer = useCallback(() => {
@@ -109,13 +140,22 @@ export function QuizViewer({ content }: QuizViewerProps) {
     const normalizedOptions = normalizeOptions(question.options);
     const correctId = getCorrectOptionId(question, normalizedOptions);
     
-    if (selectedAnswer === correctId) {
-      setScore((prev) => prev + 1);
+    const isCorrectAnswer = selectedAnswer === correctId;
+    const newScore = isCorrectAnswer ? score + 1 : score;
+    
+    if (isCorrectAnswer) {
+      setScore(newScore);
     }
     
     setAnsweredQuestions((prev) => new Set(prev).add(currentQuestion));
     setShowResult(true);
-  }, [quizData, selectedAnswer, currentQuestion]);
+    
+    // Si c'est la dernière question, sauvegarder automatiquement
+    const isLast = currentQuestion === quizData.questions.length - 1;
+    if (isLast && !saved) {
+      saveScore(newScore, quizData.questions.length);
+    }
+  }, [quizData, selectedAnswer, currentQuestion, score, saved, saveScore]);
 
   // Next question
   const handleNextQuestion = useCallback(() => {
@@ -216,7 +256,12 @@ export function QuizViewer({ content }: QuizViewerProps) {
 
       {/* Final score */}
       {hasFinished && (
-        <FinalScore score={score} total={questions.length} />
+        <FinalScore 
+          score={score} 
+          total={questions.length} 
+          isSaving={isSaving}
+          saved={saved}
+        />
       )}
     </div>
   );
@@ -351,7 +396,14 @@ function QuizActions({
   );
 }
 
-function FinalScore({ score, total }: { score: number; total: number }) {
+interface FinalScoreProps {
+  score: number;
+  total: number;
+  isSaving?: boolean;
+  saved?: boolean;
+}
+
+function FinalScore({ score, total, isSaving, saved }: FinalScoreProps) {
   const percentage = Math.round((score / total) * 100);
   const passed = percentage >= 70;
 
@@ -367,6 +419,19 @@ function FinalScore({ score, total }: { score: number; total: number }) {
         <p className="text-muted-foreground">
           {percentage}% de bonnes réponses
         </p>
+        {/* Save status */}
+        {isSaving && (
+          <div className="mt-3 flex items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Enregistrement...</span>
+          </div>
+        )}
+        {saved && !isSaving && (
+          <div className="mt-3 flex items-center justify-center gap-2 text-green-600">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Score enregistré !</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -221,6 +221,8 @@ export function StudentChaptersViewer({
       open={modalOpen}
       onOpenChange={setModalOpen}
       onComplete={onProgressUpdate}
+      courseId={courseId}
+      onScoreUpdate={onProgressUpdate}
     />
     </>
   );

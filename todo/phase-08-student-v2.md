@@ -1,7 +1,7 @@
 # 🎓 Phase 8 — Interface Élève (v2 - Améliorée)
 
 > **Objectif** : Interface élève complète, miroir du professeur avec KPIs et interactions  
-> **Statut** : 🔴 À FAIRE  
+> **Statut** : � EN COURS (8.2 + 8.3 terminés)  
 > **Durée estimée** : 10-12h  
 > **Prérequis** : Phase 7 terminée (Prof fonctionnel)
 
@@ -138,26 +138,36 @@ Voir prompts/phase-08-student-v2.md
 
 ---
 
-## 📋 Étape 8.2 — Mes Cours (avec progression)
+## 📋 Étape 8.2 — Mes Cours (avec progression) ✅ TERMINÉ
 
 ### 🎯 Objectif
 Lister les cours de sa classe avec progression et accès au contenu.
 
-### 📝 Comment
-Grille de cards avec barre de progression, filtres par matière.
+### 📝 Réalisations
+- ✅ Page `/student/courses` avec grille de cards
+- ✅ Barre de progression par cours
+- ✅ Filtres par matière
+- ✅ KPIs de scores (Continu, Quiz, Exercices, Score IA)
+- ✅ Section "Mes suppléments" avec accordéon déroulant
+- ✅ Cartes cliquables ouvrant un modal de visualisation
 
-### 🔧 Par quel moyen
-- API filtrée par `enrollment.classId` + `TeacherAssignment`
-- Card avec progression visuelle
-- Filtres matière + état
+### 🔧 Fichiers créés/modifiés
+- `src/app/(dashboard)/student/courses/page.tsx` — Liste des cours
+- `src/app/(dashboard)/student/courses/[id]/page.tsx` — Détail cours avec suppléments
+- `src/app/api/student/courses/route.ts` — API liste cours
+- `src/app/api/student/courses/[id]/route.ts` — API détail cours
+- `src/app/api/student/courses/[id]/supplements/route.ts` — API suppléments liés au cours
+- `src/components/features/student/StudentChaptersViewer.tsx` — Accordéon chapitres
+- `src/components/features/student/SectionViewerModal.tsx` — Modal de visualisation
 
 | # | Tâche | Fichier | Validation |
 |:--|:------|:--------|:-----------|
-| 8.2.1 | API Cours | `GET /api/student/courses` | Cours avec progression |
-| 8.2.2 | Page Liste | `student/courses/page.tsx` | < 100 lignes |
-| 8.2.3 | Course Card | `StudentCourseCard.tsx` | < 120 lignes |
-| 8.2.4 | Course Filters | `StudentCourseFilters.tsx` | < 80 lignes |
-| 8.2.5 | Empty State | Si aucun cours assigné | Message approprié |
+| 8.2.1 | ✅ API Cours | `GET /api/student/courses` | Cours avec progression |
+| 8.2.2 | ✅ Page Liste | `student/courses/page.tsx` | < 100 lignes |
+| 8.2.3 | ✅ Course Card | `StudentCourseCard.tsx` | Avec barre progression |
+| 8.2.4 | ✅ Course Filters | Filtres intégrés | Par matière |
+| 8.2.5 | ✅ Empty State | Si aucun cours | Message approprié |
+| 8.2.6 | ✅ Suppléments section | Accordéon dans détail cours | Avec cartes cliquables |
 
 ### 💡 INSTRUCTION 8.2 (Mes Cours)
 
@@ -201,28 +211,39 @@ Props : `{ course, progress }`
 
 ---
 
-## 📋 Étape 8.3 — Détail Cours (Chapitres + Sections)
+## 📋 Étape 8.3 — Détail Cours (Chapitres + Sections) ✅ TERMINÉ
 
 ### 🎯 Objectif
 Vue détaillée d'un cours avec navigation chapitres/sections et marquage progression.
 
-### 📝 Comment
-Layout 2 colonnes : sidebar chapitres + contenu section.
+### 📝 Réalisations
+- ✅ Layout avec tabs (Informations / Cours)
+- ✅ Accordéon de chapitres avec sections déroulantes
+- ✅ Modal de visualisation des sections (Leçon, Vidéo, Quiz, Exercice)
+- ✅ Marquage progression (compléter un chapitre)
+- ✅ KPIs de scores intégrés (Continu, Quiz, Exercices, Score IA, Examen)
+- ✅ Section "Mes suppléments" avec accordéon et cartes cliquables
 
-### 🔧 Par quel moyen
-- API détail avec chapitres et sections inclus
-- Navigation sidebar
-- Contenu markdown rendu
-- Bouton marquer terminé
+### 🔧 Fichiers créés/modifiés
+- `src/app/(dashboard)/student/courses/[id]/page.tsx` — Page détail (client component)
+- `src/app/api/student/courses/[id]/route.ts` — API détail avec chapitres
+- `src/app/api/student/courses/[id]/progress/route.ts` — API marquage progression
+- `src/app/api/student/courses/[id]/scores/route.ts` — API KPIs scores
+- `src/app/api/student/courses/[id]/supplements/route.ts` — API suppléments liés
+- `src/components/features/student/StudentChaptersViewer.tsx` — Accordéon chapitres
+- `src/components/features/student/SectionViewerModal.tsx` — Modal de lecture
+- `src/components/features/student/viewers/` — Composants viewers (Lesson, Video, Quiz, Exercise)
+- `src/components/shared/CourseScoreKPIs.tsx` — KPIs partagés
 
 | # | Tâche | Fichier | Validation |
 |:--|:------|:--------|:-----------|
-| 8.3.1 | Route | `student/courses/[id]/page.tsx` | < 100 lignes |
-| 8.3.2 | API GET | `GET /api/student/courses/[id]` | Cours + chapitres |
-| 8.3.3 | Sidebar | `ChaptersSidebar.tsx` | < 150 lignes |
-| 8.3.4 | Content | `SectionContent.tsx` | < 150 lignes |
-| 8.3.5 | Progress | `POST /api/student/progress` | Marquer section |
-| 8.3.6 | Resources | `SectionResources.tsx` | < 80 lignes |
+| 8.3.1 | ✅ Route | `student/courses/[id]/page.tsx` | Client component |
+| 8.3.2 | ✅ API GET | `GET /api/student/courses/[id]` | Cours + chapitres |
+| 8.3.3 | ✅ Accordéon | `StudentChaptersViewer.tsx` | Déroulant |
+| 8.3.4 | ✅ Content | `SectionViewerModal.tsx` | Modal lecture |
+| 8.3.5 | ✅ Progress | `POST /api/student/progress` | Marquer section |
+| 8.3.6 | ✅ KPIs | `CourseScoreKPIs.tsx` | 5 indicateurs |
+| 8.3.7 | ✅ Suppléments | Section accordéon | Cartes cliquables modal |
 
 ### 💡 INSTRUCTION 8.3 (Détail Cours)
 
@@ -252,6 +273,65 @@ Layout 2 colonnes : sidebar chapitres + contenu section.
 - Click section → charge contenu
 - Marquer terminé → toast + MAJ sidebar (✓)
 ```
+
+---
+
+## 📋 Étape 8.3bis — Mes Révisions (Suppléments personnels) ✅ TERMINÉ
+
+### 🎯 Objectif
+Permettre à l'élève de créer des notes/suppléments personnels liés ou non à des cours.
+
+### 📝 Réalisations
+- ✅ Page `/student/revisions` avec liste des suppléments
+- ✅ Création de suppléments avec titre, description
+- ✅ Attribution à plusieurs cours (many-to-many)
+- ✅ Interface d'édition identique au professeur (chapitres + cartes inline)
+- ✅ Types de cartes : NOTE, LESSON, VIDEO, EXERCISE, QUIZ
+- ✅ Icônes colorées par type (identique au prof)
+- ✅ Modal d'attribution aux cours avec checkboxes
+- ✅ Affichage des suppléments sur la page du cours
+
+### 🔧 Fichiers créés/modifiés
+
+**Schema Prisma :**
+- `StudentSupplement` — Supplément personnel
+- `StudentSupplementChapter` — Chapitres du supplément
+- `StudentSupplementCard` — Cartes (NOTE, LESSON, VIDEO, EXERCISE, QUIZ)
+- `StudentSupplementCourse` — Table de jonction many-to-many
+
+**APIs :**
+- `src/app/api/student/supplements/route.ts` — GET/POST suppléments
+- `src/app/api/student/supplements/[id]/route.ts` — GET/PUT/DELETE supplément
+- `src/app/api/student/supplements/[id]/chapters/route.ts` — GET/POST chapitres
+- `src/app/api/student/supplements/[id]/chapters/[chapterId]/route.ts` — PUT/DELETE chapitre
+- `src/app/api/student/supplements/[id]/chapters/[chapterId]/cards/route.ts` — POST carte
+- `src/app/api/student/supplements/[id]/chapters/[chapterId]/cards/[cardId]/route.ts` — PUT/DELETE carte
+- `src/app/api/student/available-courses/route.ts` — Cours disponibles pour attribution
+
+**Pages :**
+- `src/app/(dashboard)/student/revisions/page.tsx` — Liste suppléments
+- `src/app/(dashboard)/student/revisions/[id]/page.tsx` — Édition supplément
+
+**Composants :**
+- `src/components/features/student/revisions/RevisionsHeader.tsx` — Header avec bouton création
+- `src/components/features/student/revisions/RevisionsTabs.tsx` — Onglets de filtrage
+- `src/components/features/student/revisions/SupplementCard.tsx` — Card avec badges cours
+- `src/components/features/student/revisions/SupplementDetailHeader.tsx` — Header édition
+- `src/components/features/student/revisions/StudentChapterManager.tsx` — Gestionnaire chapitres
+- `src/components/features/student/revisions/StudentChapterItem.tsx` — Item chapitre éditable
+- `src/components/features/student/revisions/StudentCardItem.tsx` — Item carte éditable
+- `src/components/features/student/revisions/CourseAttributionDialog.tsx` — Dialog multi-select
+
+| # | Tâche | Fichier | Validation |
+|:--|:------|:--------|:-----------|
+| 8.3b.1 | ✅ Schema | `prisma/schema.prisma` | Many-to-many courses |
+| 8.3b.2 | ✅ APIs CRUD | `/api/student/supplements/*` | Complet |
+| 8.3b.3 | ✅ Page liste | `revisions/page.tsx` | Avec tabs filtres |
+| 8.3b.4 | ✅ Page édition | `revisions/[id]/page.tsx` | Interface prof miroir |
+| 8.3b.5 | ✅ Chapitres | `StudentChapterManager.tsx` | Inline editing |
+| 8.3b.6 | ✅ Cartes | `StudentCardItem.tsx` | 5 types, icônes colorées |
+| 8.3b.7 | ✅ Attribution | `CourseAttributionDialog.tsx` | Checkboxes multi-select |
+| 8.3b.8 | ✅ Integration | Section suppléments dans cours | Accordéon + modal |
 
 ---
 
@@ -402,17 +482,24 @@ Réutiliser `ProfileModal` créé en Phase 7.
 - [ ] Dashboard → 4 KPIs affichés avec bonnes valeurs
 - [ ] Dashboard → Dernières notes visibles
 - [ ] Dashboard → Prochaines deadlines visibles
-- [ ] Mes Cours → Liste filtrée par classe
-- [ ] Mes Cours → Progression par cours
-- [ ] Détail Cours → Chapitres + Sections navigables
-- [ ] Détail Cours → Marquer section terminée
+- [x] Mes Cours → Liste filtrée par classe ✅
+- [x] Mes Cours → Progression par cours ✅
+- [x] Mes Cours → KPIs scores (Continu, Quiz, Exercices, Score IA) ✅
+- [x] Détail Cours → Chapitres + Sections navigables ✅
+- [x] Détail Cours → Marquer section terminée ✅
+- [x] Détail Cours → Section suppléments avec accordéon ✅
+- [x] Mes Révisions → Liste suppléments ✅
+- [x] Mes Révisions → Création/édition suppléments ✅
+- [x] Mes Révisions → Attribution multi-cours ✅
+- [x] Mes Révisions → 5 types de cartes (Note, Leçon, Vidéo, Exercice, Quiz) ✅
 - [ ] Exercices → Liste avec statuts
 - [ ] Exercices → Vue calendrier
 - [ ] Messagerie → Chat classe fonctionne
 - [ ] Messagerie → Message privé prof fonctionne
 
 **Tests sécurité** :
-- [ ] Élève voit seulement ses cours (sa classe)
+- [x] Élève voit seulement ses cours (sa classe) ✅
+- [x] Supplément lié uniquement aux cours accessibles ✅
 - [ ] Impossible de voir progression d'un autre élève
 - [ ] Messages uniquement avec sa classe
 
@@ -433,12 +520,16 @@ Réutiliser `ProfileModal` créé en Phase 7.
 ## ✅ Checklist fin de phase
 
 - [ ] Dashboard avec 4 KPIs + dernières notes + deadlines
-- [ ] Mes Cours avec progression et filtres
-- [ ] Détail cours avec chapitres/sections navigables
+- [x] Mes Cours avec progression et filtres ✅
+- [x] Détail cours avec chapitres/sections navigables ✅
+- [x] Détail cours avec KPIs scores ✅
+- [x] Mes Révisions complet (CRUD suppléments) ✅
+- [x] Attribution suppléments multi-cours ✅
+- [x] Suppléments visibles sur page cours ✅
 - [ ] Mes Exercices avec statuts et calendrier
 - [ ] Messagerie classe + profs
-- [ ] Aucun fichier > 350 lignes
-- [ ] Composants partagés réutilisés
+- [x] Aucun fichier > 350 lignes ✅
+- [x] Composants partagés réutilisés ✅
 
 ---
 
@@ -448,4 +539,4 @@ Réutiliser `ProfileModal` créé en Phase 7.
 
 ---
 
-*Lignes : ~330 | Dernière MAJ : 2026-01-02*
+*Lignes : ~450 | Dernière MAJ : 2026-01-03*

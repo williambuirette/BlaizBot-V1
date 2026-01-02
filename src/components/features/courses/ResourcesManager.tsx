@@ -23,6 +23,10 @@ import {
   FileText,
   Image,
   File,
+  FileSpreadsheet,
+  Presentation,
+  Video,
+  Music,
   Table,
   FolderOpen,
   Loader2,
@@ -60,6 +64,28 @@ interface ResourceWithOrder extends Resource {
 
 interface ResourcesManagerProps {
   courseId: string;
+}
+
+// Icône colorée selon le type de fichier
+function getCourseFileIcon(fileType: string) {
+  switch (fileType) {
+    case 'pdf':
+      return <FileText className="h-6 w-6 text-red-500" />;
+    case 'word':
+      return <FileText className="h-6 w-6 text-blue-500" />;
+    case 'excel':
+      return <FileSpreadsheet className="h-6 w-6 text-green-500" />;
+    case 'powerpoint':
+      return <Presentation className="h-6 w-6 text-orange-500" />;
+    case 'image':
+      return <Image className="h-6 w-6 text-purple-500" />;
+    case 'video':
+      return <Video className="h-6 w-6 text-pink-500" />;
+    case 'audio':
+      return <Music className="h-6 w-6 text-yellow-500" />;
+    default:
+      return <File className="h-6 w-6 text-gray-500" />;
+  }
 }
 
 // Mapping des icônes et labels par type
@@ -257,7 +283,7 @@ export function ResourcesManager({ courseId }: ResourcesManagerProps) {
                       key={file.id}
                       className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      <File className="h-6 w-6 text-muted-foreground shrink-0" />
+                      <div className="shrink-0">{getCourseFileIcon(file.fileType)}</div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate" title={file.filename}>
                           {file.filename}

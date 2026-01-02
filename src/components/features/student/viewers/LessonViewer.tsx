@@ -53,11 +53,14 @@ function formatFileSize(bytes?: number): string {
 }
 
 function getFileIcon(fileType: string) {
-  if (fileType.startsWith('image/')) return <FileImage className="h-4 w-4" />;
-  if (fileType.startsWith('video/')) return <FileVideo className="h-4 w-4" />;
-  if (fileType.startsWith('audio/')) return <FileAudio className="h-4 w-4" />;
+  if (fileType.startsWith('image/')) return <FileImage className="h-4 w-4 text-purple-500" />;
+  if (fileType.startsWith('video/')) return <FileVideo className="h-4 w-4 text-pink-500" />;
+  if (fileType.startsWith('audio/')) return <FileAudio className="h-4 w-4 text-yellow-500" />;
   if (fileType.includes('pdf')) return <FileText className="h-4 w-4 text-red-500" />;
-  return <File className="h-4 w-4" />;
+  if (fileType.includes('word') || fileType.includes('document')) return <FileText className="h-4 w-4 text-blue-500" />;
+  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return <FileText className="h-4 w-4 text-green-500" />;
+  if (fileType.includes('powerpoint') || fileType.includes('presentation')) return <FileText className="h-4 w-4 text-orange-500" />;
+  return <File className="h-4 w-4 text-gray-500" />;
 }
 
 function downloadFile(url: string, filename: string) {
