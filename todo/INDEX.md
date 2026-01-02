@@ -6,24 +6,46 @@
 
 ## 🎯 Phase Active
 
-**Phase actuelle** : Phase 7 Audit — Corrections TypeScript & Refactoring  
-**Prompts** : [prompts/phase-07-audit-refactoring.md](../prompts/phase-07-audit-refactoring.md)  
-**Étape en cours** : AUD-TS1 — Corriger `Class.color` manquant  
-**Dernière MAJ** : 2026-01-02
+**Phase actuelle** : Phase 8 — Interface Élève (5 Onglets)  
+**TODO** : [todo/phase-08-student-final.md](phase-08-student-final.md)  
+**Prompts** : [prompts/phase-08-student-final.md](../prompts/phase-08-student-final.md)  
+**Étape en cours** : Onglet 1 — Dashboard  
+**Dernière MAJ** : 2025-01-02
 
-### 🔴 BLOCKERS identifiés
+### 🧭 Navigation Élève (5 Onglets)
 
-| Tâche | Description | Statut |
-|:------|:------------|:-------|
-| AUD-TS1 | Corriger `Class.color` manquant | ⬜ |
-| AUD-TS2 | Corriger type `CustomToolbar` | ⬜ |
-| AUD-TS3 | Corriger `hours` undefined | ⬜ |
-| AUD-TS4 | Corriger prop `levels` manquante | ⬜ |
-| AUD-RH1 | Composant créé pendant render (AssignmentsManager) | ⬜ |
-| AUD-RH2 | Composant créé pendant render (ClassStudentsList) | ⬜ |
-| AUD-RH3 | setState dans useEffect (ProgressSheet) | ⬜ |
-| AUD-RH4 | setState dans useEffect (ProfileModal) | ⬜ |
-| AUD-RH5 | setState dans useEffect (useAssignDialogState) | ⬜ |
+| # | Onglet | Route | État |
+|:--|:-------|:------|:----:|
+| 1 | **Dashboard** | `/student` | ⚠️ Placeholder |
+| 2 | **Mes Cours** | `/student/courses` | ⚠️ Placeholder |
+| 3 | **Assignations** | `/student/assignments` | ❌ À créer |
+| 4 | **Assistant IA** | `/student/ai` | ✅ **FAIT** |
+| 5 | **Messages** | `/student/messages` | ⚠️ Placeholder |
+
+**Légende** : ✅ Implémenté | ⚠️ Placeholder | ❌ À créer
+
+### 📁 Fichiers de référence (archives)
+
+| Fichier | Statut |
+|:--------|:-------|
+| phase-08-student-v2.md | 📦 Archivé |
+| phase-08-student-old.md | 📦 Archivé |
+| phase-08-student-suite-old.md | 📦 Archivé |
+
+---
+
+## 🟢 FINALISÉ — Phase 7 Audit (Corrections)
+
+### Résumé
+- **7 erreurs TypeScript** corrigées
+- **5 erreurs React Hooks** corrigées  
+- **0 errors / 29 warnings** au lint final
+- **Build réussi** ✅
+
+### Commit
+```
+82eea7a fix: résoudre erreurs TypeScript et ESLint (Phase 7 Audit)
+```
 
 ---
 
