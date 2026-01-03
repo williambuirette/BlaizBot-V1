@@ -1,7 +1,7 @@
 // Types et configuration pour ResourcesManager
 
 import { Link, Youtube, FileText, File, Table, Image } from 'lucide-react';
-import type { ResourceType } from '../ResourceFormDialog';
+import type { ResourceType } from '../resource-dialog';
 
 // Type pour les fichiers uploadés (CourseFile)
 export interface CourseFile {

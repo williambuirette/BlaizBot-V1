@@ -3,5 +3,5 @@
 
 export { LessonViewer, type SectionFile } from './LessonViewer';
 export { VideoViewer } from './VideoViewer';
-export { QuizViewer } from './QuizViewer';
+export { QuizViewer } from './quiz';
 export { ExerciseViewer } from './ExerciseViewer';

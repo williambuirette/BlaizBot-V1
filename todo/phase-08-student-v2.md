@@ -1,7 +1,7 @@
 # 🎓 Phase 8 — Interface Élève (v2 - Améliorée)
 
 > **Objectif** : Interface élève complète, miroir du professeur avec KPIs et interactions  
-> **Statut** : � EN COURS (8.2 + 8.3 terminés)  
+> **Statut** : 🟡 EN COURS (8.2 + 8.3 + 8.3bis + 8.3c + 8.7 terminés)  
 > **Durée estimée** : 10-12h  
 > **Prérequis** : Phase 7 terminée (Prof fonctionnel)
 
@@ -530,6 +530,199 @@ Réutiliser `ProfileModal` créé en Phase 7.
 
 ---
 
+## 📋 Étape 8.7 — Agenda Élève (Calendrier + Événements Personnels) ✅ TERMINÉ
+
+### 🎯 Objectif
+Calendrier unifié affichant les assignations du professeur + les événements personnels de l'élève.
+
+### 📝 Comment
+Réutiliser les composants calendrier du professeur (`react-big-calendar`) avec adaptation pour 2 sources de données :
+1. **Assignations Prof** (lecture seule) : via `CourseAssignment` + `StudentProgress`
+2. **Événements Perso** (CRUD) : via `CalendarEvent` existant dans le schéma Prisma
+
+### 🔧 Architecture
+
+**Sources de données :**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AGENDA ÉLÈVE                              │
+├─────────────────────────────────────────────────────────────┤
+│  📘 Assignations Professeur (lecture seule)                  │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ CourseAssignment WHERE:                              │   │
+│  │   - studentId = {me}                                 │   │
+│  │   - OR classId = {myClass}                           │   │
+│  │ JOIN StudentProgress (pour mon statut)               │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  🟢 Événements Personnels (CRUD)                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ CalendarEvent WHERE ownerId = {me}                   │   │
+│  │   - isTeacherEvent = false                           │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Différences vs agenda prof :**
+| Aspect | Professeur | Élève |
+|--------|------------|-------|
+| Créer assignation | ✅ Wizard 7 étapes | ❌ Non |
+| Créer event perso | ❌ | ✅ Modal simple |
+| Voir assignations | Toutes (créées par lui) | Celles qui le concernent |
+| Filtres | Classe, élève, matière... | Type, Matière, Cours, Statut |
+| Couleurs | Couleur classe | 🔵 Prof / 🟢 Perso |
+| Actions | Éditer, supprimer tout | Éditer/supprimer perso uniquement |
+
+### 🔧 Par quel moyen
+- API `/api/student/agenda` fusionnant les 2 sources
+- Réutilisation de `AssignmentsCalendar.tsx` avec props adaptées
+- Nouveau `NewPersonalEventModal.tsx` simplifié
+- Filtres adaptés (Type, Matière, Cours, Statut)
+
+### 📝 Réalisations
+- ✅ Page `/student/agenda` avec vue calendrier et liste
+- ✅ Vue liste groupée par date (style professeur)
+- ✅ Cartes colorées par classe + type (bordure gauche couleur)
+- ✅ Filtres en cascade : Type → Prof (multi) → Matière (multi) → Cours → Statut → Période
+- ✅ Filtrage par plage de dates (dateRange)
+- ✅ KPIs réalistes : Total / En retard / Aujourd'hui / À venir
+- ✅ Cours SANS assignations apparaissent dans l'agenda (type: 'course')
+- ✅ Création d'événements personnels via modal
+- ✅ **Deadlines personnelles sur cours** via page détail cours (`/student/courses/[id]`)
+- ✅ Connexion avec l'interface professeur (`CourseAssignment.dueDate`)
+
+### 🔧 Fichiers créés/modifiés
+**Pages :**
+- `src/app/(dashboard)/student/agenda/page.tsx` — Orchestrateur vue
+- `src/app/(dashboard)/student/courses/[id]/page.tsx` — Carte Échéances ajoutée
+
+**APIs :**
+- `src/app/api/student/agenda/route.ts` — Fusion assignments + courses + events
+- `src/app/api/student/agenda/events/route.ts` — CRUD événements perso
+- `src/app/api/student/courses/[id]/deadline/route.ts` — GET/PUT/DELETE deadline perso cours
+
+**Composants :**
+- `src/components/features/student/agenda/StudentAgendaCalendar.tsx` — Calendrier react-big-calendar
+- `src/components/features/student/agenda/StudentAgendaList.tsx` — Liste groupée par date
+- `src/components/features/student/agenda/StudentAgendaFilters.tsx` — Filtres cascade + dateRange
+- `src/components/features/student/agenda/AgendaStats.tsx` — 4 KPIs (Total, Retard, Aujourd'hui, À venir)
+- `src/components/features/student/agenda/NewPersonalEventModal.tsx` — Création événement
+- `src/components/features/student/agenda/index.ts` — Exports centralisés
+
+| # | Tâche | Fichier | Validation | Statut |
+|:--|:------|:--------|:-----------|:------:|
+| 8.7.1 | API GET Agenda | `GET /api/student/agenda` | Fusion assignments + events | ✅ |
+| 8.7.2 | API CRUD Events | `POST/PUT/DELETE /api/student/agenda/events` | Événements perso | ✅ |
+| 8.7.3 | Page Agenda | `student/agenda/page.tsx` | < 150 lignes | ✅ |
+| 8.7.4 | Calendrier | `StudentAgendaCalendar.tsx` | Réutiliser react-big-calendar | ✅ |
+| 8.7.5 | Liste | `StudentAgendaList.tsx` | Vue liste avec filtres | ✅ |
+| 8.7.6 | Filtres | `StudentAgendaFilters.tsx` | Type, Matière, Cours, Statut | ✅ |
+| 8.7.7 | Modal Event | `NewPersonalEventModal.tsx` | Titre, Description, Dates, Récurrence | ✅ |
+| 8.7.8 | Stats | `AgendaStats.tsx` | À faire / Terminé / Events perso | ✅ |
+| 8.7.9 | Index Export | `index.ts` | Exports centralisés | ✅ |
+| 8.7.10 | Deadlines Cours | `deadline/route.ts` + page cours | Échéances perso sur cours | ✅ |
+
+### 💡 INSTRUCTION 8.7 (Agenda Élève)
+
+```markdown
+## Contexte
+Tu travailles sur BlaizBot-V1 (Next.js 15, TypeScript, Prisma, shadcn/ui).
+L'élève est connecté, son ID est dans `session.user.id`.
+L'interface doit être cohérente avec l'agenda professeur (`teacher/assignments`).
+
+## Sources de vérité (CODE de référence)
+- `src/app/(dashboard)/teacher/assignments/page.tsx` — Page agenda prof
+- `src/components/features/assignments/AssignmentsCalendar.tsx` — Calendrier
+- `src/components/features/assignments/AssignmentsList.tsx` — Vue liste
+- `src/components/features/assignments/types.ts` — Types partagés
+
+## Schéma Prisma existant
+- `CourseAssignment` : Assignations du prof (targetType: CLASS|TEAM|STUDENT)
+- `StudentProgress` : Statut de l'élève sur une assignation
+- `CalendarEvent` : Événements perso (ownerId, isTeacherEvent=false)
+
+## Ta mission
+
+### 1. API `GET /api/student/agenda`
+Retourne 2 tableaux fusionnés en 1 :
+- **teacherAssignments** : CourseAssignment WHERE (studentId=me OR classId=myClass)
+  - Inclure : Course, Chapter, Section, StudentProgress (mon statut)
+  - Couleur selon priorité (HIGH=rouge, MEDIUM=orange, LOW=vert)
+- **personalEvents** : CalendarEvent WHERE ownerId=me AND isTeacherEvent=false
+  - Couleur verte pour différencier
+
+Query params de filtrage :
+- `type` : 'all' | 'teacher' | 'personal'
+- `subjectId` : filtrer par matière
+- `courseId` : filtrer par cours
+- `status` : 'all' | 'pending' | 'completed'
+
+### 2. API CRUD `/api/student/agenda/events`
+- POST : Créer CalendarEvent (ownerId=me, isTeacherEvent=false)
+- PUT : Modifier SI ownerId=me
+- DELETE : Supprimer SI ownerId=me
+
+Body création :
+{
+  title: string,
+  description?: string,
+  startDate: ISO8601,
+  endDate: ISO8601,
+  courseId?: string (optionnel, pour lier à un cours)
+}
+
+### 3. Composant `StudentAgendaCalendar.tsx`
+Réutiliser la logique de `AssignmentsCalendar.tsx` :
+- react-big-calendar avec localizer FR
+- Vues : Mois, Semaine, Jour, Agenda
+- Clic sur date → Affiche les events du jour
+- Clic sur event → Ouvre détail/édition (si perso) ou readonly (si prof)
+
+Différences :
+- Légende avec 2 couleurs (🔵 Prof / 🟢 Perso)
+- Bouton "Ajouter objectif personnel" visible
+
+### 4. Composant `NewPersonalEventModal.tsx`
+Modal simple (pas wizard) :
+- Titre (obligatoire)
+- Description (optionnel)
+- Date/heure début (obligatoire)
+- Date/heure fin (obligatoire)
+- Lier à un cours (optionnel, select)
+- Récurrence ? (optionnel : quotidien, hebdo, mensuel)
+
+### 5. Composant `StudentAgendaFilters.tsx`
+Barre de filtres horizontale :
+- [Type ▼] : Tous | Prof | Perso
+- [Matière ▼] : Liste des matières de ma classe
+- [Cours ▼] : Filtré par matière sélectionnée
+- [Statut ▼] : Tous | À faire | Terminé
+
+### 6. Layout de la page
+┌────────────────────────────────────────────────────────────────┐
+│ Mon Agenda                          [Calendrier] [Liste] [+ Objectif] │
+├────────────────────────────────────────────────────────────────┤
+│ [Type ▼] [Matière ▼] [Cours ▼] [Statut ▼]    [Rafraîchir 🔄]   │
+├────────────────────────────────────────────────────────────────┤
+│ ┌─────────┬─────────┬─────────┐                                │
+│ │ À faire │ Terminé │ Mes obj │ ← Stats compteurs              │
+│ │    5    │    12   │    3    │                                │
+│ └─────────┴─────────┴─────────┘                                │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │              [Calendrier react-big-calendar]              │ │
+│  │  Légende : 🔵 Assignations prof  🟢 Mes objectifs         │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+
+## Code de référence
+Voir prompts/phase-08-student-v2.md section 8.7
+```
+
+---
+
 ## 🧪 TEST CHECKPOINT 8.A — Validation
 
 > ⚠️ **OBLIGATOIRE** : Tests fonctionnels complets
@@ -557,6 +750,10 @@ Réutiliser `ProfileModal` créé en Phase 7.
 - [x] Mes Révisions → 5 types de cartes (Note, Leçon, Vidéo, Exercice, Quiz) ✅
 - [ ] Exercices → Liste avec statuts
 - [ ] Exercices → Vue calendrier
+- [x] Agenda → Calendrier avec assignations prof + events perso ✅
+- [x] Agenda → Création événement personnel ✅
+- [x] Agenda → Filtres (Type, Matière, Cours, Statut) ✅
+- [x] Agenda → Différenciation couleurs (prof vs perso) ✅
 - [ ] Messagerie → Chat classe fonctionne
 - [ ] Messagerie → Message privé prof fonctionne
 
@@ -591,9 +788,115 @@ Réutiliser `ProfileModal` créé en Phase 7.
 - [x] Suppléments visibles sur page cours ✅
 - [x] Modale visualisation cartes corrigée (HTML, Vidéo, Quiz, Exercice) ✅
 - [ ] Mes Exercices avec statuts et calendrier
+- [x] **Agenda Élève avec assignations prof + events perso** ✅
 - [ ] Messagerie classe + profs
-- [ ] **Refactorisation 19 fichiers > 350 lignes** → [refactoring-350-lines.md](refactoring-350-lines.md)
-- [ ] Composants partagés réutilisés
+- [x] **Refactorisation fichiers > 350 lignes** ✅ (8.R en cours)
+- [x] Composants partagés réutilisés ✅
+
+---
+
+## 📋 Étape 8.R — Refactorisation (Fichiers > 350 lignes) 🔄 EN COURS
+
+### 🎯 Objectif
+Réduire tous les fichiers au-dessous de 350 lignes en extrayant des composants/hooks réutilisables.
+
+### 📊 Audit initial (16 fichiers)
+
+| Priorité | Fichier | Lignes | Action |
+|:--------:|---------|-------:|--------|
+| 🔴 1 | `StudentAgendaFilters.tsx` | 424 | Utiliser composants partagés |
+| 🔴 2 | `StudentCoursesFiltersMulti.tsx` | 417 | Utiliser composants partagés |
+| 🔴 3 | `QuizViewer.tsx` | 439 | Extraire Question, Results, Timer |
+| 🟠 4 | `ResourceFormDialog.tsx` | 430 | Extraire TypeSelector, Preview |
+| 🟠 5 | `NewAssignmentModal.tsx` | 428 | Extraire useAssignmentSubmit hook |
+| 🟠 6 | `stats-service.ts` | 460 | ⚠️ Acceptable (service cohérent) |
+| 🟠 7 | `QuizEditorInline.tsx` x2 | 351+351 | **Mutualiser** dans shared/ |
+| 🟡 8 | `AssignmentsManager.tsx` | 413 | Extraire helpers |
+| 🟡 9 | `ExercisesManager.tsx` | 394 | Extraire helpers |
+| 🟡 10 | `ExerciseEditor.tsx` | 386 | Extraire sous-composants |
+| 🟡 11 | `assignments/route.ts` | 385 | Extraire helpers API |
+| 🟡 12 | `ConversationsList.tsx` | 355 | Extraire ConversationItem |
+| 🟡 13 | `StudentChapterManager.tsx` | 353 | Réutiliser composants prof |
+| 🟡 14 | `SectionCard.tsx` | 352 | Extraire variantes |
+
+### 🔧 Plan micro-commits
+
+| # | Tâche | Fichier(s) | Validation | Statut |
+|:--|:------|:-----------|:-----------|:------:|
+| 8.R.1 | Créer `MultiSelectDropdown.tsx` | `shared/filters/` | Composant réutilisable | ✅ |
+| 8.R.2 | Créer `SingleSelectDropdown.tsx` | `shared/filters/` | Composant réutilisable | ✅ |
+| 8.R.3 | Refactor `StudentAgendaFilters.tsx` | 424 → 306 lignes | Utiliser shared/ | ✅ |
+| 8.R.4 | Refactor `StudentCoursesFiltersMulti.tsx` | 417 → 197 lignes | Utiliser shared/ | ✅ |
+| 8.R.5 | Mutualiser `QuizEditorInline.tsx` | shared/inline-editors/quiz-editor/ | -351 lignes (doublon) | ✅ |
+| 8.R.6 | Extraire sous-composants `QuizViewer` | viewers/quiz/ | 439 → 210+214+54 lignes | ✅ |
+| 8.R.7 | *(Fusionné avec 8.R.6)* | - | - | ✅ |
+| 8.R.8 | Extraire `ResourceFormDialog` | courses/resource-dialog/ | 431 → 258+180+72 lignes | ✅ |
+| 8.R.9 | Extraire `useAssignmentSubmit.ts` | assignments/ | 429 → 258+189+59 lignes | ✅ |
+| 8.R.10 | Extraire `ConversationItem.tsx` | messages/ | 356 → 216+106+88 lignes | ✅ |
+
+### 📁 Composants partagés créés
+
+```
+src/components/shared/
+├── filters/
+│   ├── index.ts
+│   ├── MultiSelectDropdown.tsx   ← ✅ Créé
+│   └── SingleSelectDropdown.tsx  ← ✅ Créé
+├── inline-editors/
+│   ├── quiz-editor/              ← ✅ Mutualisé
+│   │   ├── index.ts
+│   │   ├── QuizEditorInline.tsx  (232 lignes)
+│   │   ├── QuestionCard.tsx      (80 lignes)
+│   │   ├── OptionsSection.tsx    (121 lignes)
+│   │   └── types.ts
+│   ├── video-editor/
+│   └── exercise-editor/
+└── viewers/
+    └── (voir student/viewers/)
+
+src/components/features/student/viewers/quiz/  ← ✅ Extrait (8.R.6)
+├── index.ts
+├── QuizViewer.tsx         (210 lignes)
+├── QuizSubComponents.tsx  (214 lignes)
+└── types.ts               (54 lignes)
+
+src/components/features/teacher/courses/resource-dialog/  ← ✅ Extrait (8.R.8)
+├── index.ts
+├── ResourceFormDialog.tsx (258 lignes)
+├── FileUploadZone.tsx     (180 lignes)
+└── types.ts               (72 lignes)
+
+src/components/features/teacher/assignments/  ← ✅ Extrait (8.R.9)
+├── NewAssignmentModal.tsx (258 lignes)
+├── useAssignmentSubmit.ts (189 lignes)
+└── StepProgressBar.tsx    (59 lignes)
+
+src/components/features/shared/messages/  ← ✅ Extrait (8.R.10)
+├── ConversationsList.tsx  (216 lignes)
+├── ConversationItem.tsx   (106 lignes)
+└── types.ts               (88 lignes)
+```
+
+### 💡 INSTRUCTION 8.R (Refactorisation)
+
+```markdown
+## Contexte
+Tu travailles sur BlaizBot-V1 (Next.js 15, TypeScript, shadcn/ui).
+Règle CRITIQUE : **Aucun fichier > 350 lignes** (sauf configs, lock, generated).
+
+## Principe
+- Extraire sans changer le comportement
+- Micro-commits atomiques et réversibles
+- Vérifier lint + build après chaque étape
+- Réutiliser les composants existants avant d'en créer
+
+## Composants partagés disponibles
+- `MultiSelectDropdown` : Dropdown multi-select avec checkboxes
+- `SingleSelectDropdown` : Dropdown single-select
+
+## Code de référence
+Voir prompts/phase-08-student-v2.md section 8.R
+```
 
 ---
 
@@ -603,4 +906,4 @@ Réutiliser `ProfileModal` créé en Phase 7.
 
 ---
 
-*Lignes : ~520 | Dernière MAJ : 2026-01-03*
+*Lignes : ~770 | Dernière MAJ : 2026-01-03*

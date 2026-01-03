@@ -3,15 +3,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -35,7 +39,11 @@ import {
   Music,
   Download, 
   ExternalLink, 
-  User 
+  User,
+  CalendarDays,
+  Clock,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { StudentChaptersViewer } from '@/components/features/student/StudentChaptersViewer';
 import { CourseScoreKPIs } from '@/components/shared/CourseScoreKPIs';
@@ -44,7 +52,7 @@ import { Plus, Layers, FileText as NoteIcon, BookOpen as LessonIcon, Video as Vi
 
 // Viewers pour les différents types de cartes
 import { VideoViewer } from '@/components/features/student/viewers/VideoViewer';
-import { QuizViewer } from '@/components/features/student/viewers/QuizViewer';
+import { QuizViewer } from '@/components/features/student/viewers/quiz';
 import { ExerciseViewer } from '@/components/features/student/viewers/ExerciseViewer';
 
 interface CourseFile {
@@ -587,11 +595,92 @@ function getCardTypeBadge(cardType: string) {
 // Composant Onglet Informations
 // ============================================
 
+interface DeadlineData {
+  personal: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    description: string | null;
+  } | null;
+  teacher: {
+    id: string;
+    title: string;
+    startDate: string | null;
+    dueDate: string | null;
+  } | null;
+}
+
 interface CourseInfoTabProps {
   course: CourseData;
 }
 
 function CourseInfoTab({ course }: CourseInfoTabProps) {
+  const [deadlines, setDeadlines] = useState<DeadlineData | null>(null);
+  const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [personalStart, setPersonalStart] = useState<Date | undefined>(undefined);
+  const [personalEnd, setPersonalEnd] = useState<Date | undefined>(undefined);
+
+  // Charger les deadlines au montage
+  useEffect(() => {
+    async function fetchDeadlines() {
+      try {
+        const res = await fetch(`/api/student/courses/${course.id}/deadline`);
+        const json = await res.json();
+        if (json.success) {
+          setDeadlines(json.data);
+          if (json.data.personal) {
+            setPersonalStart(new Date(json.data.personal.startDate));
+            setPersonalEnd(new Date(json.data.personal.endDate));
+          }
+        }
+      } catch (error) {
+        console.error('Erreur chargement deadlines:', error);
+      }
+    }
+    fetchDeadlines();
+  }, [course.id]);
+
+  const handleSaveDeadline = async () => {
+    if (!personalEnd) return;
+    
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/student/courses/${course.id}/deadline`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startDate: personalStart?.toISOString(),
+          endDate: personalEnd.toISOString(),
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setDeadlines((prev) => prev ? { ...prev, personal: json.data } : { personal: json.data, teacher: null });
+        setDeadlineModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde deadline:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteDeadline = async () => {
+    setSaving(true);
+    try {
+      await fetch(`/api/student/courses/${course.id}/deadline`, { method: 'DELETE' });
+      setDeadlines((prev) => prev ? { ...prev, personal: null } : null);
+      setPersonalStart(undefined);
+      setPersonalEnd(undefined);
+      setDeadlineModalOpen(false);
+    } catch (error) {
+      console.error('Erreur suppression deadline:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Compter les sections par type
   const totalSections = course.chapters.reduce((acc, ch) => acc + ch.sections.length, 0);
   const exerciseSections = course.chapters.reduce(
@@ -667,6 +756,147 @@ function CourseInfoTab({ course }: CourseInfoTabProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Échéances */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5" />
+                  Échéances
+                </CardTitle>
+                <CardDescription>
+                  Deadline du professeur et votre objectif personnel
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setDeadlineModalOpen(true)}
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                {deadlines?.personal ? 'Modifier' : 'Définir ma deadline'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Deadline du prof */}
+              <div className="p-4 rounded-lg border bg-blue-50/50 border-blue-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-900">Échéance professeur</span>
+                </div>
+                {deadlines?.teacher ? (
+                  <div className="space-y-1">
+                    <p className="text-sm text-blue-800">
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      <strong>Deadline :</strong> {format(new Date(deadlines.teacher.dueDate!), 'PPP', { locale: fr })}
+                    </p>
+                    {deadlines.teacher.startDate && (
+                      <p className="text-xs text-blue-600">
+                        Début : {format(new Date(deadlines.teacher.startDate), 'PPP', { locale: fr })}
+                      </p>
+                    )}
+                    <p className="text-xs text-blue-600 mt-1">
+                      {deadlines.teacher.title}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune deadline définie par le professeur
+                  </p>
+                )}
+              </div>
+
+              {/* Deadline personnelle */}
+              <div className="p-4 rounded-lg border bg-purple-50/50 border-purple-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarDays className="h-4 w-4 text-purple-600" />
+                  <span className="font-medium text-purple-900">Mon objectif personnel</span>
+                </div>
+                {deadlines?.personal ? (
+                  <div className="space-y-1">
+                    <p className="text-sm text-purple-800">
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      <strong>Deadline :</strong> {format(new Date(deadlines.personal.endDate), 'PPP', { locale: fr })}
+                    </p>
+                    <p className="text-xs text-purple-600">
+                      Début : {format(new Date(deadlines.personal.startDate), 'PPP', { locale: fr })}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Cliquez sur &quot;Définir ma deadline&quot; pour créer votre objectif
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Modal définition deadline */}
+        <Dialog open={deadlineModalOpen} onOpenChange={setDeadlineModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Définir ma deadline personnelle</DialogTitle>
+              <DialogDescription>
+                Fixez-vous un objectif pour terminer ce cours
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Date de début (optionnel)</p>
+                <Calendar
+                  mode="single"
+                  selected={personalStart}
+                  onSelect={setPersonalStart}
+                  locale={fr}
+                  className="rounded-md border"
+                />
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium mb-2">Date de fin (deadline) *</p>
+                <Calendar
+                  mode="single"
+                  selected={personalEnd}
+                  onSelect={setPersonalEnd}
+                  locale={fr}
+                  className="rounded-md border"
+                />
+              </div>
+
+              {personalEnd && (
+                <p className="text-sm text-muted-foreground">
+                  Deadline : <strong>{format(personalEnd, 'PPP', { locale: fr })}</strong>
+                </p>
+              )}
+            </div>
+
+            <DialogFooter className="flex gap-2">
+              {deadlines?.personal && (
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteDeadline}
+                  disabled={saving}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Supprimer
+                </Button>
+              )}
+              <Button
+                onClick={handleSaveDeadline}
+                disabled={!personalEnd || saving}
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Fichiers / Ressources */}
         <Card className="md:col-span-2">

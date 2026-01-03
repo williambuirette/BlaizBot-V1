@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,41 +17,19 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { Search, MessageSquare, User, Users, School, BookOpen, ChevronDown } from 'lucide-react';
+import { Search, MessageSquare, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Participant {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-}
+import { ConversationItem } from './ConversationItem';
+import {
+  categoryConfig,
+  getConversationCategory,
+  getCurrentSchoolYear,
+} from './types';
+import type { Conversation, Category } from './types';
 
-interface LastMessage {
-  id: string;
-  content: string;
-  senderId: string;
-  senderName: string;
-  createdAt: string;
-}
-
-interface CourseRef {
-  id: string;
-  title: string;
-}
-
-export interface Conversation {
-  id: string;
-  type: 'PRIVATE' | 'CLASS_GENERAL' | 'CLASS_TOPIC';
-  topicName: string | null;
-  subject: { id: string; name: string } | null;
-  course?: CourseRef | null;
-  participants: Participant[];
-  lastMessage: LastMessage | null;
-  updatedAt: string;
-  schoolYear?: string;
-  unreadCount?: number;
-}
+// Re-export types for backward compatibility
+export type { Conversation } from './types';
 
 interface ConversationsListProps {
   conversations: Conversation[];
@@ -61,49 +37,6 @@ interface ConversationsListProps {
   onSelect: (conversation: Conversation) => void;
   currentUserId: string;
 }
-
-type Category = 'private' | 'group' | 'class';
-
-function getCurrentSchoolYear(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  if (month >= 8) {
-    return `${year}-${year + 1}`;
-  }
-  return `${year - 1}-${year}`;
-}
-
-function getConversationCategory(conv: Conversation): Category {
-  if (conv.type === 'CLASS_GENERAL' || conv.type === 'CLASS_TOPIC') {
-    return 'class';
-  }
-  if (conv.participants.length > 1) {
-    return 'group';
-  }
-  return 'private';
-}
-
-const categoryConfig = {
-  private: {
-    label: 'Conversations privées',
-    icon: User,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-  },
-  group: {
-    label: 'Groupes',
-    icon: Users,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-  },
-  class: {
-    label: 'Classes',
-    icon: School,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-  },
-};
 
 export function ConversationsList({
   conversations,
@@ -172,89 +105,8 @@ export function ConversationsList({
     return counts;
   }, [filteredConversations]);
 
-  const getConversationTitle = (conv: Conversation) => {
-    if (conv.topicName) return conv.topicName;
-    if (conv.participants.length === 1 && conv.participants[0]) {
-      const p = conv.participants[0];
-      return `${p.firstName} ${p.lastName}`;
-    }
-    return conv.participants.map((p) => p.firstName).join(', ');
-  };
-
   const toggleCategory = (category: Category) => {
     setOpenCategories((prev) => ({ ...prev, [category]: !prev[category] }));
-  };
-
-  const renderConversationItem = (conv: Conversation) => {
-    const category = getConversationCategory(conv);
-    const config = categoryConfig[category];
-
-    return (
-      <button
-        key={conv.id}
-        onClick={() => onSelect(conv)}
-        className={cn(
-          'w-full text-left p-3 rounded-lg transition-colors',
-          'hover:bg-accent',
-          selectedId === conv.id && 'bg-accent ring-2 ring-primary/20'
-        )}
-      >
-        <div className="flex items-start gap-3">
-          <div className={cn('flex h-10 w-10 items-center justify-center rounded-full relative', config.bgColor)}>
-            <config.icon className={cn('h-5 w-5', config.color)} />
-            {conv.unreadCount && conv.unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full">
-                {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
-              </span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <span className={cn(
-                'font-medium truncate',
-                conv.unreadCount && conv.unreadCount > 0 && 'font-semibold'
-              )}>
-                {getConversationTitle(conv)}
-              </span>
-              {conv.lastMessage && (
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {formatDistanceToNow(new Date(conv.lastMessage.createdAt), {
-                    addSuffix: true,
-                    locale: fr,
-                  })}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              {conv.course && (
-                <Badge variant="secondary" className="text-xs flex items-center gap-1 px-1.5 py-0">
-                  <BookOpen className="h-3 w-3" />
-                  {conv.course.title.length > 12 
-                    ? conv.course.title.substring(0, 12) + '...' 
-                    : conv.course.title}
-                </Badge>
-              )}
-              {conv.subject && !conv.course && (
-                <Badge variant="outline" className="text-xs px-1.5 py-0">
-                  {conv.subject.name}
-                </Badge>
-              )}
-            </div>
-            {conv.lastMessage && (
-              <p className={cn(
-                'text-sm truncate mt-1',
-                conv.unreadCount && conv.unreadCount > 0 
-                  ? 'text-foreground font-medium' 
-                  : 'text-muted-foreground'
-              )}>
-                {conv.lastMessage.senderId === currentUserId ? 'Vous: ' : ''}
-                {conv.lastMessage.content}
-              </p>
-            )}
-          </div>
-        </div>
-      </button>
-    );
   };
 
   const renderCategorySection = (category: Category) => {
@@ -289,7 +141,16 @@ export function ConversationsList({
           )} />
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-1 mt-1">
-          {convs.map(renderConversationItem)}
+          {convs.map((conv) => (
+            <ConversationItem
+              key={conv.id}
+              conversation={conv}
+              category={category}
+              isSelected={selectedId === conv.id}
+              currentUserId={currentUserId}
+              onClick={() => onSelect(conv)}
+            />
+          ))}
         </CollapsibleContent>
       </Collapsible>
     );

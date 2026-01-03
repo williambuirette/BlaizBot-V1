@@ -39,9 +39,11 @@ export async function GET() {
           select: {
             id: true,
             title: true,
-            Subject: { select: { name: true } },
+            subjectId: true,
+            Subject: { select: { id: true, name: true } },
             TeacherProfile: {
               select: {
+                id: true,
                 User: { select: { firstName: true, lastName: true } },
               },
             },
@@ -56,7 +58,11 @@ export async function GET() {
       .map((a) => ({
         id: a.Course!.id,
         title: a.Course!.title,
-        subject: a.Course!.Subject?.name || 'Autre',
+        subject: a.Course!.Subject ? {
+          id: a.Course!.Subject.id,
+          name: a.Course!.Subject.name,
+        } : null,
+        teacherId: a.Course!.TeacherProfile?.id || null,
         teacher: a.Course!.TeacherProfile?.User
           ? `${a.Course!.TeacherProfile.User.firstName} ${a.Course!.TeacherProfile.User.lastName}`
           : null,

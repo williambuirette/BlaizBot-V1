@@ -5,7 +5,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2, ExternalLink, Download, Youtube } from 'lucide-react';
-import type { Resource } from '../ResourceFormDialog';
+import type { Resource } from '../resource-dialog';
 import { resourceTypeConfig } from './types';
 
 interface ResourceItemProps {

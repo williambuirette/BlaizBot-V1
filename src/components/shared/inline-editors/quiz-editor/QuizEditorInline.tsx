@@ -1,39 +1,19 @@
-// src/components/features/courses/inline-editors/QuizEditorInline.tsx
-// Éditeur de quiz inline (sans Dialog) pour SectionCard
+// src/components/shared/inline-editors/quiz-editor/QuizEditorInline.tsx
+// Éditeur de quiz inline partagé (sans Dialog) pour SectionCard et StudentCardExpanded
 
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, GripVertical, Loader2, Sparkles } from 'lucide-react';
+import { Plus, Loader2, Sparkles } from 'lucide-react';
+import { QuestionCard } from './QuestionCard';
+import type { QuizQuestion, QuizEditorInlineProps } from './types';
 
-interface QuizQuestion {
-  id: string;
-  question: string;
-  options: string[];
-  correctAnswers: number[];
-  explanation?: string;
-}
-
-interface QuizContent {
-  questions: QuizQuestion[];
-  shuffleQuestions?: boolean;
-  shuffleOptions?: boolean;
-  showExplanation?: boolean;
-}
-
-interface QuizEditorInlineProps {
-  sectionId: string;
-  sectionTitle: string;
-  initialContent: QuizContent | null;
-  aiInstructions?: string;
-  onContentChange: (content: QuizContent) => void;
-  onAiInstructionsChange?: (instructions: string) => void;
-}
+// ============================================================================
+// Composant principal
+// ============================================================================
 
 export function QuizEditorInline({
   sectionTitle,
@@ -210,116 +190,17 @@ export function QuizEditorInline({
         </div>
       ) : (
         questions.map((q, qIndex) => (
-          <Card key={q.id}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                  <span className="font-medium">Question {qIndex + 1}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeQuestion(qIndex)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Énoncé de la question *</Label>
-                <Textarea
-                  placeholder="Posez votre question ici..."
-                  value={q.question}
-                  onChange={(e) => updateQuestion(qIndex, 'question', e.target.value)}
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Options de réponse</Label>
-                <p className="text-xs text-muted-foreground">
-                  ✅ Cliquez sur le bouton vert pour marquer la bonne réponse
-                </p>
-                <div className="space-y-2">
-                  {q.options.map((option, oIndex) => {
-                    const isCorrect = q.correctAnswers.includes(oIndex);
-                    return (
-                      <div 
-                        key={oIndex} 
-                        className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                          isCorrect 
-                            ? 'bg-green-50 border-green-500 dark:bg-green-900/20 dark:border-green-600' 
-                            : 'bg-background border-input hover:border-muted-foreground'
-                        }`}
-                      >
-                        <Button
-                          type="button"
-                          variant={isCorrect ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => toggleCorrectAnswer(qIndex, oIndex)}
-                          className={`h-8 w-8 p-0 rounded-full shrink-0 ${
-                            isCorrect 
-                              ? 'bg-green-600 hover:bg-green-700 border-green-600' 
-                              : 'border-2 border-gray-300 hover:border-green-500'
-                          }`}
-                        >
-                          {isCorrect ? '✓' : ''}
-                        </Button>
-                        <Input
-                          placeholder={`Option ${oIndex + 1}`}
-                          value={option}
-                          onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
-                          className={`flex-1 ${isCorrect ? 'border-green-300 dark:border-green-700' : ''}`}
-                        />
-                        {isCorrect && (
-                          <span className="text-xs text-green-600 font-semibold whitespace-nowrap bg-green-100 dark:bg-green-800 px-2 py-1 rounded">
-                            BONNE RÉPONSE
-                          </span>
-                        )}
-                        {q.options.length > 2 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeOption(qIndex, oIndex)}
-                            className="shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {q.correctAnswers.length === 0 && (
-                  <p className="text-xs text-orange-600">
-                    ⚠️ Veuillez sélectionner au moins une bonne réponse
-                  </p>
-                )}
-                {q.options.length < 6 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addOption(qIndex)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Ajouter une option
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Correction / Explication</Label>
-                <Textarea
-                  placeholder="Ex: La bonne réponse est B car..."
-                  value={q.explanation || ''}
-                  onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)}
-                  rows={2}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <QuestionCard
+            key={q.id}
+            question={q}
+            index={qIndex}
+            onRemove={() => removeQuestion(qIndex)}
+            onUpdateQuestion={(field, value) => updateQuestion(qIndex, field, value)}
+            onUpdateOption={(oIndex, value) => updateOption(qIndex, oIndex, value)}
+            onAddOption={() => addOption(qIndex)}
+            onRemoveOption={(oIndex) => removeOption(qIndex, oIndex)}
+            onToggleCorrectAnswer={(oIndex) => toggleCorrectAnswer(qIndex, oIndex)}
+          />
         ))
       )}
 

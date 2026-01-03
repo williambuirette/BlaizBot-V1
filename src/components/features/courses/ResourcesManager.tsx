@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ResourceFormDialog, type ResourceType, type Resource } from './ResourceFormDialog';
+import { ResourceFormDialog, type ResourceType, type Resource } from './resource-dialog';
 import { 
   CourseFile, 
   resourceTypeConfig, 

@@ -10,11 +10,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, ChevronRight, ChevronLeft, Check, BookOpen, FileText, HelpCircle, GraduationCap, Users, CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 import { useAssignmentForm } from './useAssignmentForm';
+import { useAssignmentSubmit } from './useAssignmentSubmit';
+import { StepProgressBar, STEPS } from './StepProgressBar';
 import {
   StepSubjects,
   StepCourses,
@@ -33,62 +33,46 @@ interface NewAssignmentModalProps {
   editingAssignment?: AssignmentWithDetails | null;
 }
 
-const STEPS = [
-  { id: 1, title: 'Matières', icon: BookOpen },
-  { id: 2, title: 'Cours', icon: FileText },
-  { id: 3, title: 'Contenus', icon: HelpCircle },
-  { id: 4, title: 'Classes', icon: Users },
-  { id: 5, title: 'Élèves', icon: GraduationCap },
-  { id: 6, title: 'Deadline', icon: CalendarIcon },
-  { id: 7, title: 'Validation', icon: Check },
-];
-
 export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssignment }: NewAssignmentModalProps) {
-  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!editingAssignment;
 
   const form = useAssignmentForm(open);
+  const { submit } = useAssignmentSubmit();
 
   // Pré-remplir en mode édition
   useEffect(() => {
     if (editingAssignment && open) {
-      // Pré-sélectionner le cours
       if (editingAssignment.Course) {
         form.setSelectedCourses([editingAssignment.Course.id]);
       }
-      // Pré-sélectionner la section si disponible
       if (editingAssignment.Section) {
         form.setSelectedSections([editingAssignment.Section.id]);
       }
-      // Pré-sélectionner la classe
       if (editingAssignment.Class) {
         form.setSelectedClasses([editingAssignment.Class.id]);
       }
-      // Pré-sélectionner l'élève
       if (editingAssignment.User_CourseAssignment_studentIdToUser) {
         form.setSelectedStudents([editingAssignment.User_CourseAssignment_studentIdToUser.id]);
       }
-      // Pré-remplir deadline et priorité
       if (editingAssignment.dueDate) {
         form.setDueDate(new Date(editingAssignment.dueDate));
       }
       form.setPriority(editingAssignment.priority);
       form.setInstructions(editingAssignment.instructions || '');
-      // Aller directement à l'étape deadline en mode édition
       setCurrentStep(6);
     }
   }, [editingAssignment, open]);
 
-  // Reset on close - use form.reset directly without form in deps
+  // Reset on close
   useEffect(() => {
     if (!open) {
       setCurrentStep(1);
     }
   }, [open]);
 
-  // Validation
+  // Validation par étape
   const canProceed = () => {
     switch (currentStep) {
       case 1: return true;
@@ -101,149 +85,24 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
     }
   };
 
-  // Submit (création ou mise à jour)
+  // Submit
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
     try {
-      // Combiner date + heure
-      let finalDueDate = form.dueDate;
-      if (finalDueDate && form.dueTime) {
-        const timeParts = form.dueTime.split(':').map(Number);
-        const hours = timeParts[0] ?? 23;
-        const minutes = timeParts[1] ?? 59;
-        finalDueDate = new Date(finalDueDate);
-        finalDueDate.setHours(hours, minutes, 0, 0);
-      } else if (finalDueDate) {
-        // Si pas d'heure spécifiée, mettre 23:59
-        finalDueDate = new Date(finalDueDate);
-        finalDueDate.setHours(23, 59, 0, 0);
-      }
-
-      // Mode édition : mise à jour de l'assignation existante
-      if (isEditing && editingAssignment) {
-        const response = await fetch(`/api/teacher/assignments/${editingAssignment.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: editingAssignment.title, // Garder le titre original
-            instructions: form.instructions,
-            dueDate: finalDueDate?.toISOString(),
-            priority: form.priority,
-          }),
-        });
-
-        if (response.ok) {
-          toast({
-            title: 'Assignation modifiée',
-            description: 'Les modifications ont été enregistrées',
-          });
-          onSuccess();
-        } else {
-          const json = await response.json();
-          throw new Error(json.error || 'Erreur mise à jour');
-        }
-        return;
-      }
-
-      // Mode création : logique existante
-      console.log('=== SUBMIT DEBUG ===');
-      console.log('selectedSections:', form.selectedSections);
-      console.log('selectedStudents:', form.selectedStudents);
-      
-      const assignments = [];
-      
-      // Si aucune section sélectionnée mais des cours sont sélectionnés, créer des assignations au niveau cours
-      if (form.selectedSections.length === 0 && form.selectedCourses.length > 0) {
-        console.log('Fallback: Création au niveau cours (pas de sections)');
-        for (const courseId of form.selectedCourses) {
-          const course = form.courses.find(c => c.id === courseId);
-          for (const studentId of form.selectedStudents) {
-            // Trouver la classe de l'étudiant
-            const student = form.students.find(s => s.id === studentId);
-            const classId = student?.classId || form.selectedClasses[0] || null;
-            
-            assignments.push({
-              courseId,
-              sectionId: null,
-              studentId,
-              classId,
-              targetType: 'STUDENT',
-              title: course?.title || 'Assignation',
-              instructions: form.instructions,
-              dueDate: finalDueDate?.toISOString(),
-              priority: form.priority,
-            });
-          }
-        }
-      } else {
-        // Mode normal avec sections
-        for (const sectionId of form.selectedSections) {
-          const section = form.sections.find(s => s.id === sectionId);
-          console.log(`Looking for section ${sectionId}:`, section);
-          if (!section) {
-            console.warn(`Section ${sectionId} non trouvée dans form.sections`);
-            continue;
-          }
-          const course = form.courses.find(c => c.id === section.courseId);
-          
-          for (const studentId of form.selectedStudents) {
-            // Trouver la classe de l'étudiant
-            const student = form.students.find(s => s.id === studentId);
-            const classId = student?.classId || form.selectedClasses[0] || null;
-            
-            assignments.push({
-              courseId: section.courseId,
-              sectionId,
-              studentId,
-              classId, // Ajout du classId pour les filtres
-              targetType: 'STUDENT',
-              title: `${course?.title || 'Cours'} - ${section.title}`,
-              instructions: form.instructions,
-              dueDate: finalDueDate?.toISOString(),
-              priority: form.priority,
-            });
-          }
-        }
-      }
-
-      console.log('Assignments to create:', assignments);
-      
-      if (assignments.length === 0) {
-        toast({
-          title: 'Aucune assignation',
-          description: 'Aucune assignation valide à créer. Vérifiez les sections et étudiants sélectionnés.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log('Sending POST to /api/teacher/assignments/bulk...');
-      const response = await fetch('/api/teacher/assignments/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignments }),
-      });
-      console.log('Response status:', response.status);
-
-      const json = await response.json();
-      console.log('Response JSON:', json);
-
-      if (json.success) {
-        toast({
-          title: 'Assignations créées',
-          description: `${assignments.length} assignation(s) créée(s) avec succès`,
-        });
-        onSuccess();
-      } else {
-        throw new Error(json.error || 'Erreur création');
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: error instanceof Error ? error.message : 'Erreur lors de la création',
-        variant: 'destructive',
+      await submit({
+        editingAssignment,
+        selectedCourses: form.selectedCourses,
+        selectedSections: form.selectedSections,
+        selectedStudents: form.selectedStudents,
+        selectedClasses: form.selectedClasses,
+        courses: form.courses,
+        sections: form.sections,
+        students: form.students,
+        dueDate: form.dueDate,
+        dueTime: form.dueTime,
+        priority: form.priority,
+        instructions: form.instructions,
+        onSuccess,
       });
     } finally {
       setIsSubmitting(false);
@@ -346,36 +205,7 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Modifier l\'assignation' : 'Nouvelle Assignation'}</DialogTitle>
-          {/* Progress steps - masquer en mode édition */}
-          {!isEditing && (
-            <>
-              <div className="flex items-center justify-between mt-4 px-2">
-                {STEPS.map((step, index) => (
-                  <div key={step.id} className="flex items-center">
-                    <div
-                      className={cn(
-                        'flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-colors',
-                        currentStep === step.id
-                          ? 'bg-primary text-primary-foreground'
-                          : currentStep > step.id
-                          ? 'bg-green-500 text-white'
-                          : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
-                    </div>
-                    {index < STEPS.length - 1 && (
-                      <div className={cn('w-8 h-0.5 mx-1', currentStep > step.id ? 'bg-green-500' : 'bg-muted')} />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground text-center mt-2">
-                Étape {currentStep} : {STEPS[currentStep - 1]?.title}
-              </p>
-            </>
-          )}
-          {/* Info assignation en mode édition */}
+          {!isEditing && <StepProgressBar currentStep={currentStep} />}
           {isEditing && editingAssignment && (
             <div className="mt-2 p-3 bg-muted/50 rounded-lg">
               <p className="font-medium">{editingAssignment.title}</p>
@@ -410,7 +240,7 @@ export function NewAssignmentModal({ open, onOpenChange, onSuccess, editingAssig
               Précédent
             </Button>
           )}
-          {currentStep < 7 && !isEditing ? (
+          {currentStep < STEPS.length && !isEditing ? (
             <Button onClick={() => setCurrentStep(currentStep + 1)} disabled={!canProceed()}>
               Suivant
               <ChevronRight className="h-4 w-4 ml-1" />
