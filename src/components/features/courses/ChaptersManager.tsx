@@ -1,30 +1,19 @@
-// src/components/features/courses/ChaptersManager.tsx
-// Gestionnaire de la structure des chapitres et sections d'un cours
+// ChaptersManager - Gestionnaire de la structure des chapitres et sections
+// Refactorisé : 473 → ~280 lignes
 
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import {
   Plus,
-  ChevronDown,
-  ChevronRight,
-  GripVertical,
-  Pencil,
-  Trash2,
   BookOpen,
   Loader2,
 } from 'lucide-react';
 import { ChapterFormDialog } from './ChapterFormDialog';
 import { SectionFormDialog } from './SectionFormDialog';
-import { SectionCard, type Section } from './SectionCard';
+import { type Section } from './SectionCard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,14 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-interface Chapter {
-  id: string;
-  title: string;
-  description: string | null;
-  order: number;
-  sections: Section[];
-  _count?: { sections: number };
-}
+import { Chapter, ChapterItem } from './chapters';
 
 interface ChaptersManagerProps {
   courseId: string;
@@ -73,7 +55,6 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
       if (res.ok) {
         const data = await res.json();
         setChapters(data);
-        // Expand all by default
         setExpandedChapters(new Set(data.map((c: Chapter) => c.id)));
       }
     } catch (error) {
@@ -87,7 +68,6 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
     fetchChapters();
   }, [fetchChapters]);
 
-  // Toggle chapter expansion
   const toggleChapter = (chapterId: string) => {
     setExpandedChapters((prev) => {
       const next = new Set(prev);
@@ -104,17 +84,13 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
   const handleChapterSubmit = async (data: { title: string; description?: string }) => {
     try {
       if (editingChapter) {
-        // Update
         const res = await fetch(`/api/teacher/chapters/${editingChapter.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-        if (res.ok) {
-          await fetchChapters();
-        }
+        if (res.ok) await fetchChapters();
       } else {
-        // Create
         const res = await fetch(`/api/teacher/courses/${courseId}/chapters`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -140,9 +116,7 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
       const res = await fetch(`/api/teacher/chapters/${deleteChapterId}`, {
         method: 'DELETE',
       });
-      if (res.ok) {
-        await fetchChapters();
-      }
+      if (res.ok) await fetchChapters();
     } catch (error) {
       console.error('Erreur delete chapter:', error);
     }
@@ -157,35 +131,19 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
   }) => {
     try {
       if (editingSection) {
-        // Update
-        console.log('Updating section:', editingSection.id, 'data:', data);
         const res = await fetch(`/api/teacher/sections/${editingSection.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-        console.log('Section update response:', res.status);
-        if (res.ok) {
-          await fetchChapters();
-        } else {
-          const errorText = await res.text();
-          console.error('Section update error:', errorText);
-        }
+        if (res.ok) await fetchChapters();
       } else if (selectedChapterId) {
-        // Create
-        console.log('Creating section for chapter:', selectedChapterId, 'data:', data);
         const res = await fetch(`/api/teacher/chapters/${selectedChapterId}/sections`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-        console.log('Section create response:', res.status);
-        if (res.ok) {
-          await fetchChapters();
-        } else {
-          const errorText = await res.text();
-          console.error('Section create error:', errorText);
-        }
+        if (res.ok) await fetchChapters();
       }
     } catch (error) {
       console.error('Erreur save section:', error);
@@ -197,32 +155,19 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
 
   // Delete section
   const handleDeleteSection = async () => {
-    console.log('handleDeleteSection called, deleteSectionId:', deleteSectionId);
-    if (!deleteSectionId) {
-      console.log('No deleteSectionId, returning');
-      return;
-    }
+    if (!deleteSectionId) return;
     try {
-      console.log('Calling DELETE /api/teacher/sections/' + deleteSectionId);
       const res = await fetch(`/api/teacher/sections/${deleteSectionId}`, {
         method: 'DELETE',
       });
-      console.log('DELETE response status:', res.status);
-      if (res.ok) {
-        console.log('DELETE successful, fetching chapters...');
-        await fetchChapters();
-        console.log('Chapters refetched');
-      } else {
-        const errorText = await res.text();
-        console.error('DELETE failed:', errorText);
-      }
+      if (res.ok) await fetchChapters();
     } catch (error) {
       console.error('Erreur delete section:', error);
     }
     setDeleteSectionId(null);
   };
 
-  // Open dialogs
+  // Open dialogs helpers
   const openCreateChapter = () => {
     setEditingChapter(null);
     setChapterDialogOpen(true);
@@ -289,7 +234,9 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
                   onDeleteSection={(sectionId) => setDeleteSectionId(sectionId)}
                   onContentSaved={fetchChapters}
                   expandedSectionId={expandedSectionId}
-                  onToggleSection={(sectionId) => setExpandedSectionId(expandedSectionId === sectionId ? null : sectionId)}
+                  onToggleSection={(sectionId) => 
+                    setExpandedSectionId(expandedSectionId === sectionId ? null : sectionId)
+                  }
                 />
               ))}
             </div>
@@ -325,7 +272,10 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteChapter} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction 
+              onClick={handleDeleteChapter} 
+              className="bg-destructive text-destructive-foreground"
+            >
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -337,136 +287,20 @@ export function ChaptersManager({ courseId }: ChaptersManagerProps) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer cette section ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteSection} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction 
+              onClick={handleDeleteSection} 
+              className="bg-destructive text-destructive-foreground"
+            >
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-}
-
-// ChapterItem component
-interface ChapterItemProps {
-  chapter: Chapter;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onAddSection: () => void;
-  onEditSection: (section: Section) => void;
-  onDeleteSection: (sectionId: string) => void;
-  onContentSaved: () => void;
-  expandedSectionId: string | null;
-  onToggleSection: (sectionId: string) => void;
-}
-
-function ChapterItem({
-  chapter,
-  isExpanded,
-  onToggle,
-  onEdit,
-  onDelete,
-  onAddSection,
-  onEditSection,
-  onDeleteSection,
-  onContentSaved,
-  expandedSectionId,
-  onToggleSection,
-}: ChapterItemProps) {
-  // Handler pour update section inline
-  const handleUpdateSection = async (sectionId: string, data: Partial<Section>) => {
-    try {
-      const res = await fetch(`/api/teacher/sections/${sectionId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        onContentSaved();
-      }
-    } catch (error) {
-      console.error('Erreur update section:', error);
-    }
-  };
-  return (
-    <Collapsible open={isExpanded} onOpenChange={onToggle}>
-      <div className="border rounded-lg">
-        {/* Chapter Header */}
-        <div className="flex items-center gap-2 p-3 bg-muted/50">
-          <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="p-0 h-auto">
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-          </CollapsibleTrigger>
-          <div className="flex-1">
-            <span className="font-medium">{chapter.title}</span>
-            {chapter.description && (
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {chapter.description}
-              </p>
-            )}
-          </div>
-          <Badge variant="secondary" className="text-xs">
-            {chapter.sections?.length || 0} section{(chapter.sections?.length || 0) > 1 ? 's' : ''}
-          </Badge>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Sections */}
-        <CollapsibleContent>
-          <div className="p-3 pt-0 space-y-2">
-            {!chapter.sections || chapter.sections.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic py-2 pl-8">
-                Aucune section dans ce chapitre
-              </p>
-            ) : (
-              chapter.sections.map((section) => (
-                <SectionCard
-                  key={section.id}
-                  section={section}
-                  chapterId={chapter.id}
-                  isExpanded={expandedSectionId === section.id}
-                  onToggle={() => onToggleSection(section.id)}
-                  onEdit={() => onEditSection(section)}
-                  onUpdate={(data) => handleUpdateSection(section.id, data)}
-                  onDelete={() => onDeleteSection(section.id)}
-                  onContentSaved={onContentSaved}
-                />
-              ))
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-8 text-muted-foreground"
-              onClick={onAddSection}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Ajouter une section
-            </Button>
-          </div>
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
   );
 }
 

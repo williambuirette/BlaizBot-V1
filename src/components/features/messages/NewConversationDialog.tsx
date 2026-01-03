@@ -1,3 +1,6 @@
+// NewConversationDialog - Refactorisé
+// 557 lignes → ~180 lignes (sous-composants extraits)
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,9 +16,6 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -23,44 +23,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Loader2, Users, User, School, BookOpen, Tag } from 'lucide-react';
+import { Plus, Loader2, School } from 'lucide-react';
 import { toast } from 'sonner';
 
-type ConversationType = 'individual' | 'group' | 'class';
-
-interface ClassOption {
-  id: string;
-  name: string;
-  level: string;
-  studentsCount: number;
-}
-
-interface StudentOption {
-  id: string;
-  userId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-interface CourseOption {
-  id: string;
-  title: string;
-}
+import {
+  ConversationType,
+  useClasses,
+  useStudents,
+  useCourses,
+  TypeSelector,
+  StudentList,
+  ContextSection,
+} from './new-conversation';
 
 interface NewConversationDialogProps {
   onConversationCreated?: () => void;
-}
-
-function getCurrentSchoolYear(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  if (month >= 8) {
-    return `${year}-${year + 1}`;
-  }
-  return `${year - 1}-${year}`;
 }
 
 export function NewConversationDialog({ onConversationCreated }: NewConversationDialogProps) {
@@ -71,117 +48,27 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const [topicName, setTopicName] = useState('');
-
-  const [classes, setClasses] = useState<ClassOption[]>([]);
-  const [students, setStudents] = useState<StudentOption[]>([]);
-  const [courses, setCourses] = useState<CourseOption[]>([]);
-
-  const [loadingClasses, setLoadingClasses] = useState(false);
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [loadingCourses, setLoadingCourses] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      // Délai pour s'assurer que la session est chargée
-      setTimeout(() => {
-        fetchClasses();
-        fetchCourses();
-      }, 100);
-    }
-  }, [open]);
+  const { classes, loading: loadingClasses } = useClasses(open);
+  const { students, loading: loadingStudents } = useStudents(selectedClass);
+  const { courses, loading: loadingCourses } = useCourses(open);
 
-  useEffect(() => {
-    if (selectedClass) {
-      fetchStudents(selectedClass);
-    } else {
-      setStudents([]);
-      setSelectedStudents([]);
-    }
-  }, [selectedClass]);
-
+  // Reset students selection when type changes
   useEffect(() => {
     setSelectedStudents([]);
   }, [type]);
 
-  async function fetchClasses() {
-    setLoadingClasses(true);
-    try {
-      console.log('🔄 Chargement classes...');
-      const res = await fetch('/api/teacher/classes');
-      console.log('📡 Response status:', res.status, res.statusText);
-      
-      if (!res.ok) {
-        const errorData = await res.text();
-        console.error('❌ Erreur response:', errorData);
-        throw new Error(`Erreur ${res.status}: ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      console.log('✅ Classes reçues:', data.classes?.length || 0);
-      setClasses(data.classes || []);
-    } catch (error) {
-      console.error('💥 Erreur fetchClasses:', error);
-      toast.error('Erreur lors du chargement des classes');
-    } finally {
-      setLoadingClasses(false);
-    }
-  }
-
-  async function fetchStudents(classId: string) {
-    setLoadingStudents(true);
-    try {
-      const res = await fetch(`/api/teacher/classes/${classId}/students`);
-      if (!res.ok) throw new Error('Erreur chargement élèves');
-      const data = await res.json();
-      setStudents(data.students || []);
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Erreur lors du chargement des élèves');
-    } finally {
-      setLoadingStudents(false);
-    }
-  }
-
-  async function fetchCourses() {
-    setLoadingCourses(true);
-    try {
-      const res = await fetch('/api/teacher/courses');
-      if (!res.ok) throw new Error('Erreur chargement cours');
-      const data = await res.json();
-      setCourses(data.courses || []);
-    } catch (error) {
-      console.error('Erreur:', error);
-    } finally {
-      setLoadingCourses(false);
-    }
-  }
-
   function handleStudentToggle(userId: string) {
-    console.log('🎦 AVANT Toggle student:', userId, 'Current selection:', selectedStudents, 'Type:', type);
-    
     if (type === 'individual') {
-      const newSelection = [userId];
-      console.log('🔄 Mode individual - Nouvelle sélection:', newSelection);
-      setSelectedStudents(newSelection);
+      setSelectedStudents([userId]);
     } else {
-      setSelectedStudents((prev) => {
-        const isCurrentlySelected = prev.includes(userId);
-        const newSelection = isCurrentlySelected 
-          ? prev.filter((id) => id !== userId) 
-          : [...prev, userId];
-        console.log('🔄 Mode group - Avant:', prev, 'Après:', newSelection);
-        return newSelection;
-      });
+      setSelectedStudents((prev) =>
+        prev.includes(userId)
+          ? prev.filter((id) => id !== userId)
+          : [...prev, userId]
+      );
     }
-  }
-
-  function selectAllStudents() {
-    setSelectedStudents(students.map((s) => s.userId));
-  }
-
-  function deselectAllStudents() {
-    setSelectedStudents([]);
   }
 
   async function handleSubmit() {
@@ -190,12 +77,9 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
       return;
     }
 
-    let recipientIds: string[] = [];
-    if (type === 'class') {
-      recipientIds = students.map((s) => s.userId);
-    } else {
-      recipientIds = selectedStudents;
-    }
+    const recipientIds = type === 'class' 
+      ? students.map((s) => s.userId) 
+      : selectedStudents;
 
     if (recipientIds.length === 0) {
       toast.error('Sélectionnez au moins un destinataire');
@@ -206,15 +90,11 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
     try {
       const classData = classes.find((c) => c.id === selectedClass);
       const courseData = courses.find((c) => c.id === selectedCourse);
-      const firstRecipient = recipientIds[0];
-
+      
       let finalTopicName = topicName;
       if (!finalTopicName) {
-        if (type === 'class') {
-          finalTopicName = `Classe ${classData?.name || ''}`;
-        } else if (type === 'group') {
-          finalTopicName = `Groupe - ${selectedStudents.length} élèves`;
-        }
+        if (type === 'class') finalTopicName = `Classe ${classData?.name || ''}`;
+        else if (type === 'group') finalTopicName = `Groupe - ${selectedStudents.length} élèves`;
       }
       if (courseData) {
         finalTopicName = finalTopicName 
@@ -226,7 +106,7 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          receiverId: firstRecipient,
+          receiverId: recipientIds[0],
           content: message,
           topicName: finalTopicName || undefined,
         }),
@@ -247,7 +127,6 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
       resetForm();
       onConversationCreated?.();
     } catch (error) {
-      console.error('Erreur:', error);
       toast.error(error instanceof Error ? error.message : 'Erreur envoi message');
     } finally {
       setSubmitting(false);
@@ -284,67 +163,7 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-5 py-4">
-          {/* Type de conversation - Cartes visuelles */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Type de message</Label>
-            <RadioGroup
-              value={type}
-              onValueChange={(v) => setType(v as ConversationType)}
-              className="grid grid-cols-3 gap-3"
-            >
-              <Label
-                htmlFor="individual"
-                className={`flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  type === 'individual' 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-muted hover:border-muted-foreground/50'
-                }`}
-              >
-                <RadioGroupItem value="individual" id="individual" className="sr-only" />
-                <User className={`h-8 w-8 ${type === 'individual' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`font-medium ${type === 'individual' ? 'text-primary' : ''}`}>
-                  Un élève
-                </span>
-                <span className="text-xs text-muted-foreground text-center">
-                  Message privé
-                </span>
-              </Label>
-              <Label
-                htmlFor="group"
-                className={`flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  type === 'group' 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-muted hover:border-muted-foreground/50'
-                }`}
-              >
-                <RadioGroupItem value="group" id="group" className="sr-only" />
-                <Users className={`h-8 w-8 ${type === 'group' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`font-medium ${type === 'group' ? 'text-primary' : ''}`}>
-                  Plusieurs élèves
-                </span>
-                <span className="text-xs text-muted-foreground text-center">
-                  Groupe personnalisé
-                </span>
-              </Label>
-              <Label
-                htmlFor="class"
-                className={`flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  type === 'class' 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-muted hover:border-muted-foreground/50'
-                }`}
-              >
-                <RadioGroupItem value="class" id="class" className="sr-only" />
-                <School className={`h-8 w-8 ${type === 'class' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`font-medium ${type === 'class' ? 'text-primary' : ''}`}>
-                  Classe entière
-                </span>
-                <span className="text-xs text-muted-foreground text-center">
-                  Tous les élèves
-                </span>
-              </Label>
-            </RadioGroup>
-          </div>
+          <TypeSelector value={type} onChange={setType} />
 
           {/* Sélection de la classe */}
           <div className="space-y-2">
@@ -376,88 +195,20 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
             </Select>
           </div>
 
-          {/* Sélection des élèves (sauf type 'class') */}
+          {/* Liste des élèves */}
           {type !== 'class' && selectedClass && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  {type === 'individual' ? 'Élève' : 'Élèves'} 
-                  <span className="text-red-500">*</span>
-                  {type === 'group' && selectedStudents.length > 0 && (
-                    <span className="text-muted-foreground text-sm">
-                      ({selectedStudents.length} sélectionné{selectedStudents.length > 1 ? 's' : ''})
-                    </span>
-                  )}
-                </Label>
-                {type === 'group' && students.length > 0 && (
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={selectAllStudents}
-                      disabled={selectedStudents.length === students.length}
-                    >
-                      Tout sélectionner
-                    </Button>
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      size="sm" 
-                      onClick={deselectAllStudents}
-                      disabled={selectedStudents.length === 0}
-                    >
-                      Désélectionner
-                    </Button>
-                  </div>
-                )}
-              </div>
-              <ScrollArea className="h-40 border rounded-md">
-                {loadingStudents ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                ) : students.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Aucun élève dans cette classe
-                  </p>
-                ) : (
-                  <div className="p-2 space-y-1">
-                    {students.map((student) => {
-                      const isSelected = selectedStudents.includes(student.userId);
-                      return (
-                        <div
-                          key={student.id}
-                          className={`flex items-center space-x-3 p-2 rounded-md transition-colors ${
-                            isSelected ? 'bg-primary/10' : 'hover:bg-muted'
-                          }`}
-                        >
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={(checked) => {
-                              console.log('📋 Checkbox change:', checked, 'for student:', student.userId);
-                              handleStudentToggle(student.userId);
-                            }}
-                          />
-                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleStudentToggle(student.userId)}>
-                            <p className="text-sm font-medium">
-                              {student.lastName} {student.firstName}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {student.email}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
+            <StudentList
+              type={type}
+              students={students}
+              selectedStudents={selectedStudents}
+              loading={loadingStudents}
+              onToggle={handleStudentToggle}
+              onSelectAll={() => setSelectedStudents(students.map((s) => s.userId))}
+              onDeselectAll={() => setSelectedStudents([])}
+            />
           )}
 
-          {/* Info si type 'class' */}
+          {/* Info classe entière */}
           {type === 'class' && selectedClass && (
             <div className="bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
@@ -470,62 +221,18 @@ export function NewConversationDialog({ onConversationCreated }: NewConversation
             </div>
           )}
 
-          {/* Section Contexte (Cours + Thématique) */}
-          <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-            <h4 className="font-medium text-sm flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              Contexte (optionnel)
-            </h4>
-            
-            {/* Cours lié */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm">
-                <BookOpen className="h-4 w-4" />
-                Lié au cours
-              </Label>
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Aucun cours" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun cours</SelectItem>
-                  {loadingCourses ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </div>
-                  ) : (
-                    courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.title}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Thématique */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm">
-                <Tag className="h-4 w-4" />
-                Thématique / Sujet
-              </Label>
-              <Input
-                placeholder="Ex: Rappel devoirs, Questions sur le cours, Sortie scolaire..."
-                value={topicName}
-                onChange={(e) => setTopicName(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Aide à organiser vos conversations par thème
-              </p>
-            </div>
-          </div>
+          <ContextSection
+            courses={courses}
+            loadingCourses={loadingCourses}
+            selectedCourse={selectedCourse}
+            topicName={topicName}
+            onCourseChange={setSelectedCourse}
+            onTopicChange={setTopicName}
+          />
 
           {/* Message */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              Message <span className="text-red-500">*</span>
-            </Label>
+            <Label>Message <span className="text-red-500">*</span></Label>
             <Textarea
               placeholder="Écrivez votre message..."
               value={message}

@@ -528,8 +528,8 @@ Réutiliser `ProfileModal` créé en Phase 7.
 - [x] Suppléments visibles sur page cours ✅
 - [ ] Mes Exercices avec statuts et calendrier
 - [ ] Messagerie classe + profs
-- [x] Aucun fichier > 350 lignes ✅
-- [x] Composants partagés réutilisés ✅
+- [ ] **Refactorisation 19 fichiers > 350 lignes** → [refactoring-350-lines.md](refactoring-350-lines.md)
+- [ ] Composants partagés réutilisés
 
 ---
 

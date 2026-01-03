@@ -1,262 +1,40 @@
+// AssignmentFiltersBar - Refactorisé
+// 537 lignes → ~130 lignes (sous-composants extraits)
+
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, ChevronDown, RotateCcw, Check } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { RotateCcw } from 'lucide-react';
 
-// Types alignés avec NewAssignmentModal
-export interface AssignmentFiltersState {
-  subjectIds: string[];
-  courseIds: string[];
-  chapterIds: string[];
-  sectionIds: string[];
-  classIds: string[];
-  studentIds: string[];
-  priorities: string[];
-  dateRange: { start: Date; end: Date } | null;
-}
+import {
+  AssignmentFiltersState,
+  PRIORITY_OPTIONS,
+  useFiltersData,
+  useFiltersActions,
+  FilterDropdown,
+  DateRangeDropdown,
+} from './filters';
+
+// Ré-exporter le type pour compatibilité
+export type { AssignmentFiltersState } from './filters';
 
 interface AssignmentFiltersBarProps {
   filters: AssignmentFiltersState;
   onFiltersChange: (filters: AssignmentFiltersState) => void;
 }
 
-interface Subject { id: string; name: string }
-interface Course { id: string; title: string; subjectId?: string; subject?: { id: string } }
-interface Chapter { id: string; title: string; courseId: string }
-interface Section { id: string; title: string; chapterId: string }
-interface ClassOption { id: string; name: string; color?: string | null }
-interface Student { id: string; firstName: string; lastName: string; classId: string }
-
-const PRIORITY_OPTIONS = [
-  { value: 'HIGH', label: 'Haute', color: 'text-red-600' },
-  { value: 'MEDIUM', label: 'Moyenne', color: 'text-orange-600' },
-  { value: 'LOW', label: 'Basse', color: 'text-green-600' },
-];
-
 export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFiltersBarProps) {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [classes, setClasses] = useState<ClassOption[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    subjects,
+    chapters,
+    sections,
+    classes,
+    students,
+    filteredCourses,
+    isLoading,
+  } = useFiltersData(filters, onFiltersChange);
 
-  // Refs pour éviter les boucles infinies
-  const prevSubjectsRef = useRef<string>('');
-  const prevClassesRef = useRef<string>('');
-  const prevCoursesRef = useRef<string>('');
-  const prevChaptersRef = useRef<string>('');
-
-  // Chargement initial
-  useEffect(() => {
-    async function fetchOptions() {
-      try {
-        const [subjectsRes, coursesRes, classesRes] = await Promise.all([
-          fetch('/api/teacher/subjects'),
-          fetch('/api/teacher/courses'),
-          fetch('/api/teacher/classes'),
-        ]);
-        
-        const [subjectsJson, coursesJson, classesJson] = await Promise.all([
-          subjectsRes.json(),
-          coursesRes.json(),
-          classesRes.json(),
-        ]);
-        
-        setSubjects(subjectsJson.subjects || subjectsJson.data || []);
-        const coursesArray = coursesJson.data?.courses || coursesJson.data || [];
-        setCourses(Array.isArray(coursesArray) ? coursesArray : []);
-        const classesArray = classesJson.classes || classesJson.data || [];
-        setClasses(Array.isArray(classesArray) ? classesArray : []);
-      } catch (error) {
-        console.error('Erreur chargement filtres:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchOptions();
-  }, []);
-
-  // Charger les chapitres quand les cours changent
-  useEffect(() => {
-    const coursesKey = filters.courseIds.sort().join(',');
-    if (coursesKey === prevCoursesRef.current) return;
-    prevCoursesRef.current = coursesKey;
-
-    if (filters.courseIds.length === 0) {
-      setChapters([]);
-      // Aussi nettoyer les sections si pas de chapitres
-      if (filters.chapterIds.length > 0) {
-        onFiltersChange({ ...filters, chapterIds: [], sectionIds: [] });
-      }
-      return;
-    }
-
-    async function loadChapters() {
-      try {
-        const allChapters: Chapter[] = [];
-        for (const courseId of filters.courseIds) {
-          const response = await fetch(`/api/teacher/courses/${courseId}`);
-          const json = await response.json();
-          if (json.success && json.data?.Chapter) {
-            for (const chapter of json.data.Chapter) {
-              allChapters.push({
-                id: chapter.id,
-                title: chapter.title,
-                courseId: chapter.courseId,
-              });
-            }
-          }
-        }
-        setChapters(allChapters);
-      } catch (error) {
-        console.error('Erreur chargement chapitres:', error);
-      }
-    }
-    loadChapters();
-  }, [filters.courseIds, onFiltersChange]);
-
-  // Charger les sections quand les chapitres changent
-  useEffect(() => {
-    const chaptersKey = filters.chapterIds.sort().join(',');
-    if (chaptersKey === prevChaptersRef.current) return;
-    prevChaptersRef.current = chaptersKey;
-
-    if (filters.chapterIds.length === 0) {
-      setSections([]);
-      // Aussi nettoyer les sections si pas de chapitres
-      if (filters.sectionIds.length > 0) {
-        onFiltersChange({ ...filters, sectionIds: [] });
-      }
-      return;
-    }
-
-    async function loadSections() {
-      try {
-        const allSections: Section[] = [];
-        for (const chapterId of filters.chapterIds) {
-          const response = await fetch(`/api/teacher/chapters/${chapterId}`);
-          const json = await response.json();
-          if (json.success && json.data?.Section) {
-            for (const section of json.data.Section) {
-              allSections.push({
-                id: section.id,
-                title: section.title,
-                chapterId: section.chapterId,
-              });
-            }
-          }
-        }
-        setSections(allSections);
-      } catch (error) {
-        console.error('Erreur chargement sections:', error);
-      }
-    }
-    loadSections();
-  }, [filters.chapterIds, onFiltersChange]);
-
-  // Charger les élèves quand les classes changent
-  useEffect(() => {
-    const classesKey = filters.classIds.sort().join(',');
-    if (classesKey === prevClassesRef.current) return;
-    prevClassesRef.current = classesKey;
-
-    if (filters.classIds.length === 0) {
-      setStudents([]);
-      return;
-    }
-
-    async function loadStudents() {
-      try {
-        const allStudents: Student[] = [];
-        for (const classId of filters.classIds) {
-          const response = await fetch(`/api/teacher/classes/${classId}`);
-          const json = await response.json();
-          if (json.success && json.data?.StudentProfile) {
-            for (const student of json.data.StudentProfile) {
-              if (student.User) {
-                allStudents.push({
-                  id: student.User.id,
-                  firstName: student.User.firstName,
-                  lastName: student.User.lastName,
-                  classId,
-                });
-              }
-            }
-          }
-        }
-        setStudents(allStudents);
-      } catch (error) {
-        console.error('Erreur chargement élèves:', error);
-      }
-    }
-    loadStudents();
-  }, [filters.classIds]);
-
-  // Filtrage cascade : Matières → Cours
-  const filteredCourses = useMemo(() => {
-    if (filters.subjectIds.length === 0) return courses;
-    return courses.filter(c => {
-      const courseSubjectId = c.subject?.id || c.subjectId;
-      return courseSubjectId && filters.subjectIds.includes(courseSubjectId);
-    });
-  }, [courses, filters.subjectIds]);
-
-  // Nettoyage cascade
-  useEffect(() => {
-    const subjectsKey = filters.subjectIds.sort().join(',');
-    if (subjectsKey === prevSubjectsRef.current) return;
-    prevSubjectsRef.current = subjectsKey;
-
-    if (filters.subjectIds.length > 0 && filters.courseIds.length > 0) {
-      const validCourseIds = filteredCourses.map(c => c.id);
-      const newCourseIds = filters.courseIds.filter(id => validCourseIds.includes(id));
-      if (newCourseIds.length !== filters.courseIds.length) {
-        onFiltersChange({ ...filters, courseIds: newCourseIds });
-      }
-    }
-  }, [filters, filteredCourses, onFiltersChange]);
-
-  const toggleItem = useCallback((key: keyof AssignmentFiltersState, value: string) => {
-    const currentValues = filters[key] as string[];
-    const newValues = currentValues.includes(value)
-      ? currentValues.filter(v => v !== value)
-      : [...currentValues, value];
-    onFiltersChange({ ...filters, [key]: newValues });
-  }, [filters, onFiltersChange]);
-
-  const handleReset = () => {
-    onFiltersChange({
-      subjectIds: [],
-      courseIds: [],
-      chapterIds: [],
-      sectionIds: [],
-      classIds: [],
-      studentIds: [],
-      priorities: [],
-      dateRange: null,
-    });
-  };
-
-  const activeFiltersCount = 
-    filters.subjectIds.length +
-    filters.courseIds.length +
-    filters.chapterIds.length +
-    filters.sectionIds.length +
-    filters.classIds.length +
-    filters.studentIds.length +
-    filters.priorities.length +
-    (filters.dateRange ? 1 : 0);
+  const { toggleItem, handleReset, activeFiltersCount } = useFiltersActions(filters, onFiltersChange);
 
   return (
     <div className="flex flex-wrap items-center gap-2 p-4 bg-muted/30 rounded-lg border">
@@ -379,158 +157,5 @@ export function AssignmentFiltersBar({ filters, onFiltersChange }: AssignmentFil
         </Button>
       )}
     </div>
-  );
-}
-
-// Dropdown générique pour les filtres
-function FilterDropdown<T>({
-  label,
-  items,
-  selected,
-  onToggle,
-  getId,
-  renderItem,
-  isLoading,
-  emptyMessage,
-}: {
-  label: string;
-  items: T[];
-  selected: string[];
-  onToggle: (id: string) => void;
-  getId: (item: T) => string;
-  renderItem: (item: T) => React.ReactNode;
-  isLoading: boolean;
-  emptyMessage: string;
-}) {
-  const count = selected.length;
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-1">
-          {label}
-          {count > 0 && (
-            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
-              {count}
-            </Badge>
-          )}
-          <ChevronDown className="h-3 w-3 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-0" align="start">
-        <ScrollArea className="max-h-64">
-          {isLoading ? (
-            <div className="p-4 space-y-2">
-              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-              <div className="h-4 w-20 animate-pulse rounded bg-muted" />
-            </div>
-          ) : items.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground text-center">
-              {emptyMessage}
-            </p>
-          ) : (
-            <div className="p-2 space-y-1">
-              {items.map((item) => {
-                const id = getId(item);
-                const isSelected = selected.includes(id);
-                return (
-                  <div
-                    key={id}
-                    className={cn(
-                      'flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-colors text-sm',
-                      isSelected && 'bg-muted'
-                    )}
-                    onClick={() => onToggle(id)}
-                  >
-                    <Checkbox checked={isSelected} onCheckedChange={() => onToggle(id)} />
-                    <span className="flex-1">{renderItem(item)}</span>
-                    {isSelected && <Check className="h-3 w-3 text-primary" />}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-// Dropdown pour la période
-function DateRangeDropdown({
-  dateRange,
-  onChange,
-}: {
-  dateRange: { start: Date; end: Date } | null;
-  onChange: (range: { start: Date; end: Date } | null) => void;
-}) {
-  const hasRange = dateRange !== null;
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-1">
-          <CalendarIcon className="h-3 w-3" />
-          Période
-          {hasRange && (
-            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">1</Badge>
-          )}
-          <ChevronDown className="h-3 w-3 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-3" align="start">
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Du</p>
-            <Calendar
-              mode="single"
-              selected={dateRange?.start}
-              onSelect={(date) => {
-                if (date) {
-                  onChange({
-                    start: date,
-                    end: dateRange?.end || date,
-                  });
-                }
-              }}
-              locale={fr}
-              className="rounded-md border"
-            />
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Au</p>
-            <Calendar
-              mode="single"
-              selected={dateRange?.end}
-              onSelect={(date) => {
-                if (date) {
-                  onChange({
-                    start: dateRange?.start || date,
-                    end: date,
-                  });
-                }
-              }}
-              locale={fr}
-              className="rounded-md border"
-            />
-          </div>
-          {hasRange && (
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground">
-                {format(dateRange.start, 'dd MMM yyyy', { locale: fr })} - {format(dateRange.end, 'dd MMM yyyy', { locale: fr })}
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2"
-                onClick={() => onChange(null)}
-              >
-                Effacer la période
-              </Button>
-            </div>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
   );
 }

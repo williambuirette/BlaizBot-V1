@@ -7,22 +7,29 @@
 ## 🎯 Phase Active
 
 **Phase actuelle** : Phase 8 — Interface Élève (5 Onglets)  
-**TODO** : [todo/phase-08-student-final.md](phase-08-student-final.md)  
-**Prompts** : [prompts/phase-08-student-final.md](../prompts/phase-08-student-final.md)  
-**Étape en cours** : Onglet 1 — Dashboard  
-**Dernière MAJ** : 2025-01-02
+**TODO** : [todo/phase-08-student-v2.md](phase-08-student-v2.md)  
+**Prompts** : `prompts/phase-08-*`  
+**Étape en cours** : Dashboard (8.1) + Refactoring  
+**Dernière MAJ** : 2026-01-03
 
 ### 🧭 Navigation Élève (5 Onglets)
 
 | # | Onglet | Route | État |
 |:--|:-------|:------|:----:|
-| 1 | **Dashboard** | `/student` | ⚠️ Placeholder |
-| 2 | **Mes Cours** | `/student/courses` | ⚠️ Placeholder |
-| 3 | **Assignations** | `/student/assignments` | ❌ À créer |
-| 4 | **Assistant IA** | `/student/ai` | ✅ **FAIT** |
-| 5 | **Messages** | `/student/messages` | ⚠️ Placeholder |
+| 1 | **Dashboard** | `/student` | ⚠️ À faire |
+| 2 | **Mes Cours** | `/student/courses` | ✅ **FAIT** |
+| 3 | **Mes Révisions** | `/student/revisions` | ✅ **FAIT** |
+| 4 | **Assignations** | `/student/assignments` | ❌ À créer |
+| 5 | **Assistant IA** | `/student/ai` | ✅ **FAIT** |
+| 6 | **Messages** | `/student/messages` | ⚠️ Placeholder |
 
 **Légende** : ✅ Implémenté | ⚠️ Placeholder | ❌ À créer
+
+### 🔧 Refactorisation en attente
+
+**19 fichiers > 350 lignes** à découper.  
+**TODO** : [todo/refactoring-350-lines.md](refactoring-350-lines.md)  
+**Prompts** : [prompts/refactoring-350-lines-prompts.md](../prompts/refactoring-350-lines-prompts.md)
 
 ### 📁 Fichiers de référence (archives)
 
