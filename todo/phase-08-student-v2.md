@@ -335,6 +335,68 @@ Permettre à l'élève de créer des notes/suppléments personnels liés ou non 
 
 ---
 
+## 📋 Étape 8.3c — Corrections Affichage Cartes (Modale Visualisation) ✅ TERMINÉ
+
+### 🎯 Objectif
+Corriger l'affichage du contenu des cartes dans la modale de visualisation sur la page cours.
+
+### 📝 Problèmes résolus
+1. **Contenu HTML brut** : Le contenu NOTE/LESSON stocké en JSON `{"html":"..."}` s'affichait en brut
+2. **Vidéo en lien externe** : La vidéo affichait le JSON au lieu d'un iframe YouTube
+3. **Props manquantes** : ExerciseViewer et QuizViewer nécessitaient des props supplémentaires
+
+### 🔧 Corrections apportées
+
+**Page cours `[id]/page.tsx` :**
+- Ajout helper `parseCardContent()` pour extraire le HTML du JSON
+- Ajout fonction `renderCardContent()` qui choisit le viewer selon le type de carte
+- Import des viewers : `VideoViewer`, `QuizViewer`, `ExerciseViewer`
+
+**VideoViewer.tsx :**
+- Parsing du format StudentCard `{"videos":[{"videoId":"..."}],"videoId":"..."}` 
+- Priorité au `videoId` racine ou dans `videos[]`
+- Extraction du videoId depuis l'URL si nécessaire
+- Affichage iframe YouTube au lieu de lien externe
+
+| # | Tâche | Fichier | Validation |
+|:--|:------|:--------|:-----------|
+| 8.3c.1 | ✅ parseCardContent | `courses/[id]/page.tsx` | HTML extrait du JSON |
+| 8.3c.2 | ✅ renderCardContent | `courses/[id]/page.tsx` | Switch par cardType |
+| 8.3c.3 | ✅ VideoViewer parsing | `viewers/VideoViewer.tsx` | Format StudentCard géré |
+| 8.3c.4 | ✅ Props viewers | `courses/[id]/page.tsx` | sectionId/sectionTitle passés |
+
+### 💡 Code clé
+
+```typescript
+// parseCardContent - Extraire HTML du JSON
+function parseCardContent(content: string | null): string {
+  if (!content) return '';
+  try {
+    const parsed = JSON.parse(content);
+    return parsed.html || content;
+  } catch {
+    return content;
+  }
+}
+
+// renderCardContent - Viewer selon type
+function renderCardContent(card: SupplementCard) {
+  switch (card.cardType) {
+    case 'NOTE':
+    case 'LESSON':
+      return <div dangerouslySetInnerHTML={{ __html: parseCardContent(card.content) }} />;
+    case 'VIDEO':
+      return <VideoViewer content={card.content} />;
+    case 'QUIZ':
+      return <QuizViewer content={card.content} sectionId={card.id} />;
+    case 'EXERCISE':
+      return <ExerciseViewer content={card.content} sectionId={card.id} sectionTitle={card.title} />;
+  }
+}
+```
+
+---
+
 ## 📋 Étape 8.4 — Mes Exercices & Assignations
 
 ### 🎯 Objectif
@@ -488,6 +550,7 @@ Réutiliser `ProfileModal` créé en Phase 7.
 - [x] Détail Cours → Chapitres + Sections navigables ✅
 - [x] Détail Cours → Marquer section terminée ✅
 - [x] Détail Cours → Section suppléments avec accordéon ✅
+- [x] Détail Cours → Modal visualisation cartes (HTML, Vidéo, Quiz, Exercice) ✅
 - [x] Mes Révisions → Liste suppléments ✅
 - [x] Mes Révisions → Création/édition suppléments ✅
 - [x] Mes Révisions → Attribution multi-cours ✅
@@ -526,6 +589,7 @@ Réutiliser `ProfileModal` créé en Phase 7.
 - [x] Mes Révisions complet (CRUD suppléments) ✅
 - [x] Attribution suppléments multi-cours ✅
 - [x] Suppléments visibles sur page cours ✅
+- [x] Modale visualisation cartes corrigée (HTML, Vidéo, Quiz, Exercice) ✅
 - [ ] Mes Exercices avec statuts et calendrier
 - [ ] Messagerie classe + profs
 - [ ] **Refactorisation 19 fichiers > 350 lignes** → [refactoring-350-lines.md](refactoring-350-lines.md)
@@ -539,4 +603,4 @@ Réutiliser `ProfileModal` créé en Phase 7.
 
 ---
 
-*Lignes : ~450 | Dernière MAJ : 2026-01-03*
+*Lignes : ~520 | Dernière MAJ : 2026-01-03*

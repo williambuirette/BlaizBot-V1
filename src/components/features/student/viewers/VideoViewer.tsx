@@ -29,11 +29,57 @@ interface VideoViewerProps {
   content: string | null;
 }
 
+// Interface pour le format des cartes élève (StudentCard VIDEO)
+interface StudentCardVideoContent {
+  videos?: Array<{
+    id: string;
+    url: string;
+    platform: 'youtube' | 'vimeo' | 'uploaded' | 'other';
+    videoId?: string;
+    title?: string;
+    description?: string;
+  }>;
+  description?: string;
+  url?: string;
+  platform?: string;
+  videoId?: string;
+}
+
 // Helpers
 function parseVideoContent(content: string | null): VideoContent | null {
   if (!content) return null;
   try {
-    return JSON.parse(content) as VideoContent;
+    const parsed = JSON.parse(content) as StudentCardVideoContent;
+    
+    // Format StudentCard - priorité au videoId racine ou dans videos[]
+    const videoId = parsed.videoId || (parsed.videos?.[0]?.videoId);
+    const platform = parsed.platform || parsed.videos?.[0]?.platform || 'youtube';
+    const url = parsed.url || parsed.videos?.[0]?.url;
+    
+    if (videoId) {
+      return {
+        type: platform as VideoContent['type'],
+        videoId: videoId,
+        originalUrl: url,
+      };
+    }
+    
+    // Si pas de videoId mais une URL, extraire le videoId
+    if (url) {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const extractedId = url.includes('youtu.be')
+          ? url.split('/').pop()?.split('?')[0]
+          : new URLSearchParams(url.split('?')[1]).get('v');
+        return { type: 'youtube', videoId: extractedId || undefined, originalUrl: url };
+      }
+      if (url.includes('vimeo.com')) {
+        const extractedId = url.split('/').pop()?.split('?')[0];
+        return { type: 'vimeo', videoId: extractedId || undefined, originalUrl: url };
+      }
+    }
+    
+    // Format standard VideoContent (fallback)
+    return parsed as unknown as VideoContent;
   } catch {
     // URL brute
     if (content.includes('youtube.com') || content.includes('youtu.be')) {

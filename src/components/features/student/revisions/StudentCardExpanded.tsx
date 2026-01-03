@@ -125,8 +125,16 @@ export function StudentCardExpanded({
   };
 
   // Fichiers mis à jour
-  const handleFilesChange = (files: StudentCardData['files']) => {
-    setCardData(prev => ({ ...prev, files }));
+  const handleFileUploaded = (file: NonNullable<StudentCardData['files']>[number]) => {
+    setCardData(prev => ({ ...prev, files: [...(prev.files || []), file] }));
+    onContentSaved?.();
+  };
+
+  const handleFileDeleted = (fileId: string) => {
+    setCardData(prev => ({ 
+      ...prev, 
+      files: (prev.files || []).filter(f => f.id !== fileId) 
+    }));
     onContentSaved?.();
   };
 
@@ -168,17 +176,16 @@ export function StudentCardExpanded({
                   cardType: cardData.cardType,
                   content: currentContent,
                   cardId: card.id,
-                  supplementId,
-                  quiz: cardData.quiz,
+                  cardTitle: cardData.title,
                   onChange: handleContentChange,
-                  onSave: saveContent,
                 })}
 
                 {/* Fichiers attachés */}
                 <StudentFilesManager
                   cardId={card.id}
                   files={cardData.files || []}
-                  onFilesChange={handleFilesChange}
+                  onFileUploaded={handleFileUploaded}
+                  onFileDeleted={handleFileDeleted}
                 />
               </>
             )}
@@ -194,63 +201,71 @@ interface EditorConfig {
   cardType: StudentCardData['cardType'];
   content: string;
   cardId: string;
-  supplementId: string;
-  quiz?: StudentCardData['quiz'];
+  cardTitle: string;
   onChange: (content: string) => void;
-  onSave: () => void;
+}
+
+// Parse le contenu JSON ou retourne un objet vide
+function parseContent<T>(content: string, defaultValue: T): T {
+  if (!content) return defaultValue;
+  try {
+    return JSON.parse(content) as T;
+  } catch {
+    return defaultValue;
+  }
 }
 
 function renderEditor({
   cardType,
   content,
   cardId,
-  supplementId,
-  quiz,
+  cardTitle,
   onChange,
-  onSave,
 }: EditorConfig) {
   switch (cardType) {
     case 'NOTE':
       return (
         <NoteEditorInline
-          content={content}
-          onChange={onChange}
-          onSave={onSave}
+          cardId={cardId}
+          cardTitle={cardTitle}
+          initialContent={parseContent(content, { html: content })}
+          onContentChange={(c) => onChange(JSON.stringify(c))}
         />
       );
     case 'LESSON':
       return (
         <LessonEditorInline
-          content={content}
-          onChange={onChange}
-          onSave={onSave}
+          sectionId={cardId}
+          sectionTitle={cardTitle}
+          initialContent={parseContent(content, { html: '' })}
+          onContentChange={(c) => onChange(JSON.stringify(c))}
         />
       );
     case 'VIDEO':
       return (
         <VideoEditorInline
-          content={content}
-          onChange={onChange}
-          onSave={onSave}
+          sectionId={cardId}
+          sectionTitle={cardTitle}
+          initialContent={parseContent(content, null)}
+          onContentChange={(c) => onChange(JSON.stringify(c))}
         />
       );
     case 'QUIZ':
       return (
         <QuizEditorInline
-          content={content}
-          cardId={cardId}
-          supplementId={supplementId}
-          quizData={quiz}
-          onChange={onChange}
-          onSave={onSave}
+          sectionId={cardId}
+          sectionTitle={cardTitle}
+          initialContent={parseContent(content, null)}
+          onContentChange={(c) => onChange(JSON.stringify(c))}
         />
       );
     case 'EXERCISE':
       return (
         <ExerciseEditorInline
-          content={content}
-          onChange={onChange}
-          onSave={onSave}
+          sectionId={cardId}
+          sectionTitle={cardTitle}
+          initialContent={parseContent(content, null)}
+          onContentChange={(c) => onChange(JSON.stringify(c))}
         />
       );
     default:

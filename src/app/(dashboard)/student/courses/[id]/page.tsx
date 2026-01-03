@@ -42,6 +42,11 @@ import { CourseScoreKPIs } from '@/components/shared/CourseScoreKPIs';
 import type { CourseScoreData } from '@/types/course-score';
 import { Plus, Layers, FileText as NoteIcon, BookOpen as LessonIcon, Video as VideoIcon, Dumbbell as ExerciseIcon, HelpCircle as QuizIcon, ChevronRight } from 'lucide-react';
 
+// Viewers pour les différents types de cartes
+import { VideoViewer } from '@/components/features/student/viewers/VideoViewer';
+import { QuizViewer } from '@/components/features/student/viewers/QuizViewer';
+import { ExerciseViewer } from '@/components/features/student/viewers/ExerciseViewer';
+
 interface CourseFile {
   id: string;
   filename: string;
@@ -467,16 +472,7 @@ export default function StudentCourseDetailPage({ params }: StudentCourseDetailP
               </DialogHeader>
               
               <div className="mt-4">
-                {selectedCard.content ? (
-                  <div 
-                    className="prose prose-sm dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: selectedCard.content }}
-                  />
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">
-                    Cette carte n&apos;a pas encore de contenu.
-                  </p>
-                )}
+                {renderCardContent(selectedCard)}
               </div>
             </>
           )}
@@ -484,6 +480,69 @@ export default function StudentCourseDetailPage({ params }: StudentCourseDetailP
       </Dialog>
     </div>
   );
+}
+
+// ============================================
+// Helpers pour les cartes
+// ============================================
+
+// Parse le contenu JSON des cartes (stocké en {"html": "..."} pour NOTE/LESSON)
+function parseCardContent(content: string | null): string {
+  if (!content) return '';
+  try {
+    const parsed = JSON.parse(content);
+    return parsed.html || content;
+  } catch {
+    return content;
+  }
+}
+
+// Rend le contenu approprié selon le type de carte
+function renderCardContent(card: SupplementCard) {
+  if (!card.content) {
+    return (
+      <p className="text-muted-foreground text-center py-8">
+        Cette carte n&apos;a pas encore de contenu.
+      </p>
+    );
+  }
+
+  switch (card.cardType) {
+    case 'NOTE':
+    case 'LESSON':
+      return (
+        <div 
+          className="prose prose-sm dark:prose-invert max-w-none"
+          dangerouslySetInnerHTML={{ __html: parseCardContent(card.content) }}
+        />
+      );
+    
+    case 'VIDEO':
+      // VideoViewer gère le parsing du JSON vidéo
+      return <VideoViewer content={card.content} />;
+    
+    case 'QUIZ':
+      // QuizViewer avec props optionnelles pour les suppléments
+      return <QuizViewer content={card.content} sectionId={card.id} />;
+    
+    case 'EXERCISE':
+      // ExerciseViewer avec sectionId/sectionTitle pour les suppléments
+      return (
+        <ExerciseViewer 
+          content={card.content} 
+          sectionId={card.id}
+          sectionTitle={card.title}
+        />
+      );
+    
+    default:
+      return (
+        <div 
+          className="prose prose-sm dark:prose-invert max-w-none"
+          dangerouslySetInnerHTML={{ __html: parseCardContent(card.content) }}
+        />
+      );
+  }
 }
 
 // ============================================

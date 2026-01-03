@@ -199,15 +199,88 @@ les suppléments de l'élève liés à ce cours.
 
 ---
 
+## � Prompt Optimal — Affichage Cartes dans Modale (8.3c)
+
+> **Itérations réelles** : 3 (HTML brut → VideoViewer parsing → props manquantes)
+> **Problèmes rencontrés** :
+> 1. Contenu JSON `{"html":"..."}` affiché en brut
+> 2. VideoViewer ne parsait pas le format StudentCard `{"videos":[...]}`
+> 3. ExerciseViewer et QuizViewer nécessitaient `sectionId`/`sectionTitle`
+
+```markdown
+## Contexte
+Sur la page cours élève, j'ai une modale qui affiche le contenu des cartes de supplément.
+Le contenu est stocké en JSON :
+- NOTE/LESSON : `{"html":"<p>Mon texte</p>"}`
+- VIDEO : `{"videos":[{"id":"...","url":"https://youtu.be/xxx","platform":"youtube","videoId":"xxx"}],"videoId":"xxx"}`
+- QUIZ/EXERCISE : Format spécifique avec questions
+
+## Problème
+Le contenu s'affiche en JSON brut au lieu d'être rendu (HTML ou iframe YouTube).
+
+## Ta mission
+### 1. Helper `parseCardContent(content: string | null): string`
+- Parse le JSON
+- Retourne `parsed.html` ou le contenu brut si erreur
+
+### 2. Fonction `renderCardContent(card: SupplementCard)`
+Switch par `card.cardType` :
+- NOTE/LESSON → `dangerouslySetInnerHTML` avec `parseCardContent()`
+- VIDEO → `<VideoViewer content={card.content} />`
+- QUIZ → `<QuizViewer content={card.content} sectionId={card.id} />`
+- EXERCISE → `<ExerciseViewer content={card.content} sectionId={card.id} sectionTitle={card.title} />`
+
+### 3. Adapter VideoViewer.tsx
+Le format StudentCard stocke le videoId à 2 endroits :
+- `content.videoId` (racine)
+- `content.videos[0].videoId` (dans l'array)
+
+Modifier `parseVideoContent()` pour :
+1. Vérifier `parsed.videoId` en premier
+2. Sinon `parsed.videos?.[0]?.videoId`
+3. Sinon extraire depuis l'URL YouTube
+
+### 4. Props des viewers
+- QuizViewer : `sectionId` optionnel (pour save scores)
+- ExerciseViewer : `sectionId` et `sectionTitle` requis
+
+## Code attendu
+
+// parseCardContent
+function parseCardContent(content: string | null): string {
+  if (!content) return '';
+  try {
+    const parsed = JSON.parse(content);
+    return parsed.html || content;
+  } catch {
+    return content;
+  }
+}
+
+// VideoViewer parsing
+const videoId = parsed.videoId || (parsed.videos?.[0]?.videoId);
+```
+
+**Différences clés vs situation initiale** :
+- Clarifier les 2 formats de stockage (JSON vs brut)
+- Spécifier exactement où chercher le videoId
+- Mentionner les props obligatoires des viewers
+
+**Leçon apprise** :
+- Toujours vérifier le format exact des données stockées en BDD
+- Les composants viewers ont des interfaces différentes à respecter
+
+---
+
 ## 📊 Statistiques Finales
 
 | Métrique | Valeur |
 |:---------|:-------|
-| Fichiers créés | ~25 |
+| Fichiers créés | ~28 |
 | APIs créées | 8 |
-| Composants | 12 |
-| Itérations totales | ~15 |
-| Temps estimé | ~6h |
+| Composants | 14 |
+| Itérations totales | ~18 |
+| Temps estimé | ~7h |
 
 ---
 
